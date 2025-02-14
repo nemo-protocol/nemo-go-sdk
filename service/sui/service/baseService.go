@@ -13,7 +13,7 @@ var (
 )
 
 type SuiService struct {
-	suiApi *client.Client
+	SuiApi *client.Client
 }
 
 func InitSuiService() *SuiService{
@@ -24,7 +24,7 @@ func InitSuiService() *SuiService{
 			panic(errorMsg)
 		}
 		instance = &SuiService{
-			suiApi: c,
+			SuiApi: c,
 		}
 	})
 	return instance

@@ -19,3 +19,10 @@ type BcsMoveObject struct {
 	HasPublicTransfer bool   `json:"hasPublicTransfer"`
 	Version           int64  `json:"version"`
 }
+
+type Object struct {
+	Package  PackageObject  `json:"package"`
+}
+type PackageObject struct {
+	Disassembled map[string]interface{} `json:"disassembled"`
+}

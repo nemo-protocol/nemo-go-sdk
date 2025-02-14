@@ -14,14 +14,14 @@ func NewAccountPrivateKey(privateKeyHex string) *account.Account {
 	// decode privateKey
 	privateKeyBytes, err := hex.DecodeString(privateKeyHex)
 	if err != nil {
-		fmt.Printf("解码私钥失败: %v\n", err)
+		fmt.Printf("decode privateKey error: %v\n", err)
 		return nil
 	}
 
 	// create sign scheme
 	scheme, err := sui_types.NewSignatureScheme(0)
 	if err != nil {
-		fmt.Printf("创建签名方案失败: %v\n", err)
+		fmt.Printf("create sign scheme error: %v\n", err)
 		return nil
 	}
 

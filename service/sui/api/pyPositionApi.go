@@ -15,8 +15,8 @@ var (
 	PYSTATE = "0xa1e4db3075919be54b43d72e89fc669b75663b6e9a26e427bdef04326903e293"
 )
 
-func InitPyPosition(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoPackageId, syType string) (*sui_types.Argument,error) {
-	nemoPackage, err := sui_types.NewObjectIdFromHex(nemoPackageId)
+func InitPyPosition(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoPackage, syType string) (*sui_types.Argument,error) {
+	nemoPackageId, err := sui_types.NewObjectIdFromHex(nemoPackage)
 	if err != nil {
 		return nil, err
 	}
@@ -33,23 +33,22 @@ func InitPyPosition(ptb *sui_types.ProgrammableTransactionBuilder, client *clien
 	typeArguments := make([]move_types.TypeTag, 0)
 	typeArguments = append(typeArguments, typeTag)
 
+	versionCallArg,err := GetObjectArg(client, VERSION, false, nemoPackage, "py", "init_py_position")
+	if err != nil {
+		return nil, err
+	}
+
+	pyStateCallArg,err := GetObjectArg(client, PYSTATE, false, nemoPackage, "py", "init_py_position")
+	if err != nil {
+		return nil, err
+	}
+
+	clockCallArg,err := GetObjectArg(client, constant.CLOCK, false, nemoPackage, "py", "init_py_position")
+	if err != nil {
+		return nil, err
+	}
+
 	callArgs := make([]sui_types.CallArg, 0)
-
-	versionCallArg,err := GetObjectArg(client, VERSION, false)
-	if err != nil {
-		return nil, err
-	}
-
-	pyStateCallArg,err := GetObjectArg(client, PYSTATE, false)
-	if err != nil {
-		return nil, err
-	}
-
-	clockCallArg,err := GetObjectArg(client, constant.CLOCK, false)
-	if err != nil {
-		return nil, err
-	}
-
 	callArgs = append(callArgs, sui_types.CallArg{Object: versionCallArg}, sui_types.CallArg{Object: pyStateCallArg}, sui_types.CallArg{Object: clockCallArg})
 	var arguments []sui_types.Argument
 	for _, v := range callArgs {
@@ -62,7 +61,7 @@ func InitPyPosition(ptb *sui_types.ProgrammableTransactionBuilder, client *clien
 	command := ptb.Command(
 		sui_types.Command{
 			MoveCall: &sui_types.ProgrammableMoveCall{
-				Package:       *nemoPackage,
+				Package:       *nemoPackageId,
 				Module:        module,
 				Function:      function,
 				TypeArguments: typeArguments,
@@ -73,13 +72,12 @@ func InitPyPosition(ptb *sui_types.ProgrammableTransactionBuilder, client *clien
 	return &command, nil
 }
 
-func GetObjectArg(client *client.Client, shareObject string, isCoin bool) (*sui_types.ObjectArg, error) {
+func GetObjectArg(client *client.Client, shareObject string, isCoin bool, contractPackage, module, function string) (*sui_types.ObjectArg, error) {
 	hexObject, err := sui_types.NewObjectIdFromHex(shareObject)
 	if err != nil {
 		return nil, err
 	}
 	sourceObjectData, err := GetObjectMetadata(client, shareObject)
-	fmt.Printf("\nsourceObjectData:%+v\n",sourceObjectData.Data)
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +91,7 @@ func GetObjectArg(client *client.Client, shareObject string, isCoin bool) (*sui_
 			}{
 				Id:                   *hexObject,
 				InitialSharedVersion: *sourceObjectData.Data.Owner.Shared.InitialSharedVersion,
-				Mutable:              GetObjectMutable(sourceObjectData),
+				Mutable:              GetObjectMutable(client, *sourceObjectData.Data.Type, contractPackage, module, function),
 			},
 		}, nil
 	}
