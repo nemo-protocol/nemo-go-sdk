@@ -11,53 +11,50 @@ import (
 	"nemo-go-sdk/service/sui/api"
 )
 
-var (
-	NEMOPACKAGE = "0xa035d268323e40ab99ce8e4b12353bd89a63270935b4969d5bba87aa850c2b19"
-	SYTYPE = "0x36a4c63cd17d48d33e32c3796245b2d1ebe50c2898ee80e682b787fb9b6519d5::sSUI::SSUI"
-	COINTYPE = "0xaafc4f740de0dd0dde642a31148fb94517087052f19afb0f7bed1dc41a50c77b::scallop_sui::SCALLOP_SUI"
-	UNDERLYINGCOINTYPE = "0x2::sui::SUI"
-)
-
-func (s *SuiService)MintPy(sourceCoin string, amountFloat float64, sender *account.Account) (bool, error){
-	// create trade builder
+func (s *SuiService)SwapByPy(amountIn, slippage float64, amountInType, exactAmountOutType string, sender *account.Account) (bool, error){
 	ptb := sui_types.NewProgrammableTransactionBuilder()
-	client := InitSuiService()
+	suiService := InitSuiService()
 
-	arg1, err := api.InitPyPosition(ptb, client.SuiApi, NEMOPACKAGE, SYTYPE)
+	oracleArgument, err := api.GetPriceVoucherFromXOracle(ptb, suiService.SuiApi, NEMOPACKAGE, SYTYPE, UNDERLYINGCOINTYPE)
 	if err != nil{
 		return false, err
 	}
 
-	amountIn := uint64(amountFloat * 1000000000)
-	remainingCoins, gasCoin, err := api.RemainCoinAndGas(client.SuiApi, sender.Address, uint64(10000000))
+	pyState := "0x60422aa99f040c7ac8d0071a3bfd5431bd05b3ad82c77636761eab2709681fde"
+	nemoPackageList := []string{"0xbde9dd9441697413cf312a2d4e37721f38814b96d037cb90d5af10b79de1d446", NEMOPACKAGE}
+	swapArgument, err := api.SwapExactPtForSy(ptb, suiService.BlockApi, suiService.SuiApi, NEMOPACKAGE, pyState, SYTYPE, sender.Address, nemoPackageList, oracleArgument)
 	if err != nil{
 		return false, err
 	}
 
-	arg2, remainingCoins, err := api.MergeCoin(ptb, client.SuiApi, remainingCoins, amountIn)
+	syRedeemResult, err := api.SyRedeem(ptb, suiService.SuiApi, NEMOPACKAGE, COINTYPE, SYTYPE, swapArgument)
 	if err != nil{
 		return false, err
 	}
 
-
-	sCoin, err := api.MintSCoin(ptb, client.SuiApi, COINTYPE, UNDERLYINGCOINTYPE, arg2[0])
-	if err != nil{
-		return false, err
-	}
-
-	// change recipient address
+	//coin, err := api.BurnSCoin(ptb, suiService.SuiApi, COINTYPE, UNDERLYINGCOINTYPE, syRedeemResult)
+	//if err != nil{
+	//	return false, err
+	//}
 	recipientAddr, err := sui_types.NewAddressFromHex(sender.Address)
 	if err != nil {
 		return false, err
 	}
 
-	recArg, err := ptb.Pure(*recipientAddr)
+	recArg, err := ptb.Pure(recipientAddr)
 	if err != nil {
 		return false, err
 	}
 
+	transferArgs := make([]sui_types.Argument, 0)
 	// transfer object
-	transferArgs := []sui_types.Argument{*arg1, *sCoin}
+	resultArg := &sui_types.Argument{
+		NestedResult: &struct {
+			Result1 uint16
+			Result2 uint16
+		}{Result1: *syRedeemResult.Result, Result2: 0},
+	}
+	transferArgs = append(transferArgs, *resultArg)
 
 	ptb.Command(
 		sui_types.Command{
@@ -73,6 +70,10 @@ func (s *SuiService)MintPy(sourceCoin string, amountFloat float64, sender *accou
 
 	pt := ptb.Finish()
 
+	_, gasCoin, err := api.RemainCoinAndGas(suiService.SuiApi, sender.Address, uint64(10000000))
+	if err != nil{
+		return false, err
+	}
 	gasPayment := []*sui_types.ObjectRef{gasCoin}
 
 	senderAddr, err := sui_types.NewObjectIdFromHex(sender.Address)
@@ -107,7 +108,7 @@ func (s *SuiService)MintPy(sourceCoin string, amountFloat float64, sender *accou
 		ShowBalanceChanges: true,
 	}
 
-	resp, err := client.SuiApi.ExecuteTransactionBlock(
+	resp, err := suiService.SuiApi.ExecuteTransactionBlock(
 		context.Background(),
 		txBytes,
 		[]any{signature},
@@ -121,9 +122,9 @@ func (s *SuiService)MintPy(sourceCoin string, amountFloat float64, sender *accou
 	b,_ := json.Marshal(resp)
 	fmt.Printf("\n==resp:%+v==\n",string(b))
 
-	return true, nil
+	return false, nil
 }
 
-func (s *SuiService)RedeemPy(outCoin string, expectOut float64, sender *account.Account)(bool, error){
+func (s *SuiService)SwapToPy() (bool, error){
 	return false, nil
 }

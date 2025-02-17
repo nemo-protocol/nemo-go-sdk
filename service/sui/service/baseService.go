@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"github.com/block-vision/sui-go-sdk/sui"
 	"github.com/coming-chat/go-sui/v2/client"
 	"sync"
 )
@@ -14,6 +15,7 @@ var (
 
 type SuiService struct {
 	SuiApi *client.Client
+	BlockApi *sui.ISuiAPI
 }
 
 func InitSuiService() *SuiService{
@@ -23,9 +25,12 @@ func InitSuiService() *SuiService{
 			errorMsg := fmt.Sprintf("connect sui main net error:%v", err)
 			panic(errorMsg)
 		}
+		blockSuiApi := sui.NewSuiClient(SuiMainNetEndpoint)
 		instance = &SuiService{
 			SuiApi: c,
+			BlockApi: &blockSuiApi,
 		}
+
 	})
 	return instance
 }

@@ -3,7 +3,10 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	blockModels "github.com/block-vision/sui-go-sdk/models"
+	"github.com/block-vision/sui-go-sdk/sui"
 	"github.com/coming-chat/go-sui/v2/client"
 	"github.com/coming-chat/go-sui/v2/sui_types"
 	"github.com/coming-chat/go-sui/v2/types"
@@ -28,11 +31,14 @@ func GetObjectMetadata(client *client.Client, objectId string) (*types.SuiObject
 }
 
 func GetObjectMutable(client *client.Client, objectType, contractPackage, module, function string) bool{
-	po,_ := sui_types.NewObjectIdFromHex(contractPackage)
-	o,_ := client.GetObject(context.Background(), *po, &types.SuiObjectDataOptions{
+	contractPackageAddr,err := sui_types.NewObjectIdFromHex(contractPackage)
+	if err != nil{
+		return false
+	}
+	objects,_ := client.GetObject(context.Background(), *contractPackageAddr, &types.SuiObjectDataOptions{
 		ShowType: true, ShowContent: true, ShowBcs: true, ShowOwner: true, ShowPreviousTransaction: true, ShowStorageRebate: true, ShowDisplay: true,
 	})
-	marshal, _ := json.Marshal(o.Data.Content.Data)
+	marshal, _ := json.Marshal(objects.Data.Content.Data)
 	packageObject := models.Object{}
 	_ = json.Unmarshal(marshal, &packageObject)
 	filterFunc := utils.FindFunctionInBytecode(packageObject.Package.Disassembled[module].(string), function)
@@ -60,4 +66,120 @@ func GetObjectMutable(client *client.Client, objectType, contractPackage, module
 		return true
 	}
 	return false
+}
+
+func GetOwnObjectsMap(client *sui.ISuiAPI, ownerAddress string) ([]map[string]interface{}, error) {
+	if client == nil{
+		return nil, errors.New("client is nil pointer！")
+	}
+	limit := uint64(50)
+	objectFilter := blockModels.SuiXGetOwnedObjectsRequest{
+		Address: ownerAddress,
+		Query: blockModels.SuiObjectResponseQuery{
+			Options: blockModels.SuiObjectDataOptions{
+				ShowType: true, ShowContent: true, ShowBcs: true, ShowOwner: true, ShowPreviousTransaction: true, ShowStorageRebate: true, ShowDisplay: true,
+			},
+		},
+		Limit: limit,
+	}
+	var resp blockModels.PaginatedObjectsResponse
+	respList := make([]map[string]interface{}, 0)
+	var err error
+	hasNext := true
+	for hasNext{
+		resp, err = (*client).SuiXGetOwnedObjects(context.Background(), objectFilter)
+		if err != nil{
+			return nil, err
+		}
+
+		if resp.HasNextPage{
+			hasNext = resp.HasNextPage
+			cursor := resp.NextCursor
+			objectFilter.Cursor = cursor
+		}else {
+			hasNext = false
+		}
+
+
+		b, _ := json.Marshal(resp.Data)
+		data := make([]map[string]interface{}, 0)
+		_ = json.Unmarshal(b, &data)
+		respList = append(respList, data...)
+	}
+
+	return respList, nil
+}
+
+func GetObjectFieldByObjectId(client *client.Client, objectId string) (map[string]interface{}, error){
+	objectIdHex, err := sui_types.NewObjectIdFromHex(objectId)
+	if err != nil{
+		return nil, err
+	}
+
+	options := types.SuiObjectDataOptions{
+		ShowType: true, ShowContent: true, ShowBcs: true, ShowOwner: true, ShowPreviousTransaction: true, ShowStorageRebate: true, ShowDisplay: true,
+	}
+	info, err := client.GetObject(context.Background(), *objectIdHex, &options)
+	if err != nil{
+		return nil, err
+	}
+
+	byteData,err := json.Marshal(info.Data.Content.Data)
+	if err != nil{
+		return nil, err
+	}
+
+	commonModels := models.CommonOnChainDataResp{}
+	_ = json.Unmarshal(byteData, &commonModels)
+	byteData, err = json.Marshal(commonModels.MoveObject.Fields)
+	if err != nil{
+		return nil, err
+	}
+	fields := make(map[string]interface{}, 0)
+	err = json.Unmarshal(byteData, &fields)
+	if err != nil{
+		return nil, err
+	}
+	return fields, nil
+}
+
+func GetOwnerObjectByType(blockClient *sui.ISuiAPI, client *client.Client, objectsType []string, syType, maturity string, ownerAddress string) (string,error){
+	objectsMap, err := GetOwnObjectsMap(blockClient, ownerAddress)
+	if err != nil{
+		return "", err
+	}
+	fmt.Printf("\n==objectsType list:%+v==\n",objectsType)
+	for _,v := range objectsMap{
+		objectType := v["data"].(map[string]interface{})["type"].(string)
+		objectId := v["data"].(map[string]interface{})["objectId"].(string)
+		fmt.Printf("\n==objectType:%v,objectId:%v==\n",objectType,objectId)
+		if !utils.Contains(objectsType, objectType){
+			continue
+		}
+
+		fields,err := GetObjectFieldByObjectId(client, objectId)
+		if err != nil{
+			continue
+		}
+
+		objectMaturity := fields["expiry"]
+		pyStateId := fields["py_state_id"]
+		if objectMaturity == "" || pyStateId == ""{
+			continue
+		}
+
+		pyStateFields,err := GetObjectFieldByObjectId(client, pyStateId.(string))
+		if err != nil{
+			continue
+		}
+		objectSyType := pyStateFields["name"].(string)
+		if !strings.HasPrefix(objectSyType, "0x"){
+			objectSyType = fmt.Sprintf("0x%v",objectSyType)
+		}
+
+		if objectMaturity.(string) == maturity && objectSyType == syType{
+			return objectId, nil
+		}
+	}
+	return "", nil
 }

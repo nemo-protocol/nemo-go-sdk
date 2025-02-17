@@ -82,7 +82,7 @@ func GetObjectArg(client *client.Client, shareObject string, isCoin bool, contra
 		return nil, err
 	}
 
-	if !isCoin{
+	if !isCoin && sourceObjectData.Data.Owner.AddressOwner == nil{
 		return &sui_types.ObjectArg{
 			SharedObject: &struct {
 				Id                   sui_types.ObjectID

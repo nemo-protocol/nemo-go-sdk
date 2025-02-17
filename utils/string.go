@@ -22,3 +22,12 @@ func ExtractFunctionArgs(funcDef string) string {
 	matches := argPattern.FindString(funcDef)
 	return matches
 }
+
+func Contains(elems []string, elem string) bool {
+	for _, e := range elems {
+		if elem == e {
+			return true
+		}
+	}
+	return false
+}

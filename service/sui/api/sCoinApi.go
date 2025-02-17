@@ -17,13 +17,13 @@ var (
 )
 
 func MintSCoin(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, coinType, underlyingCoinType string, coinArgument *sui_types.Argument) (*sui_types.Argument,error) {
-	scaPackage, err := sui_types.NewObjectIdFromHex(SCALLOPPACKAGE)
+	scallopMintSPackage, err := sui_types.NewObjectIdFromHex(SCALLOPPACKAGE)
 	if err != nil {
 		return nil, err
 	}
 
 	module := move_types.Identifier("s_coin_converter")
-	function := move_types.Identifier("mint_s_coin")
+	function := move_types.Identifier("burn_s_coin")
 	sCoinStructTag, err := GetStructTag(coinType)
 	if err != nil {
 		return nil, err
@@ -61,7 +61,7 @@ func MintSCoin(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Cli
 	command := ptb.Command(
 		sui_types.Command{
 			MoveCall: &sui_types.ProgrammableMoveCall{
-				Package:       *scaPackage,
+				Package:       *scallopMintSPackage,
 				Module:        module,
 				Function:      function,
 				TypeArguments: typeArguments,
@@ -73,7 +73,7 @@ func MintSCoin(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Cli
 }
 
 func Mint(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, underlyingCoinType string, coinArgument *sui_types.Argument) (*sui_types.Argument,error) {
-	nemoPackage, err := sui_types.NewObjectIdFromHex(SCALLOPMINTPACKAGE)
+	scallopMintPackage, err := sui_types.NewObjectIdFromHex(SCALLOPMINTPACKAGE)
 	if err != nil {
 		return nil, err
 	}
@@ -123,7 +123,127 @@ func Mint(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, 
 	command := ptb.Command(
 		sui_types.Command{
 			MoveCall: &sui_types.ProgrammableMoveCall{
-				Package:       *nemoPackage,
+				Package:       *scallopMintPackage,
+				Module:        module,
+				Function:      function,
+				TypeArguments: typeArguments,
+				Arguments:     arguments,
+			},
+		},
+	)
+	return &command, nil
+}
+
+func BurnSCoin(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, coinType, underlyingCoinType string, coinArgument *sui_types.Argument) (*sui_types.Argument,error){
+	scallopMintSPackage, err := sui_types.NewObjectIdFromHex(SCALLOPPACKAGE)
+	if err != nil {
+		return nil, err
+	}
+
+	module := move_types.Identifier("s_coin_converter")
+	function := move_types.Identifier("mint_s_coin")
+	sCoinStructTag, err := GetStructTag(coinType)
+	if err != nil {
+		return nil, err
+	}
+	type1Tag := move_types.TypeTag{
+		Struct: sCoinStructTag,
+	}
+	underlyingCoinStructTag, err := GetStructTag(underlyingCoinType)
+	if err != nil {
+		return nil, err
+	}
+	type2Tag := move_types.TypeTag{
+		Struct: underlyingCoinStructTag,
+	}
+	typeArguments := make([]move_types.TypeTag, 0)
+	typeArguments = append(typeArguments, type1Tag, type2Tag)
+
+	scaTreasuryCallArg,err := GetObjectArg(client, SCOINTREASURY, false, SCALLOPPACKAGE, "s_coin_converter", "mint_s_coin")
+	if err != nil {
+		return nil, err
+	}
+	scaTreasuryArgument, err := ptb.Input(sui_types.CallArg{Object: scaTreasuryCallArg})
+	if err != nil {
+		return nil, err
+	}
+
+	var arguments []sui_types.Argument
+
+	arguments = append(arguments, scaTreasuryArgument, *coinArgument)
+	command := ptb.Command(
+		sui_types.Command{
+			MoveCall: &sui_types.ProgrammableMoveCall{
+				Package:       *scallopMintSPackage,
+				Module:        module,
+				Function:      function,
+				TypeArguments: typeArguments,
+				Arguments:     arguments,
+			},
+		},
+	)
+
+	marketCoin, err := Redeem(ptb, client, underlyingCoinType, &command)
+	if err != nil {
+		return nil, err
+	}
+	return marketCoin, nil
+}
+
+func Redeem(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, underlyingCoinType string, coinArgument *sui_types.Argument) (*sui_types.Argument,error) {
+	scallopMintPackage, err := sui_types.NewObjectIdFromHex(SCALLOPMINTPACKAGE)
+	if err != nil {
+		return nil, err
+	}
+	moduleName := "redeem"
+	functionName := "redeem"
+	module := move_types.Identifier(moduleName)
+	function := move_types.Identifier(functionName)
+
+	underlyingCoinStructTag, err := GetStructTag(underlyingCoinType)
+	if err != nil {
+		return nil, err
+	}
+	type1Tag := move_types.TypeTag{
+		Struct: underlyingCoinStructTag,
+	}
+	typeArguments := make([]move_types.TypeTag, 0)
+	typeArguments = append(typeArguments, type1Tag)
+
+	versionCallArg,err := GetObjectArg(client, SCALLOPVERSION, false, SCALLOPMINTPACKAGE, moduleName, functionName)
+	if err != nil {
+		return nil, err
+	}
+
+	marketObjectCallArg,err := GetObjectArg(client, SCALLOPMARKETOBJECT, false, SCALLOPMINTPACKAGE, moduleName, functionName)
+	if err != nil {
+		return nil, err
+	}
+
+	clockCallArg,err := GetObjectArg(client, constant.CLOCK, false, SCALLOPMINTPACKAGE, moduleName, functionName)
+	if err != nil {
+		return nil, err
+	}
+
+	callArgs := make([]sui_types.CallArg, 0)
+	callArgs = append(callArgs, sui_types.CallArg{Object: versionCallArg}, sui_types.CallArg{Object: marketObjectCallArg})
+	var arguments []sui_types.Argument
+	for _, v := range callArgs {
+		argument, err := ptb.Input(v)
+		if err != nil {
+			return nil, err
+		}
+		arguments = append(arguments, argument)
+	}
+
+	arguments = append(arguments, *coinArgument)
+	clockArgument,err := ptb.Input(sui_types.CallArg{Object: clockCallArg})
+	arguments = append(arguments, clockArgument)
+
+	command := ptb.Command(
+		sui_types.Command{
+			MoveCall: &sui_types.ProgrammableMoveCall{
+				Package:       *scallopMintPackage,
 				Module:        module,
 				Function:      function,
 				TypeArguments: typeArguments,
