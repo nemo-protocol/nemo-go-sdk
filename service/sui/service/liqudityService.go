@@ -11,7 +11,7 @@ import (
 	"nemo-go-sdk/service/sui/api"
 )
 
-func (s *SuiService)AddLiquidity(sourceCoin string, amountFloat float64, sender *account.Account)(bool, error){
+func (s *SuiService)AddLiquidity(coinType string, amountFloat float64, sender *account.Account)(bool, error){
 	// create trade builder
 	ptb := sui_types.NewProgrammableTransactionBuilder()
 	client := InitSuiService()
@@ -22,7 +22,7 @@ func (s *SuiService)AddLiquidity(sourceCoin string, amountFloat float64, sender 
 	}
 
 	amountIn := uint64(amountFloat * 1000000000)
-	remainingCoins, gasCoin, err := api.RemainCoinAndGas(client.SuiApi, sender.Address, uint64(10000000))
+	remainingCoins, gasCoin, err := api.RemainCoinAndGas(client.SuiApi, sender.Address, uint64(10000000), coinType)
 	if err != nil{
 		return false, err
 	}

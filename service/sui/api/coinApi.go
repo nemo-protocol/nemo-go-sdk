@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/coming-chat/go-sui/v2/client"
 	"github.com/coming-chat/go-sui/v2/sui_types"
+	"nemo-go-sdk/service/sui/common/constant"
 	"sort"
 	"strconv"
 )
@@ -27,8 +28,7 @@ type CoinPage struct {
 	HasNextPage bool       `json:"hasNextPage"`
 }
 
-func RemainCoinAndGas(client *client.Client, address string, expectGas uint64) ([]CoinData, *sui_types.ObjectRef, error) {
-	coinType := "0x2::sui::SUI"
+func RemainCoinAndGas(client *client.Client, address string, expectGas uint64, coinType string) ([]CoinData, *sui_types.ObjectRef, error) {
 	sd, err := sui_types.NewAddressFromHex(address)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to get SUI address: %w", err)
@@ -47,7 +47,7 @@ func RemainCoinAndGas(client *client.Client, address string, expectGas uint64) (
 	}
 
 	if len(coins.Data) == 0 {
-		return nil, nil, errors.New("account has no SUI coins")
+		return nil, nil, errors.New(fmt.Sprintf("address:%v account has no %v coins", address, coinType))
 	}
 
 	var gasCoin *CoinData
@@ -61,7 +61,7 @@ func RemainCoinAndGas(client *client.Client, address string, expectGas uint64) (
 			continue
 		}
 
-		if balance >= expectGas {
+		if balance >= expectGas && constant.IsGasCoinType(coinType){
 			diff := balance - expectGas
 			if diff < minDiff {
 				if gasCoin != nil {
@@ -79,29 +79,32 @@ func RemainCoinAndGas(client *client.Client, address string, expectGas uint64) (
 		totalBalance += balance
 	}
 
-	if gasCoin == nil {
+	if gasCoin == nil && constant.IsGasCoinType(coinType){
 		return nil, nil, errors.New("no suitable coin for gas found")
 	}
 
-	coinId, err := sui_types.NewObjectIdFromHex(gasCoin.CoinObjectId)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to parse coin ID: %w", err)
-	}
+	var gasObjectRef *sui_types.ObjectRef
+	if gasCoin != nil{
+		coinId, err := sui_types.NewObjectIdFromHex(gasCoin.CoinObjectId)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to parse coin ID: %w", err)
+		}
 
-	version, err := strconv.ParseUint(gasCoin.Version, 10, 64)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to parse version: %w", err)
-	}
+		version, err := strconv.ParseUint(gasCoin.Version, 10, 64)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to parse version: %w", err)
+		}
 
-	digest, err := sui_types.NewDigest(gasCoin.Digest)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to parse digest: %w", err)
-	}
+		digest, err := sui_types.NewDigest(gasCoin.Digest)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to parse digest: %w", err)
+		}
 
-	gasObjectRef := &sui_types.ObjectRef{
-		ObjectId: *coinId,
-		Version:  version,
-		Digest:   *digest,
+		gasObjectRef = &sui_types.ObjectRef{
+			ObjectId: *coinId,
+			Version:  version,
+			Digest:   *digest,
+		}
 	}
 
 	return remainingCoins, gasObjectRef, nil

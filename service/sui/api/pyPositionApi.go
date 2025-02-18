@@ -12,7 +12,7 @@ import (
 
 var (
 	VERSION = "0x4000b5c20e70358a42ae45421c96d2f110817d75b80df30dad5b5d4f1fdad6af"
-	PYSTATE = "0xa1e4db3075919be54b43d72e89fc669b75663b6e9a26e427bdef04326903e293"
+	PYSTATE = "0x8532078f19b70f7e5373053dff559c19717ab7235ec9697f3ce4d6daead7ebdc"
 )
 
 func InitPyPosition(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoPackage, syType string) (*sui_types.Argument,error) {
@@ -70,6 +70,14 @@ func InitPyPosition(ptb *sui_types.ProgrammableTransactionBuilder, client *clien
 		},
 	)
 	return &command, nil
+}
+
+func GetObjectArgument(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, shareObject string, isCoin bool, contractPackage, module, function string) (sui_types.Argument, error){
+	arg, err := GetObjectArg(client, shareObject, isCoin, contractPackage, module, function)
+	if err != nil{
+		return sui_types.Argument{}, err
+	}
+	return ptb.Input(sui_types.CallArg{Object: arg})
 }
 
 func GetObjectArg(client *client.Client, shareObject string, isCoin bool, contractPackage, module, function string) (*sui_types.ObjectArg, error) {

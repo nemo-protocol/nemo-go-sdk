@@ -18,7 +18,7 @@ var (
 	UNDERLYINGCOINTYPE = "0x2::sui::SUI"
 )
 
-func (s *SuiService)MintPy(sourceCoin string, amountFloat float64, sender *account.Account) (bool, error){
+func (s *SuiService)MintPy(coinType string, amountFloat float64, sender *account.Account) (bool, error){
 	// create trade builder
 	ptb := sui_types.NewProgrammableTransactionBuilder()
 	client := InitSuiService()
@@ -29,7 +29,7 @@ func (s *SuiService)MintPy(sourceCoin string, amountFloat float64, sender *accou
 	}
 
 	amountIn := uint64(amountFloat * 1000000000)
-	remainingCoins, gasCoin, err := api.RemainCoinAndGas(client.SuiApi, sender.Address, uint64(10000000))
+	remainingCoins, gasCoin, err := api.RemainCoinAndGas(client.SuiApi, sender.Address, uint64(10000000), coinType)
 	if err != nil{
 		return false, err
 	}

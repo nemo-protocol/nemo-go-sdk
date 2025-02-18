@@ -15,7 +15,8 @@ var (
 	SYSTATE = "0xdc04b5fffe78fae13e967c5943ea6b543637df8955afca1e89a70d0cf5a1a0c2"
 	PRICEORACLECONFIG = "0x8dc043ba780bc9f5b4eab09c4e6d82d7af295e5c5ab32be5c27d9933fb02421b"
 	MARKETGLOBALCONFIG = "0x9bdde7b16ccaa212b80cb3ae8d644aa1c7f65fd12764ce9bc267fe28de72b54d"
-	MARKETSTATECONFIG = "0x5ffefd4e43c8abbef1704ee479e49aa79e84ef507eec117de7f203f14b81b87e"
+	MARKETSTATECONFIG = "0x876d6f16bb3c7439cd2490b13dbbd249618e5d10bef53a00fac800f60fd86acf"
+	YIELDFACTORYCONFIG = "0x0f3e1b1922a2445a4ed5ec936a348cf6bfe50f829b92da0ba9ed3490ae1f1439"
 )
 
 func Deposit(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoPackage, coinType, syType string, coinArgument *sui_types.Argument) (*sui_types.Argument,error) {
@@ -46,27 +47,18 @@ func Deposit(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Clien
 	typeArguments := make([]move_types.TypeTag, 0)
 	typeArguments = append(typeArguments, typeTag, syTypeTag)
 
-	versionCallArg,err := GetObjectArg(client, VERSION, false, nemoPackage, moduleName, functionName)
-	if err != nil {
-		return nil, err
-	}
-
-	syStateCallArg,err := GetObjectArg(client, SYSTATE, false, nemoPackage, moduleName, functionName)
-	if err != nil {
-		return nil, err
-	}
-
 	var arguments []sui_types.Argument
-	versionArgument,err := ptb.Input(sui_types.CallArg{Object: versionCallArg})
+	versionArgument,err := GetObjectArgument(ptb, client, VERSION, false, nemoPackage, moduleName, functionName)
 	if err != nil {
 		return nil, err
 	}
 
-	syStateArgument,err := ptb.Input(sui_types.CallArg{Object: syStateCallArg})
+	syStateArgument,err := GetObjectArgument(ptb, client, SYSTATE, false, nemoPackage, moduleName, functionName)
 	if err != nil {
 		return nil, err
 	}
 	arguments = append(arguments, versionArgument, *coinArgument, syStateArgument)
+
 	command := ptb.Command(
 		sui_types.Command{
 			MoveCall: &sui_types.ProgrammableMoveCall{
@@ -104,11 +96,7 @@ func SwapExactPtForSy(ptb *sui_types.ProgrammableTransactionBuilder, blockClient
 	typeArguments := make([]move_types.TypeTag, 0)
 	typeArguments = append(typeArguments, syTypeTag)
 
-	versionCallArg,err := GetObjectArg(client, VERSION, false, currentNemoPackage, moduleName, functionName)
-	if err != nil {
-		return nil, err
-	}
-	versionArgument,err := ptb.Input(sui_types.CallArg{Object: versionCallArg})
+	versionArgument,err := GetObjectArgument(ptb, client, VERSION, false, currentNemoPackage, moduleName, functionName)
 	if err != nil {
 		return nil, err
 	}
@@ -133,49 +121,28 @@ func SwapExactPtForSy(ptb *sui_types.ProgrammableTransactionBuilder, blockClient
 	}
 
 	var pyPositionArgument *sui_types.Argument
-	pyPositionCallArg,err := GetObjectArg(client, pyPosition, false, currentNemoPackage, moduleName, functionName)
-	if err != nil {
-		return nil, err
-	}
-	argument, err := ptb.Input(sui_types.CallArg{Object: pyPositionCallArg})
+	argument, err := GetObjectArgument(ptb, client, pyPosition, false, currentNemoPackage, moduleName, functionName)
 	if err != nil{
 		return nil, err
 	}
 	pyPositionArgument = &argument
 
-
-	pyStateCallArg,err := GetObjectArg(client, pyState, false, currentNemoPackage, moduleName, functionName)
-	if err != nil {
-		return nil, err
-	}
-	pyStateArgument,err := ptb.Input(sui_types.CallArg{Object: pyStateCallArg})
+	pyStateArgument,err := GetObjectArgument(ptb, client, pyState, false, currentNemoPackage, moduleName, functionName)
 	if err != nil {
 		return nil, err
 	}
 
-	marketStateCallArg,err := GetObjectArg(client, MARKETSTATECONFIG, false, currentNemoPackage, moduleName, functionName)
-	if err != nil {
-		return nil, err
-	}
-	marketStateArgument,err := ptb.Input(sui_types.CallArg{Object: marketStateCallArg})
+	marketStateArgument,err := GetObjectArgument(ptb, client, MARKETSTATECONFIG, false, currentNemoPackage, moduleName, functionName)
 	if err != nil {
 		return nil, err
 	}
 
-	marketGlobalConfigCallArg,err := GetObjectArg(client, MARKETGLOBALCONFIG, false, currentNemoPackage, moduleName, functionName)
-	if err != nil {
-		return nil, err
-	}
-	marketGlobalConfigArgument,err := ptb.Input(sui_types.CallArg{Object: marketGlobalConfigCallArg})
+	marketGlobalConfigArgument,err := GetObjectArgument(ptb, client, MARKETGLOBALCONFIG, false, currentNemoPackage, moduleName, functionName)
 	if err != nil {
 		return nil, err
 	}
 
-	clockCallArg,err := GetObjectArg(client, constant.CLOCK, false, currentNemoPackage, moduleName, functionName)
-	if err != nil {
-		return nil, err
-	}
-	clockArgument,err := ptb.Input(sui_types.CallArg{Object: clockCallArg})
+	clockArgument,err := GetObjectArgument(ptb, client, constant.CLOCK, false, currentNemoPackage, moduleName, functionName)
 	if err != nil {
 		return nil, err
 	}
@@ -242,20 +209,12 @@ func SyRedeem(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Clie
 	typeArguments := make([]move_types.TypeTag, 0)
 	typeArguments = append(typeArguments, arg0TypeTag, arg1TypeTag)
 
-	versionCallArg,err := GetObjectArg(client, VERSION, false, nemoPackage, moduleName, functionName)
-	if err != nil {
-		return nil, err
-	}
-	versionArgument,err := ptb.Input(sui_types.CallArg{Object: versionCallArg})
+	versionArgument,err := GetObjectArgument(ptb, client, VERSION, false, nemoPackage, moduleName, functionName)
 	if err != nil {
 		return nil, err
 	}
 
-	syStateCallArg,err := GetObjectArg(client, SYSTATE, false, nemoPackage, moduleName, functionName)
-	if err != nil {
-		return nil, err
-	}
-	syStateArgument,err := ptb.Input(sui_types.CallArg{Object: syStateCallArg})
+	syStateArgument,err := GetObjectArgument(ptb, client, SYSTATE, false, nemoPackage, moduleName, functionName)
 	if err != nil {
 		return nil, err
 	}
@@ -290,3 +249,290 @@ func CreatePureU64CallArg(value uint64) sui_types.CallArg {
 	}
 }
 
+func SwapExactYtForSy(ptb *sui_types.ProgrammableTransactionBuilder, blockClient *sui.ISuiAPI, client *client.Client, currentNemoPackage ,pyState, syType, ownerAddress string, nemoPackageList []string, oracleArgument *sui_types.Argument) (*sui_types.Argument,error){
+	nemoPackageId, err := sui_types.NewObjectIdFromHex(currentNemoPackage)
+	if err != nil {
+		return nil, err
+	}
+
+	moduleName := "router"
+	functionName := "swap_exact_yt_for_sy"
+	module := move_types.Identifier(moduleName)
+	function := move_types.Identifier(functionName)
+
+	syStructTag, err := GetStructTag(syType)
+	if err != nil {
+		return nil, err
+	}
+	syTypeTag := move_types.TypeTag{
+		Struct: syStructTag,
+	}
+	typeArguments := make([]move_types.TypeTag, 0)
+	typeArguments = append(typeArguments, syTypeTag)
+
+	versionArgument,err := GetObjectArgument(ptb, client, VERSION, false, currentNemoPackage, moduleName, functionName)
+	if err != nil {
+		return nil, err
+	}
+
+	pyStateInfo, err := GetObjectFieldByObjectId(client, pyState)
+	if err != nil{
+		return nil, err
+	}
+	maturity := pyStateInfo["expiry"].(string)
+
+	expectPyPositionTypeList := make([]string, 0)
+	for _, pkg := range nemoPackageList{
+		expectPyPositionTypeList = append(expectPyPositionTypeList, fmt.Sprintf("%v::py_position::PyPosition", pkg))
+	}
+
+	pyPosition,err := GetOwnerObjectByType(blockClient, client, expectPyPositionTypeList, syType, maturity, ownerAddress)
+	if err != nil {
+		return nil, err
+	}
+	if pyPosition == ""{
+		return nil, errors.New("without pyPosition！")
+	}
+
+	var pyPositionArgument *sui_types.Argument
+	argument, err := GetObjectArgument(ptb, client, pyPosition, false, currentNemoPackage, moduleName, functionName)
+	if err != nil{
+		return nil, err
+	}
+	pyPositionArgument = &argument
+
+	pyStateArgument,err := GetObjectArgument(ptb, client, pyState, false, currentNemoPackage, moduleName, functionName)
+	if err != nil {
+		return nil, err
+	}
+
+	yieldFactoryArgument,err := GetObjectArgument(ptb, client, YIELDFACTORYCONFIG, false, currentNemoPackage, moduleName, functionName)
+	if err != nil {
+		return nil, err
+	}
+
+	marketStateArgument,err := GetObjectArgument(ptb, client, MARKETSTATECONFIG, false, currentNemoPackage, moduleName, functionName)
+	if err != nil {
+		return nil, err
+	}
+
+	marketGlobalConfigArgument,err := GetObjectArgument(ptb, client, MARKETGLOBALCONFIG, false, currentNemoPackage, moduleName, functionName)
+	if err != nil {
+		return nil, err
+	}
+
+	clockArgument,err := GetObjectArgument(ptb, client, constant.CLOCK, false, currentNemoPackage, moduleName, functionName)
+	if err != nil {
+		return nil, err
+	}
+
+	ytAmountIn := CreatePureU64CallArg(4000000)
+	ytAmountArgument,err := ptb.Input(ytAmountIn)
+	if err != nil {
+		return nil, err
+	}
+	syOut := CreatePureU64CallArg(10)
+	syOutArgument,err := ptb.Input(syOut)
+	if err != nil {
+		return nil, err
+	}
+
+	var arguments []sui_types.Argument
+	resultArg := &sui_types.Argument{
+		NestedResult: &struct {
+			Result1 uint16
+			Result2 uint16
+		}{Result1: *oracleArgument.Result, Result2: 0},
+	}
+
+	arguments = append(arguments, versionArgument, ytAmountArgument, syOutArgument, *pyPositionArgument, pyStateArgument, *resultArg, yieldFactoryArgument, marketGlobalConfigArgument, marketStateArgument, clockArgument)
+	command := ptb.Command(
+		sui_types.Command{
+			MoveCall: &sui_types.ProgrammableMoveCall{
+				Package:       *nemoPackageId,
+				Module:        module,
+				Function:      function,
+				TypeArguments: typeArguments,
+				Arguments:     arguments,
+			},
+		},
+	)
+	return &command, nil
+}
+
+func SwapExactSyForYt(ptb *sui_types.ProgrammableTransactionBuilder, blockClient *sui.ISuiAPI, client *client.Client, currentNemoPackage ,pyState, syType, ownerAddress string, nemoPackageList []string, approxYtOut, netSyTokenization, minYtOut uint64, oracleArgument, coinArgument *sui_types.Argument) (*sui_types.Argument,error){
+	nemoPackageId, err := sui_types.NewObjectIdFromHex(currentNemoPackage)
+	if err != nil {
+		return nil, err
+	}
+
+	moduleName := "router"
+	functionName := "swap_exact_sy_for_yt"
+	module := move_types.Identifier(moduleName)
+	function := move_types.Identifier(functionName)
+	syStructTag, err := GetStructTag(syType)
+	if err != nil {
+		return nil, err
+	}
+	syTypeTag := move_types.TypeTag{
+		Struct: syStructTag,
+	}
+	typeArguments := make([]move_types.TypeTag, 0)
+	typeArguments = append(typeArguments, syTypeTag)
+
+	versionArgument,err := GetObjectArgument(ptb, client, VERSION, false, currentNemoPackage, moduleName, functionName)
+	if err != nil {
+		return nil, err
+	}
+
+	pyStateInfo, err := GetObjectFieldByObjectId(client, pyState)
+	if err != nil{
+		return nil, err
+	}
+	maturity := pyStateInfo["expiry"].(string)
+
+	expectPyPositionTypeList := make([]string, 0)
+	for _, pkg := range nemoPackageList{
+		expectPyPositionTypeList = append(expectPyPositionTypeList, fmt.Sprintf("%v::py_position::PyPosition", pkg))
+	}
+
+	pyPosition,err := GetOwnerObjectByType(blockClient, client, expectPyPositionTypeList, syType, maturity, ownerAddress)
+	if err != nil {
+		return nil, err
+	}
+	var pyPositionArgument *sui_types.Argument
+	if pyPosition == ""{
+		pyPositionArgument, err = InitPyPosition(ptb, client, currentNemoPackage, syType)
+		if err != nil{
+			return nil, err
+		}
+	}else {
+		argument, err := GetObjectArgument(ptb, client, pyPosition, false, currentNemoPackage, moduleName, functionName)
+		if err != nil{
+			return nil, err
+		}
+		pyPositionArgument = &argument
+	}
+
+	pyStateArgument,err := GetObjectArgument(ptb, client, pyState, false, currentNemoPackage, moduleName, functionName)
+	if err != nil {
+		return nil, err
+	}
+
+	yieldFactoryArgument,err := GetObjectArgument(ptb, client, YIELDFACTORYCONFIG, false, currentNemoPackage, moduleName, functionName)
+	if err != nil {
+		return nil, err
+	}
+
+	marketGlobalConfigArgument,err := GetObjectArgument(ptb, client, MARKETGLOBALCONFIG, false, currentNemoPackage, moduleName, functionName)
+	if err != nil {
+		return nil, err
+	}
+
+	marketStateArgument,err := GetObjectArgument(ptb, client, MARKETSTATECONFIG, false, currentNemoPackage, moduleName, functionName)
+	if err != nil {
+		return nil, err
+	}
+
+	clockArgument,err := GetObjectArgument(ptb, client, constant.CLOCK, false, currentNemoPackage, moduleName, functionName)
+	if err != nil {
+		return nil, err
+	}
+
+	approxYtOutCallArg := CreatePureU64CallArg(approxYtOut)
+	approxYtOutArgument,err := ptb.Input(approxYtOutCallArg)
+	if err != nil {
+		return nil, err
+	}
+
+	netSyTokenizationCallArg := CreatePureU64CallArg(netSyTokenization)
+	netSyTokenizationArgument,err := ptb.Input(netSyTokenizationCallArg)
+	if err != nil {
+		return nil, err
+	}
+
+	minYtOutCallArg := CreatePureU64CallArg(minYtOut)
+	minYtOutArgument,err := ptb.Input(minYtOutCallArg)
+	if err != nil {
+		return nil, err
+	}
+
+	var arguments []sui_types.Argument
+	arguments = append(arguments, versionArgument, minYtOutArgument, approxYtOutArgument, netSyTokenizationArgument, *coinArgument, *oracleArgument, *pyPositionArgument, pyStateArgument, yieldFactoryArgument, marketGlobalConfigArgument, marketStateArgument, clockArgument)
+	command := ptb.Command(
+		sui_types.Command{
+			MoveCall: &sui_types.ProgrammableMoveCall{
+				Package:       *nemoPackageId,
+				Module:        module,
+				Function:      function,
+				TypeArguments: typeArguments,
+				Arguments:     arguments,
+			},
+		},
+	)
+	return &command, nil
+}
+
+func GetApproxYtOutForNetSyInInternal(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoPackage, syType, pyState, marketGlobalConfig, marketState string, netSyIn, minYtOut uint64, oracleArgument *sui_types.Argument) (*sui_types.Argument,error){
+	nemoPackageId, err := sui_types.NewObjectIdFromHex(nemoPackage)
+	if err != nil {
+		return nil, err
+	}
+
+	moduleName := "offchain"
+	functionName := "get_approx_yt_out_for_net_sy_in_internal"
+	module := move_types.Identifier(moduleName)
+	function := move_types.Identifier(functionName)
+	syStructTag, err := GetStructTag(syType)
+	if err != nil {
+		return nil, err
+	}
+	syTypeTag := move_types.TypeTag{
+		Struct: syStructTag,
+	}
+	typeArguments := make([]move_types.TypeTag, 0)
+	typeArguments = append(typeArguments, syTypeTag)
+
+	pyStateArgument,err := GetObjectArgument(ptb, client, pyState, false, nemoPackage, moduleName, functionName)
+
+	marketGlobalConfigArgument,err := GetObjectArgument(ptb, client, marketGlobalConfig, false, nemoPackage, moduleName, functionName)
+	if err != nil {
+		return nil, err
+	}
+
+	marketStateArgument,err := GetObjectArgument(ptb, client, marketState, false, nemoPackage, moduleName, functionName)
+	if err != nil {
+		return nil, err
+	}
+
+	clockArgument,err := GetObjectArgument(ptb, client, constant.CLOCK, false, nemoPackage, moduleName, functionName)
+	if err != nil {
+		return nil, err
+	}
+
+	netSyInArg := CreatePureU64CallArg(netSyIn)
+	netSyInAtgument,err := ptb.Pure(netSyInArg)
+	if err != nil {
+		return nil, err
+	}
+	minYtOutArg := CreatePureU64CallArg(minYtOut)
+	minYtOutAtgument,err := ptb.Pure(minYtOutArg)
+	if err != nil {
+		return nil, err
+	}
+
+	var arguments []sui_types.Argument
+	arguments = append(arguments, netSyInAtgument, minYtOutAtgument, *oracleArgument, pyStateArgument, pyStateArgument, marketStateArgument, marketGlobalConfigArgument, clockArgument)
+	command := ptb.Command(
+		sui_types.Command{
+			MoveCall: &sui_types.ProgrammableMoveCall{
+				Package:       *nemoPackageId,
+				Module:        module,
+				Function:      function,
+				TypeArguments: typeArguments,
+				Arguments:     arguments,
+			},
+		},
+	)
+	return &command, nil
+}

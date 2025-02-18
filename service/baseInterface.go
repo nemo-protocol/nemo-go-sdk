@@ -7,6 +7,6 @@ type ContractInterface interface {
 	RedeemPy(outCoin string, expectOut float64, sender *account.Account)(bool, error)
 	AddLiquidity(sourceCoin string, amountFloat float64, sender *account.Account)(bool, error)
 	RedeemLiquidity(outCoin string, expectOut float64, sender *account.Account)(bool, error)
-	SwapByPy(amountIn, slippage float64, amountInType, exactAmountOutType string, sender *account.Account)(bool, error)
-	SwapToPy()(bool, error)
+	SwapByPy(amountIn, slippage float64, coinType , amountInType, exactAmountOutType string, sender *account.Account)(bool, error)
+	SwapToPy(amountIn, slippage float64, coinType , amountInType, exactAmountOutType string, sender *account.Account)(bool, error)
 }
