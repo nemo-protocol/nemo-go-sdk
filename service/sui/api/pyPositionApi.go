@@ -12,7 +12,7 @@ import (
 
 var (
 	VERSION = "0x4000b5c20e70358a42ae45421c96d2f110817d75b80df30dad5b5d4f1fdad6af"
-	PYSTATE = "0x8532078f19b70f7e5373053dff559c19717ab7235ec9697f3ce4d6daead7ebdc"
+	PYSTATE = "0x4f3cc83141fa233ee733074f90c8b955cb76030b4ae119bd5d40f9bbace97cde"
 )
 
 func InitPyPosition(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoPackage, syType string) (*sui_types.Argument,error) {

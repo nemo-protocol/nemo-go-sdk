@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"github.com/coming-chat/go-sui/v2/account"
 	"github.com/coming-chat/go-sui/v2/client"
@@ -12,7 +13,7 @@ import (
 	"nemo-go-sdk/service/sui/common/constant"
 )
 
-func DryRunGetApproxYtOutForNetSyInInternal(client *client.Client, nemoPackage, syType, pyState, marketGlobalConfig, marketState string, netSyIn, minYtOut uint64, sender *account.Account) (approxYtOut uint64, netSyTokenization uint64, err error) {
+func DryRunGetApproxPyOutForNetSyInInternal(client *client.Client, nemoPackage, syType, pyState, marketGlobalConfig, marketState, exactPyType string, netSyIn, minYtOut uint64, sender *account.Account) (approxPyOut uint64, netSyTokenization uint64, err error) {
 	ptb := sui_types.NewProgrammableTransactionBuilder()
 
 	nemoPackageId, err := sui_types.NewObjectIdFromHex(nemoPackage)
@@ -26,7 +27,14 @@ func DryRunGetApproxYtOutForNetSyInInternal(client *client.Client, nemoPackage, 
 	}
 
 	moduleName := "offchain"
-	functionName := "get_approx_yt_out_for_net_sy_in_internal"
+	var functionName string
+	if exactPyType == constant.PTTYPE{
+		functionName = "get_approx_pt_out_for_net_sy_in_internal"
+	}else if exactPyType == constant.YTTYPE{
+		functionName = "get_approx_yt_out_for_net_sy_in_internal"
+	}else {
+		return 0, 0, errors.New("swap type error！")
+	}
 	module := move_types.Identifier(moduleName)
 	function := move_types.Identifier(functionName)
 
@@ -40,13 +48,13 @@ func DryRunGetApproxYtOutForNetSyInInternal(client *client.Client, nemoPackage, 
 		return 0, 0, err
 	}
 
-	minYtOutArg := CreatePureU64CallArg(minYtOut)
-	minYtOutArgument, err := ptb.Input(minYtOutArg)
+	minPyOutArg := CreatePureU64CallArg(minYtOut)
+	minPyOutArgument, err := ptb.Input(minPyOutArg)
 	if err != nil {
 		return 0, 0, err
 	}
 
-	oracleArgument, err := GetPriceVoucherFromXOracle(ptb, client, nemoPackage, syType, constant.GASCOINTYPE)
+	oracleArgument, err := GetPriceVoucherFromXOracle(ptb, client, nemoPackage, syType, "0x7016aae72cfc67f2fadf55769c0a7dd54291a583b63051a5ed71081cce836ac6::sca::SCA")
 	if err != nil{
 		return 0, 0, err
 	}
@@ -70,12 +78,23 @@ func DryRunGetApproxYtOutForNetSyInInternal(client *client.Client, nemoPackage, 
 
 	arguments := []sui_types.Argument{
 		netSyInArgument,
-		minYtOutArgument,
+		minPyOutArgument,
 		*oracleArgument,
 		ps,
 		ms,
 		mgc,
 		c,
+	}
+	if exactPyType == constant.PTTYPE{
+		arguments = []sui_types.Argument{
+			netSyInArgument,
+			minPyOutArgument,
+			*oracleArgument,
+			ps,
+			mgc,
+			ms,
+			c,
+		}
 	}
 
 	ptb.Command(
@@ -110,6 +129,9 @@ func DryRunGetApproxYtOutForNetSyInInternal(client *client.Client, nemoPackage, 
 	if err != nil {
 		return 0, 0, fmt.Errorf("failed to inspect transaction: %w", err)
 	}
+	if result.Error != nil{
+		return 0, 0, errors.New(fmt.Sprintf("%v", *result.Error))
+	}
 	if len(result.Results) == 0 {
 		return 0, 0, fmt.Errorf("no results returned")
 	}
@@ -127,8 +149,8 @@ func DryRunGetApproxYtOutForNetSyInInternal(client *client.Client, nemoPackage, 
 					}
 				}
 				if len(byteSlice) >= 8 {
-					approxYtOut = binary.LittleEndian.Uint64(byteSlice)
-					fmt.Printf("Parsed approxYtOut: %d\n", approxYtOut)
+					approxPyOut = binary.LittleEndian.Uint64(byteSlice)
+					fmt.Printf("Parsed approxYtOut: %d\n", approxPyOut)
 				}
 			}
 		}
@@ -152,12 +174,12 @@ func DryRunGetApproxYtOutForNetSyInInternal(client *client.Client, nemoPackage, 
 		}
 	}
 
-	fmt.Printf("\nFinal values - approxYtOut: %d, netSyTokenization: %d\n", approxYtOut, netSyTokenization)
+	fmt.Printf("\nFinal values - approxYtOut: %d, netSyTokenization: %d\n", approxPyOut, netSyTokenization)
 
-	return approxYtOut, netSyTokenization, nil
+	return approxPyOut, netSyTokenization, nil
 }
 
-func GetYtOutForExactSyInWithPriceVoucher(client *client.Client, nemoPackage, syType, pyState, marketGlobalConfig, marketState string, netSyIn uint64, priceOracle string, sender *account.Account) (uint64, error){
+func DryRunGetPyOutForExactSyInWithPriceVoucher(client *client.Client, nemoPackage, syType, pyState, marketGlobalConfig, marketState, exactPyType string, netSyIn uint64, priceOracle string, sender *account.Account) (uint64, error){
 	ptb := sui_types.NewProgrammableTransactionBuilder()
 
 	nemoPackageId, err := sui_types.NewObjectIdFromHex(nemoPackage)
@@ -171,7 +193,13 @@ func GetYtOutForExactSyInWithPriceVoucher(client *client.Client, nemoPackage, sy
 	}
 
 	moduleName := "router"
-	functionName := "get_yt_out_for_exact_sy_in_with_price_voucher"
+	var functionName string
+	if exactPyType == constant.PTTYPE{
+		functionName = "get_pt_out_for_exact_sy_in_with_price_voucher"
+	}else {
+		functionName = "get_yt_out_for_exact_sy_in_with_price_voucher"
+	}
+
 	module := move_types.Identifier(moduleName)
 	function := move_types.Identifier(functionName)
 
@@ -185,14 +213,14 @@ func GetYtOutForExactSyInWithPriceVoucher(client *client.Client, nemoPackage, sy
 		return 0, err
 	}
 
-	minYtOut := uint64(0)
-	minYtOutArg := CreatePureU64CallArg(minYtOut)
-	minYtOutArgument, err := ptb.Input(minYtOutArg)
+	minPyOut := uint64(0)
+	minPyOutArg := CreatePureU64CallArg(minPyOut)
+	minPyOutArgument, err := ptb.Input(minPyOutArg)
 	if err != nil {
 		return 0, err
 	}
 
-	oracleArgument, err := GetPriceVoucherFromXOracle(ptb, client, nemoPackage, syType, constant.GASCOINTYPE)
+	oracleArgument, err := GetPriceVoucherFromXOracle(ptb, client, nemoPackage, syType, "0x7016aae72cfc67f2fadf55769c0a7dd54291a583b63051a5ed71081cce836ac6::sca::SCA")
 	if err != nil{
 		return 0, err
 	}
@@ -216,7 +244,7 @@ func GetYtOutForExactSyInWithPriceVoucher(client *client.Client, nemoPackage, sy
 
 	arguments := []sui_types.Argument{
 		netSyInArgument,
-		minYtOutArgument,
+		minPyOutArgument,
 		*oracleArgument,
 		ps,
 		mgc,
@@ -256,6 +284,9 @@ func GetYtOutForExactSyInWithPriceVoucher(client *client.Client, nemoPackage, sy
 	if err != nil {
 		return 0, fmt.Errorf("failed to inspect transaction: %w", err)
 	}
+	if result.Error != nil{
+		return 0, errors.New(fmt.Sprintf("%v", *result.Error))
+	}
 	if len(result.Results) == 0 {
 		return 0, fmt.Errorf("no results returned")
 	}
@@ -273,11 +304,11 @@ func GetYtOutForExactSyInWithPriceVoucher(client *client.Client, nemoPackage, sy
 					}
 				}
 				if len(byteSlice) >= 8 {
-					minYtOut = binary.LittleEndian.Uint64(byteSlice)
-					fmt.Printf("Parsed minYtOut: %d\n", minYtOut)
+					minPyOut = binary.LittleEndian.Uint64(byteSlice)
+					fmt.Printf("Parsed minYtOut: %d\n", minPyOut)
 				}
 			}
 		}
 	}
-	return minYtOut, nil
+	return minPyOut, nil
 }

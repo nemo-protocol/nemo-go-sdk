@@ -17,7 +17,7 @@ func (s *SuiService)SwapByPy(amountIn, slippage float64, coinType, amountInType,
 	ptb := sui_types.NewProgrammableTransactionBuilder()
 	suiService := InitSuiService()
 
-	oracleArgument, err := api.GetPriceVoucherFromXOracle(ptb, suiService.SuiApi, NEMOPACKAGE, SYTYPE, UNDERLYINGCOINTYPE)
+	oracleArgument, err := api.GetPriceVoucherFromXOracle(ptb, suiService.SuiApi, NEMOPACKAGE, SYTYPE, "0x7016aae72cfc67f2fadf55769c0a7dd54291a583b63051a5ed71081cce836ac6::sca::SCA")
 	if err != nil{
 		return false, err
 	}
@@ -143,13 +143,13 @@ func (s *SuiService)SwapToPy(amountIn, slippage float64, coinType, amountInType,
 	client := InitSuiService()
 	netSyIn := uint64(amountIn*1000000000)
 
-	minYtOut, err := api.GetYtOutForExactSyInWithPriceVoucher(client.SuiApi, NEMOPACKAGE, SYTYPE, api.PYSTATE, api.MARKETGLOBALCONFIG, api.MARKETSTATECONFIG,netSyIn, api.PRICEORACLECONFIG, sender)
+	minYtOut, err := api.DryRunGetPyOutForExactSyInWithPriceVoucher(client.SuiApi, NEMOPACKAGE, SYTYPE, api.PYSTATE, api.MARKETGLOBALCONFIG, api.MARKETSTATECONFIG, exactAmountOutType, netSyIn, api.PRICEORACLECONFIG, sender)
 	if err != nil{
 		return false, err
 	}
 	minYtOut = minYtOut - uint64(float64(minYtOut) * slippage)
 
-	approxYtOut, netSyTokenization, err := api.DryRunGetApproxYtOutForNetSyInInternal(client.SuiApi, NEMOPACKAGE, SYTYPE, api.PYSTATE, api.MARKETGLOBALCONFIG, api.MARKETSTATECONFIG, netSyIn, minYtOut, sender)
+	approxPyOut, netSyTokenization, err := api.DryRunGetApproxPyOutForNetSyInInternal(client.SuiApi, NEMOPACKAGE, SYTYPE, api.PYSTATE, api.MARKETGLOBALCONFIG, api.MARKETSTATECONFIG, exactAmountOutType, netSyIn, minYtOut, sender)
 	if err != nil{
 		return false, err
 	}
@@ -173,7 +173,6 @@ func (s *SuiService)SwapToPy(amountIn, slippage float64, coinType, amountInType,
 		return false, err
 	}
 
-	// 执行 SplitCoin 操作
 	splitResult,_,err := api.SplitCoinFromMerged(ptb, *mergeCoinArgument[0], netSyIn)
 	if err != nil{
 		return false, err
@@ -184,16 +183,26 @@ func (s *SuiService)SwapToPy(amountIn, slippage float64, coinType, amountInType,
 		return false, err
 	}
 	
-	oracleArgument, err := api.GetPriceVoucherFromXOracle(ptb, client.SuiApi, NEMOPACKAGE, SYTYPE, constant.GASCOINTYPE)
+	oracleArgument, err := api.GetPriceVoucherFromXOracle(ptb, client.SuiApi, NEMOPACKAGE, SYTYPE, "0x7016aae72cfc67f2fadf55769c0a7dd54291a583b63051a5ed71081cce836ac6::sca::SCA")
 	if err != nil{
 		return false, err
 	}
 
 	nemoPackageList := []string{"0xbde9dd9441697413cf312a2d4e37721f38814b96d037cb90d5af10b79de1d446", NEMOPACKAGE}
-	_, err = api.SwapExactSyForYt(ptb, client.BlockApi, client.SuiApi, NEMOPACKAGE, api.PYSTATE, SYTYPE, sender.Address, nemoPackageList, approxYtOut, netSyTokenization, minYtOut, oracleArgument, depositArgument)
-	if err != nil{
-		return false, err
+	if exactAmountOutType == constant.YTTYPE{
+		_, err = api.SwapExactSyForYt(ptb, client.BlockApi, client.SuiApi, NEMOPACKAGE, api.PYSTATE, SYTYPE, sender.Address, nemoPackageList, approxPyOut, netSyTokenization, minYtOut, oracleArgument, depositArgument)
+		if err != nil{
+			return false, err
+		}
+	}else if exactAmountOutType == constant.PTTYPE{
+		_, err = api.SwapExactSyForPt(ptb, client.BlockApi, client.SuiApi, NEMOPACKAGE, api.PYSTATE, SYTYPE, sender.Address, nemoPackageList, approxPyOut, minYtOut, oracleArgument, depositArgument)
+		if err != nil{
+			return false, err
+		}
+	}else{
+		return false, errors.New("swap type error！")
 	}
+
 
 	// transfer object
 	//transferArgs := []sui_types.Argument{remainMergeCoinArgument}

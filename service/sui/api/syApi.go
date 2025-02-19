@@ -15,7 +15,7 @@ var (
 	SYSTATE = "0xdc04b5fffe78fae13e967c5943ea6b543637df8955afca1e89a70d0cf5a1a0c2"
 	PRICEORACLECONFIG = "0x8dc043ba780bc9f5b4eab09c4e6d82d7af295e5c5ab32be5c27d9933fb02421b"
 	MARKETGLOBALCONFIG = "0x9bdde7b16ccaa212b80cb3ae8d644aa1c7f65fd12764ce9bc267fe28de72b54d"
-	MARKETSTATECONFIG = "0x876d6f16bb3c7439cd2490b13dbbd249618e5d10bef53a00fac800f60fd86acf"
+	MARKETSTATECONFIG = "0x860bd16041a9a1c7404f1a615a43efdfeddb36fd2e36c069a16d287e97971e5b"
 	YIELDFACTORYCONFIG = "0x0f3e1b1922a2445a4ed5ec936a348cf6bfe50f829b92da0ba9ed3490ae1f1439"
 )
 
@@ -459,6 +459,108 @@ func SwapExactSyForYt(ptb *sui_types.ProgrammableTransactionBuilder, blockClient
 
 	var arguments []sui_types.Argument
 	arguments = append(arguments, versionArgument, minYtOutArgument, approxYtOutArgument, netSyTokenizationArgument, *coinArgument, *oracleArgument, *pyPositionArgument, pyStateArgument, yieldFactoryArgument, marketGlobalConfigArgument, marketStateArgument, clockArgument)
+	command := ptb.Command(
+		sui_types.Command{
+			MoveCall: &sui_types.ProgrammableMoveCall{
+				Package:       *nemoPackageId,
+				Module:        module,
+				Function:      function,
+				TypeArguments: typeArguments,
+				Arguments:     arguments,
+			},
+		},
+	)
+	return &command, nil
+}
+
+func SwapExactSyForPt(ptb *sui_types.ProgrammableTransactionBuilder, blockClient *sui.ISuiAPI, client *client.Client, currentNemoPackage ,pyState, syType, ownerAddress string, nemoPackageList []string, approxPtOut, minYtOut uint64, oracleArgument, coinArgument *sui_types.Argument) (*sui_types.Argument,error){
+	nemoPackageId, err := sui_types.NewObjectIdFromHex(currentNemoPackage)
+	if err != nil {
+		return nil, err
+	}
+
+	moduleName := "router"
+	functionName := "swap_exact_sy_for_pt"
+	module := move_types.Identifier(moduleName)
+	function := move_types.Identifier(functionName)
+	syStructTag, err := GetStructTag(syType)
+	if err != nil {
+		return nil, err
+	}
+	syTypeTag := move_types.TypeTag{
+		Struct: syStructTag,
+	}
+	typeArguments := make([]move_types.TypeTag, 0)
+	typeArguments = append(typeArguments, syTypeTag)
+
+	versionArgument,err := GetObjectArgument(ptb, client, VERSION, false, currentNemoPackage, moduleName, functionName)
+	if err != nil {
+		return nil, err
+	}
+
+	pyStateInfo, err := GetObjectFieldByObjectId(client, pyState)
+	if err != nil{
+		return nil, err
+	}
+	maturity := pyStateInfo["expiry"].(string)
+
+	expectPyPositionTypeList := make([]string, 0)
+	for _, pkg := range nemoPackageList{
+		expectPyPositionTypeList = append(expectPyPositionTypeList, fmt.Sprintf("%v::py_position::PyPosition", pkg))
+	}
+
+	pyPosition,err := GetOwnerObjectByType(blockClient, client, expectPyPositionTypeList, syType, maturity, ownerAddress)
+	if err != nil {
+		return nil, err
+	}
+	var pyPositionArgument *sui_types.Argument
+	if pyPosition == ""{
+		pyPositionArgument, err = InitPyPosition(ptb, client, currentNemoPackage, syType)
+		if err != nil{
+			return nil, err
+		}
+	}else {
+		argument, err := GetObjectArgument(ptb, client, pyPosition, false, currentNemoPackage, moduleName, functionName)
+		if err != nil{
+			return nil, err
+		}
+		pyPositionArgument = &argument
+	}
+
+	pyStateArgument,err := GetObjectArgument(ptb, client, pyState, false, currentNemoPackage, moduleName, functionName)
+	if err != nil {
+		return nil, err
+	}
+
+	marketGlobalConfigArgument,err := GetObjectArgument(ptb, client, MARKETGLOBALCONFIG, false, currentNemoPackage, moduleName, functionName)
+	if err != nil {
+		return nil, err
+	}
+
+	marketStateArgument,err := GetObjectArgument(ptb, client, MARKETSTATECONFIG, false, currentNemoPackage, moduleName, functionName)
+	if err != nil {
+		return nil, err
+	}
+
+	clockArgument,err := GetObjectArgument(ptb, client, constant.CLOCK, false, currentNemoPackage, moduleName, functionName)
+	if err != nil {
+		return nil, err
+	}
+
+	approxPtOutCallArg := CreatePureU64CallArg(approxPtOut)
+	approxPtOutArgument,err := ptb.Input(approxPtOutCallArg)
+	if err != nil {
+		return nil, err
+	}
+
+	minPtOutCallArg := CreatePureU64CallArg(minYtOut)
+	minPtOutArgument,err := ptb.Input(minPtOutCallArg)
+	if err != nil {
+		return nil, err
+	}
+
+	var arguments []sui_types.Argument
+	arguments = append(arguments, versionArgument, minPtOutArgument, approxPtOutArgument, *coinArgument, *oracleArgument, *pyPositionArgument, pyStateArgument, marketGlobalConfigArgument, marketStateArgument, clockArgument)
 	command := ptb.Command(
 		sui_types.Command{
 			MoveCall: &sui_types.ProgrammableMoveCall{
