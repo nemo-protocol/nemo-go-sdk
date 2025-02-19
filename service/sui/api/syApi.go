@@ -613,18 +613,140 @@ func GetApproxYtOutForNetSyInInternal(ptb *sui_types.ProgrammableTransactionBuil
 	}
 
 	netSyInArg := CreatePureU64CallArg(netSyIn)
-	netSyInAtgument,err := ptb.Pure(netSyInArg)
+	netSyInArgument,err := ptb.Pure(netSyInArg)
 	if err != nil {
 		return nil, err
 	}
 	minYtOutArg := CreatePureU64CallArg(minYtOut)
-	minYtOutAtgument,err := ptb.Pure(minYtOutArg)
+	minYtOutArgument,err := ptb.Pure(minYtOutArg)
 	if err != nil {
 		return nil, err
 	}
 
 	var arguments []sui_types.Argument
-	arguments = append(arguments, netSyInAtgument, minYtOutAtgument, *oracleArgument, pyStateArgument, pyStateArgument, marketStateArgument, marketGlobalConfigArgument, clockArgument)
+	arguments = append(arguments, netSyInArgument, minYtOutArgument, *oracleArgument, pyStateArgument, pyStateArgument, marketStateArgument, marketGlobalConfigArgument, clockArgument)
+	command := ptb.Command(
+		sui_types.Command{
+			MoveCall: &sui_types.ProgrammableMoveCall{
+				Package:       *nemoPackageId,
+				Module:        module,
+				Function:      function,
+				TypeArguments: typeArguments,
+				Arguments:     arguments,
+			},
+		},
+	)
+	return &command, nil
+}
+
+func MintPy(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoPackage, syType string, coinArgument, priceOracleArgument, pyPositionArgument *sui_types.Argument) (*sui_types.Argument,error) {
+	nemoPackageId, err := sui_types.NewObjectIdFromHex(nemoPackage)
+	if err != nil {
+		return nil, err
+	}
+
+	moduleName := "yield_factory"
+	functionName := "mint_py"
+	module := move_types.Identifier(moduleName)
+	function := move_types.Identifier(functionName)
+	syStructTag, err := GetStructTag(syType)
+	if err != nil {
+		return nil, err
+	}
+	syTypeTag := move_types.TypeTag{
+		Struct: syStructTag,
+	}
+	typeArguments := make([]move_types.TypeTag, 0)
+	typeArguments = append(typeArguments, syTypeTag)
+
+	versionArgument,err := GetObjectArgument(ptb, client, VERSION, false, nemoPackage, moduleName, functionName)
+	if err != nil {
+		return nil, err
+	}
+
+	pyStateArgument,err := GetObjectArgument(ptb, client, PYSTATE, false, nemoPackage, moduleName, functionName)
+	if err != nil {
+		return nil, err
+	}
+
+	yieldFactoryConfigArgument,err := GetObjectArgument(ptb, client, YIELDFACTORYCONFIG, false, nemoPackage, moduleName, functionName)
+	if err != nil {
+		return nil, err
+	}
+
+	clockArgument,err := GetObjectArgument(ptb, client, constant.CLOCK, false, nemoPackage, moduleName, functionName)
+	if err != nil {
+		return nil, err
+	}
+
+	var arguments []sui_types.Argument
+	arguments = append(arguments, versionArgument, *coinArgument, *priceOracleArgument, *pyPositionArgument, pyStateArgument, yieldFactoryConfigArgument, clockArgument)
+	command := ptb.Command(
+		sui_types.Command{
+			MoveCall: &sui_types.ProgrammableMoveCall{
+				Package:       *nemoPackageId,
+				Module:        module,
+				Function:      function,
+				TypeArguments: typeArguments,
+				Arguments:     arguments,
+			},
+		},
+	)
+	return &command, nil
+}
+
+func RedeemPy(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoPackage, syType string, amountIn uint64, priceOracleArgument, pyPositionArgument *sui_types.Argument) (*sui_types.Argument,error) {
+	nemoPackageId, err := sui_types.NewObjectIdFromHex(nemoPackage)
+	if err != nil {
+		return nil, err
+	}
+
+	moduleName := "yield_factory"
+	functionName := "redeem_py"
+	module := move_types.Identifier(moduleName)
+	function := move_types.Identifier(functionName)
+	syStructTag, err := GetStructTag(syType)
+	if err != nil {
+		return nil, err
+	}
+	syTypeTag := move_types.TypeTag{
+		Struct: syStructTag,
+	}
+	typeArguments := make([]move_types.TypeTag, 0)
+	typeArguments = append(typeArguments, syTypeTag)
+
+	versionArgument,err := GetObjectArgument(ptb, client, VERSION, false, nemoPackage, moduleName, functionName)
+	if err != nil {
+		return nil, err
+	}
+
+	pyStateArgument,err := GetObjectArgument(ptb, client, PYSTATE, false, nemoPackage, moduleName, functionName)
+	if err != nil {
+		return nil, err
+	}
+
+	yieldFactoryConfigArgument,err := GetObjectArgument(ptb, client, YIELDFACTORYCONFIG, false, nemoPackage, moduleName, functionName)
+	if err != nil {
+		return nil, err
+	}
+
+	clockArgument,err := GetObjectArgument(ptb, client, constant.CLOCK, false, nemoPackage, moduleName, functionName)
+	if err != nil {
+		return nil, err
+	}
+
+	ptInArgument,err := ptb.Pure(amountIn)
+	if err != nil {
+		return nil, err
+	}
+
+	ytInArgument,err := ptb.Pure(amountIn)
+	if err != nil {
+		return nil, err
+	}
+
+	var arguments []sui_types.Argument
+	arguments = append(arguments, versionArgument, ptInArgument, ytInArgument, *priceOracleArgument, *pyPositionArgument, pyStateArgument, yieldFactoryConfigArgument, clockArgument)
 	command := ptb.Command(
 		sui_types.Command{
 			MoveCall: &sui_types.ProgrammableMoveCall{
