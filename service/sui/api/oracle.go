@@ -5,17 +5,18 @@ import (
 	"github.com/coming-chat/go-sui/v2/move_types"
 	"github.com/coming-chat/go-sui/v2/sui_types"
 	"nemo-go-sdk/service/sui/common/constant"
+	"nemo-go-sdk/service/sui/common/models"
 )
 
-func GetPriceVoucherFromXOracle(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoPackage, syType, underlyingCoinType string) (*sui_types.Argument,error) {
-	nemoPackageId, err := sui_types.NewObjectIdFromHex(nemoPackage)
+func GetPriceVoucherFromXOracle(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig) (*sui_types.Argument,error) {
+	nemoPackageId, err := sui_types.NewObjectIdFromHex(nemoConfig.NemoContract)
 	if err != nil {
 		return nil, err
 	}
 
 	module := move_types.Identifier("oracle")
 	function := move_types.Identifier("get_price_voucher_from_x_oracle")
-	syStructTag, err := GetStructTag(syType)
+	syStructTag, err := GetStructTag(nemoConfig.SyCoinType)
 	if err != nil {
 		return nil, err
 	}
@@ -23,7 +24,7 @@ func GetPriceVoucherFromXOracle(ptb *sui_types.ProgrammableTransactionBuilder, c
 		Struct: syStructTag,
 	}
 
-	structTag, err := GetStructTag(underlyingCoinType)
+	structTag, err := GetStructTag(nemoConfig.UnderlyingCoinType)
 	if err != nil {
 		return nil, err
 	}
@@ -33,27 +34,27 @@ func GetPriceVoucherFromXOracle(ptb *sui_types.ProgrammableTransactionBuilder, c
 	typeArguments := make([]move_types.TypeTag, 0)
 	typeArguments = append(typeArguments, syTypeTag, typeTag)
 
-	priceOracleCallArg,err := GetObjectArg(client, PRICEORACLECONFIG, false, nemoPackage, "oracle", "get_price_voucher_from_x_oracle")
+	priceOracleCallArg,err := GetObjectArg(client, nemoConfig.PriceOracle, false, nemoConfig.NemoContract, "oracle", "get_price_voucher_from_x_oracle")
 	if err != nil {
 		return nil, err
 	}
 
-	scallopVersionCallArg,err := GetObjectArg(client, SCALLOPVERSION, false, nemoPackage, "oracle", "get_price_voucher_from_x_oracle")
+	scallopVersionCallArg,err := GetObjectArg(client, SCALLOPVERSION, false, nemoConfig.NemoContract, "oracle", "get_price_voucher_from_x_oracle")
 	if err != nil {
 		return nil, err
 	}
 
-	scallopMarketCallArg,err := GetObjectArg(client, SCALLOPMARKETOBJECT, false, nemoPackage, "oracle", "get_price_voucher_from_x_oracle")
+	scallopMarketCallArg,err := GetObjectArg(client, SCALLOPMARKETOBJECT, false, nemoConfig.NemoContract, "oracle", "get_price_voucher_from_x_oracle")
 	if err != nil {
 		return nil, err
 	}
 
-	syStateCallArg,err := GetObjectArg(client, SYSTATE, false, nemoPackage, "oracle", "get_price_voucher_from_x_oracle")
+	syStateCallArg,err := GetObjectArg(client, nemoConfig.SyState, false, nemoConfig.NemoContract, "oracle", "get_price_voucher_from_x_oracle")
 	if err != nil {
 		return nil, err
 	}
 
-	clockCallArg,err := GetObjectArg(client, constant.CLOCK, false, nemoPackage, "oracle", "get_price_voucher_from_x_oracle")
+	clockCallArg,err := GetObjectArg(client, constant.CLOCK, false, nemoConfig.NemoContract, "oracle", "get_price_voucher_from_x_oracle")
 	if err != nil {
 		return nil, err
 	}

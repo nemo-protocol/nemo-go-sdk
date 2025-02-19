@@ -11,57 +11,50 @@ import (
 	"github.com/fardream/go-bcs/bcs"
 	"nemo-go-sdk/service/sui/api"
 	"nemo-go-sdk/service/sui/common/constant"
+	"nemo-go-sdk/service/sui/common/models"
 )
 
-var (
-	NEMOPACKAGE = "0xa035d268323e40ab99ce8e4b12353bd89a63270935b4969d5bba87aa850c2b19"
-	SYTYPE = "0x9b545bff00534f06d4f826802c2cc727c3827ac9a659ceeb117940b6c234dda7::sSCA::SSCA"
-	COINTYPE = "0xaafc4f740de0dd0dde642a31148fb94517087052f19afb0f7bed1dc41a50c77b::scallop_sui::SCALLOP_SUI"
-	UNDERLYINGCOINTYPE = "0x2::sui::SUI"
-)
-
-func (s *SuiService)MintPy(coinType string, amountIn float64, sender *account.Account) (bool, error){
+func (s *SuiService)MintPy(amountIn float64, sender *account.Account, nemoConfig *models.NemoConfig) (bool, error){
 	netSyIn := uint64(amountIn*1000000000)
 	// create trade builder
 	ptb := sui_types.NewProgrammableTransactionBuilder()
 	client := InitSuiService()
 
-	pyStateInfo, err := api.GetObjectFieldByObjectId(client.SuiApi, api.PYSTATE)
+	pyStateInfo, err := api.GetObjectFieldByObjectId(client.SuiApi, nemoConfig.PyState)
 	if err != nil{
 		return false, err
 	}
 	maturity := pyStateInfo["expiry"].(string)
 
 	expectPyPositionTypeList := make([]string, 0)
-	nemoPackageList := []string{"0xbde9dd9441697413cf312a2d4e37721f38814b96d037cb90d5af10b79de1d446", NEMOPACKAGE}
-	for _, pkg := range nemoPackageList{
+	for _, pkg := range nemoConfig.NemoContractList{
 		expectPyPositionTypeList = append(expectPyPositionTypeList, fmt.Sprintf("%v::py_position::PyPosition", pkg))
 	}
-	pyPosition,err := api.GetOwnerObjectByType(client.BlockApi, client.SuiApi, expectPyPositionTypeList, SYTYPE, maturity, sender.Address)
+	pyPosition,err := api.GetOwnerObjectByType(client.BlockApi, client.SuiApi, expectPyPositionTypeList, nemoConfig.SyCoinType, maturity, sender.Address)
 	if err != nil {
 		return false, err
 	}
 
 	var pyPositionArgument *sui_types.Argument
 	if pyPosition == ""{
-		pyPositionArgument, err = api.InitPyPosition(ptb, client.SuiApi, NEMOPACKAGE, SYTYPE)
+		pyPositionArgument, err = api.InitPyPosition(ptb, client.SuiApi, nemoConfig)
 		if err != nil{
 			return false, err
 		}
 	}else {
-		argument, err := api.GetObjectArgument(ptb, client.SuiApi, pyPosition, false, NEMOPACKAGE, "yield_factory", "mint_py")
+		argument, err := api.GetObjectArgument(ptb, client.SuiApi, pyPosition, false, nemoConfig.NemoContract, "yield_factory", "mint_py")
 		if err != nil{
 			return false, err
 		}
 		pyPositionArgument = &argument
 	}
 
-	remainingCoins, gasCoin, err := api.RemainCoinAndGas(client.SuiApi, sender.Address, uint64(10000000), coinType)
+	remainingCoins, gasCoin, err := api.RemainCoinAndGas(client.SuiApi, sender.Address, uint64(10000000), nemoConfig.CoinType)
 	if err != nil{
 		return false, err
 	}
 
-	if !constant.IsGasCoinType(coinType){
+	if !constant.IsGasCoinType(nemoConfig.CoinType){
 		_, gasCoin, err = api.RemainCoinAndGas(client.SuiApi, sender.Address, uint64(10000000), constant.GASCOINTYPE)
 		if err != nil{
 			return false, err
@@ -78,14 +71,14 @@ func (s *SuiService)MintPy(coinType string, amountIn float64, sender *account.Ac
 		return false, err
 	}
 
-	depositArgument, err := api.Deposit(ptb, client.SuiApi, NEMOPACKAGE, coinType, SYTYPE, &splitResult)
+	depositArgument, err := api.Deposit(ptb, client.SuiApi, nemoConfig, &splitResult)
 
-	oracleArgument, err := api.GetPriceVoucherFromXOracle(ptb, client.SuiApi, NEMOPACKAGE, SYTYPE, "0x7016aae72cfc67f2fadf55769c0a7dd54291a583b63051a5ed71081cce836ac6::sca::SCA")
+	oracleArgument, err := api.GetPriceVoucherFromXOracle(ptb, client.SuiApi, nemoConfig)
 	if err != nil{
 		return false, err
 	}
 
-	_, err = api.MintPy(ptb, client.SuiApi, NEMOPACKAGE, SYTYPE, depositArgument, oracleArgument, pyPositionArgument)
+	_, err = api.MintPy(ptb, client.SuiApi, nemoConfig, depositArgument, oracleArgument, pyPositionArgument)
 	if err != nil{
 		return false, err
 	}
@@ -175,24 +168,23 @@ func (s *SuiService)MintPy(coinType string, amountIn float64, sender *account.Ac
 	return true, nil
 }
 
-func (s *SuiService)RedeemPy(coinType string, amountIn float64, sender *account.Account)(bool, error){
+func (s *SuiService)RedeemPy(amountIn float64, sender *account.Account, nemoConfig *models.NemoConfig)(bool, error){
 	netAmountIn := uint64(amountIn*1000000000)
 	// create trade builder
 	ptb := sui_types.NewProgrammableTransactionBuilder()
 	client := InitSuiService()
 
-	pyStateInfo, err := api.GetObjectFieldByObjectId(client.SuiApi, api.PYSTATE)
+	pyStateInfo, err := api.GetObjectFieldByObjectId(client.SuiApi, nemoConfig.PyState)
 	if err != nil{
 		return false, err
 	}
 	maturity := pyStateInfo["expiry"].(string)
 	
 	expectPyPositionTypeList := make([]string, 0)
-	nemoPackageList := []string{"0xbde9dd9441697413cf312a2d4e37721f38814b96d037cb90d5af10b79de1d446", NEMOPACKAGE}
-	for _, pkg := range nemoPackageList{
+	for _, pkg := range nemoConfig.NemoContractList{
 		expectPyPositionTypeList = append(expectPyPositionTypeList, fmt.Sprintf("%v::py_position::PyPosition", pkg))
 	}
-	pyPosition,err := api.GetOwnerObjectByType(client.BlockApi, client.SuiApi, expectPyPositionTypeList, SYTYPE, maturity, sender.Address)
+	pyPosition,err := api.GetOwnerObjectByType(client.BlockApi, client.SuiApi, expectPyPositionTypeList, nemoConfig.SyCoinType, maturity, sender.Address)
 	if err != nil {
 		return false, err
 	}
@@ -200,12 +192,12 @@ func (s *SuiService)RedeemPy(coinType string, amountIn float64, sender *account.
 		return false, errors.New("pyPosition not exist！")
 	}
 
-	pyPositionArgument, err := api.GetObjectArgument(ptb, client.SuiApi, pyPosition, false, NEMOPACKAGE, "yield_factory", "redeem_py")
+	pyPositionArgument, err := api.GetObjectArgument(ptb, client.SuiApi, pyPosition, false, nemoConfig.NemoContract, "yield_factory", "redeem_py")
 	if err != nil{
 		return false, err
 	}
 
-	oracleArgument, err := api.GetPriceVoucherFromXOracle(ptb, client.SuiApi, NEMOPACKAGE, SYTYPE, "0x7016aae72cfc67f2fadf55769c0a7dd54291a583b63051a5ed71081cce836ac6::sca::SCA")
+	oracleArgument, err := api.GetPriceVoucherFromXOracle(ptb, client.SuiApi, nemoConfig)
 	if err != nil{
 		return false, err
 	}
@@ -215,12 +207,12 @@ func (s *SuiService)RedeemPy(coinType string, amountIn float64, sender *account.
 		return false, err
 	}
 
-	redeemPyResult, err := api.RedeemPy(ptb, client.SuiApi, NEMOPACKAGE, SYTYPE, netAmountIn, oracleArgument, &pyPositionArgument)
+	redeemPyResult, err := api.RedeemPy(ptb, client.SuiApi, nemoConfig, netAmountIn, oracleArgument, &pyPositionArgument)
 	if err != nil{
 		return false, err
 	}
 
-	syRedeemResult, err := api.SyRedeem(ptb, client.SuiApi, NEMOPACKAGE, coinType, SYTYPE, redeemPyResult)
+	syRedeemResult, err := api.SyRedeem(ptb, client.SuiApi, nemoConfig, redeemPyResult)
 	if err != nil{
 		return false, err
 	}

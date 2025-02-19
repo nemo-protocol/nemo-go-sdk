@@ -1,12 +1,15 @@
 package service
 
-import "github.com/coming-chat/go-sui/v2/account"
+import (
+	"github.com/coming-chat/go-sui/v2/account"
+	"nemo-go-sdk/service/sui/common/models"
+)
 
 type ContractInterface interface {
-	MintPy(coinType string, amountIn float64, sender *account.Account)(bool, error)
-	RedeemPy(coinType string, amountIn float64, sender *account.Account)(bool, error)
-	AddLiquidity(sourceCoin string, amountFloat float64, sender *account.Account)(bool, error)
-	RedeemLiquidity(outCoin string, expectOut float64, sender *account.Account)(bool, error)
-	SwapByPy(amountIn, slippage float64, coinType , amountInType, exactAmountOutType string, sender *account.Account)(bool, error)
-	SwapToPy(amountIn, slippage float64, coinType , amountInType, exactAmountOutType string, sender *account.Account)(bool, error)
+	MintPy(amountIn float64, sender *account.Account, nemoConfig *models.NemoConfig)(bool, error)
+	RedeemPy(amountIn float64, sender *account.Account, nemoConfig *models.NemoConfig)(bool, error)
+	AddLiquidity(amountFloat float64, sender *account.Account, nemoConfig *models.NemoConfig)(bool, error)
+	RedeemLiquidity(expectOut float64, sender *account.Account, nemoConfig *models.NemoConfig)(bool, error)
+	SwapByPy(amountIn, slippage float64, amountInType, exactAmountOutType string, sender *account.Account, nemoConfig *models.NemoConfig)(bool, error)
+	SwapToPy(amountIn, slippage float64, amountInType, exactAmountOutType string, sender *account.Account, nemoConfig *models.NemoConfig)(bool, error)
 }

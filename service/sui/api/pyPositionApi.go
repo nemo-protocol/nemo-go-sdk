@@ -7,23 +7,19 @@ import (
 	"github.com/coming-chat/go-sui/v2/move_types"
 	"github.com/coming-chat/go-sui/v2/sui_types"
 	"nemo-go-sdk/service/sui/common/constant"
+	"nemo-go-sdk/service/sui/common/models"
 	"strings"
 )
 
-var (
-	VERSION = "0x4000b5c20e70358a42ae45421c96d2f110817d75b80df30dad5b5d4f1fdad6af"
-	PYSTATE = "0x4f3cc83141fa233ee733074f90c8b955cb76030b4ae119bd5d40f9bbace97cde"
-)
-
-func InitPyPosition(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoPackage, syType string) (*sui_types.Argument,error) {
-	nemoPackageId, err := sui_types.NewObjectIdFromHex(nemoPackage)
+func InitPyPosition(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig) (*sui_types.Argument,error) {
+	nemoPackageId, err := sui_types.NewObjectIdFromHex(nemoConfig.NemoContract)
 	if err != nil {
 		return nil, err
 	}
 
 	module := move_types.Identifier("py")
 	function := move_types.Identifier("init_py_position")
-	structTag, err := GetStructTag(syType)
+	structTag, err := GetStructTag(nemoConfig.SyCoinType)
 	if err != nil {
 		return nil, err
 	}
@@ -33,17 +29,17 @@ func InitPyPosition(ptb *sui_types.ProgrammableTransactionBuilder, client *clien
 	typeArguments := make([]move_types.TypeTag, 0)
 	typeArguments = append(typeArguments, typeTag)
 
-	versionCallArg,err := GetObjectArg(client, VERSION, false, nemoPackage, "py", "init_py_position")
+	versionCallArg,err := GetObjectArg(client, nemoConfig.Version, false, nemoConfig.NemoContract, "py", "init_py_position")
 	if err != nil {
 		return nil, err
 	}
 
-	pyStateCallArg,err := GetObjectArg(client, PYSTATE, false, nemoPackage, "py", "init_py_position")
+	pyStateCallArg,err := GetObjectArg(client, nemoConfig.PyState, false, nemoConfig.NemoContract, "py", "init_py_position")
 	if err != nil {
 		return nil, err
 	}
 
-	clockCallArg,err := GetObjectArg(client, constant.CLOCK, false, nemoPackage, "py", "init_py_position")
+	clockCallArg,err := GetObjectArg(client, constant.CLOCK, false, nemoConfig.NemoContract, "py", "init_py_position")
 	if err != nil {
 		return nil, err
 	}

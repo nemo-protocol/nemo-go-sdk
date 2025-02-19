@@ -9,20 +9,21 @@ import (
 	"github.com/coming-chat/go-sui/v2/types"
 	"github.com/fardream/go-bcs/bcs"
 	"nemo-go-sdk/service/sui/api"
+	"nemo-go-sdk/service/sui/common/models"
 )
 
-func (s *SuiService)AddLiquidity(coinType string, amountFloat float64, sender *account.Account)(bool, error){
+func (s *SuiService)AddLiquidity(amountFloat float64, sender *account.Account, nemoConfig *models.NemoConfig)(bool, error){
 	// create trade builder
 	ptb := sui_types.NewProgrammableTransactionBuilder()
 	client := InitSuiService()
 
-	arg1, err := api.InitPyPosition(ptb, client.SuiApi, NEMOPACKAGE, SYTYPE)
+	arg1, err := api.InitPyPosition(ptb, client.SuiApi, nemoConfig)
 	if err != nil{
 		return false, err
 	}
 
 	amountIn := uint64(amountFloat * 1000000000)
-	remainingCoins, gasCoin, err := api.RemainCoinAndGas(client.SuiApi, sender.Address, uint64(10000000), coinType)
+	remainingCoins, gasCoin, err := api.RemainCoinAndGas(client.SuiApi, sender.Address, uint64(10000000), nemoConfig.CoinType)
 	if err != nil{
 		return false, err
 	}
@@ -33,7 +34,7 @@ func (s *SuiService)AddLiquidity(coinType string, amountFloat float64, sender *a
 	}
 
 
-	sCoin, err := api.MintSCoin(ptb, client.SuiApi, COINTYPE, UNDERLYINGCOINTYPE, arg2[0])
+	sCoin, err := api.MintSCoin(ptb, client.SuiApi, nemoConfig.CoinType, nemoConfig.UnderlyingCoinType, arg2[0])
 	if err != nil{
 		return false, err
 	}
@@ -117,6 +118,6 @@ func (s *SuiService)AddLiquidity(coinType string, amountFloat float64, sender *a
 	return true, nil
 }
 
-func (s *SuiService)RedeemLiquidity(outCoin string, expectOut float64, sender *account.Account)(bool, error){
+func (s *SuiService)RedeemLiquidity(expectOut float64, sender *account.Account, nemoConfig *models.NemoConfig)(bool, error){
 	return false, nil
 }

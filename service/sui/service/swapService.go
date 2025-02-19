@@ -11,28 +11,26 @@ import (
 	"github.com/fardream/go-bcs/bcs"
 	"nemo-go-sdk/service/sui/api"
 	"nemo-go-sdk/service/sui/common/constant"
+	"nemo-go-sdk/service/sui/common/models"
 )
 
-func (s *SuiService)SwapByPy(amountIn, slippage float64, coinType, amountInType, exactAmountOutType string, sender *account.Account) (bool, error){
+func (s *SuiService)SwapByPy(amountIn, slippage float64, amountInType, exactAmountOutType string, sender *account.Account, nemoConfig *models.NemoConfig) (bool, error){
 	ptb := sui_types.NewProgrammableTransactionBuilder()
 	suiService := InitSuiService()
 
-	oracleArgument, err := api.GetPriceVoucherFromXOracle(ptb, suiService.SuiApi, NEMOPACKAGE, SYTYPE, "0x7016aae72cfc67f2fadf55769c0a7dd54291a583b63051a5ed71081cce836ac6::sca::SCA")
+	oracleArgument, err := api.GetPriceVoucherFromXOracle(ptb, suiService.SuiApi, nemoConfig)
 	if err != nil{
 		return false, err
 	}
 
-	pyState := "0x60422aa99f040c7ac8d0071a3bfd5431bd05b3ad82c77636761eab2709681fde"
-	nemoPackageList := []string{"0xbde9dd9441697413cf312a2d4e37721f38814b96d037cb90d5af10b79de1d446", NEMOPACKAGE}
-
 	var swapArgument *sui_types.Argument
 	if amountInType == constant.PTTYPE{
-		swapArgument, err = api.SwapExactPtForSy(ptb, suiService.BlockApi, suiService.SuiApi, NEMOPACKAGE, pyState, SYTYPE, sender.Address, nemoPackageList, oracleArgument)
+		swapArgument, err = api.SwapExactPtForSy(ptb, suiService.BlockApi, suiService.SuiApi, nemoConfig, sender.Address, oracleArgument)
 		if err != nil{
 			return false, err
 		}
 	} else if amountInType == constant.YTTYPE{
-		swapArgument, err = api.SwapExactYtForSy(ptb, suiService.BlockApi, suiService.SuiApi, NEMOPACKAGE, pyState, SYTYPE, sender.Address, nemoPackageList, oracleArgument)
+		swapArgument, err = api.SwapExactYtForSy(ptb, suiService.BlockApi, suiService.SuiApi, nemoConfig, sender.Address, oracleArgument)
 		if err != nil{
 			return false, err
 		}
@@ -41,7 +39,7 @@ func (s *SuiService)SwapByPy(amountIn, slippage float64, coinType, amountInType,
 	}
 
 
-	syRedeemResult, err := api.SyRedeem(ptb, suiService.SuiApi, NEMOPACKAGE, COINTYPE, SYTYPE, swapArgument)
+	syRedeemResult, err := api.SyRedeem(ptb, suiService.SuiApi, nemoConfig, swapArgument)
 	if err != nil{
 		return false, err
 	}
@@ -84,7 +82,7 @@ func (s *SuiService)SwapByPy(amountIn, slippage float64, coinType, amountInType,
 
 	pt := ptb.Finish()
 
-	_, gasCoin, err := api.RemainCoinAndGas(suiService.SuiApi, sender.Address, uint64(10000000), coinType)
+	_, gasCoin, err := api.RemainCoinAndGas(suiService.SuiApi, sender.Address, uint64(10000000), constant.GASCOINTYPE)
 	if err != nil{
 		return false, err
 	}
@@ -139,29 +137,29 @@ func (s *SuiService)SwapByPy(amountIn, slippage float64, coinType, amountInType,
 	return false, nil
 }
 
-func (s *SuiService)SwapToPy(amountIn, slippage float64, coinType, amountInType, exactAmountOutType string, sender *account.Account) (bool, error){
+func (s *SuiService)SwapToPy(amountIn, slippage float64, amountInType, exactAmountOutType string, sender *account.Account, nemoConfig *models.NemoConfig) (bool, error){
 	client := InitSuiService()
 	netSyIn := uint64(amountIn*1000000000)
 
-	minYtOut, err := api.DryRunGetPyOutForExactSyInWithPriceVoucher(client.SuiApi, NEMOPACKAGE, SYTYPE, api.PYSTATE, api.MARKETGLOBALCONFIG, api.MARKETSTATECONFIG, exactAmountOutType, netSyIn, api.PRICEORACLECONFIG, sender)
+	minYtOut, err := api.DryRunGetPyOutForExactSyInWithPriceVoucher(client.SuiApi, nemoConfig, exactAmountOutType, netSyIn, nemoConfig.PriceOracle, sender)
 	if err != nil{
 		return false, err
 	}
 	minYtOut = minYtOut - uint64(float64(minYtOut) * slippage)
 
-	approxPyOut, netSyTokenization, err := api.DryRunGetApproxPyOutForNetSyInInternal(client.SuiApi, NEMOPACKAGE, SYTYPE, api.PYSTATE, api.MARKETGLOBALCONFIG, api.MARKETSTATECONFIG, exactAmountOutType, netSyIn, minYtOut, sender)
+	approxPyOut, netSyTokenization, err := api.DryRunGetApproxPyOutForNetSyInInternal(client.SuiApi, nemoConfig, exactAmountOutType, netSyIn, minYtOut, sender)
 	if err != nil{
 		return false, err
 	}
 
 	ptb := sui_types.NewProgrammableTransactionBuilder()
 	
-	remainingCoins, gasCoin, err := api.RemainCoinAndGas(client.SuiApi, sender.Address, uint64(10000000), coinType)
+	remainingCoins, gasCoin, err := api.RemainCoinAndGas(client.SuiApi, sender.Address, uint64(10000000), amountInType)
 	if err != nil{
 		return false, err
 	}
 	
-	if !constant.IsGasCoinType(coinType){
+	if !constant.IsGasCoinType(nemoConfig.CoinType){
 		_, gasCoin, err = api.RemainCoinAndGas(client.SuiApi, sender.Address, uint64(10000000), constant.GASCOINTYPE)
 		if err != nil{
 			return false, err
@@ -178,24 +176,23 @@ func (s *SuiService)SwapToPy(amountIn, slippage float64, coinType, amountInType,
 		return false, err
 	}
 
-	depositArgument, err := api.Deposit(ptb, client.SuiApi, NEMOPACKAGE, coinType, SYTYPE, &splitResult)
+	depositArgument, err := api.Deposit(ptb, client.SuiApi, nemoConfig, &splitResult)
 	if err != nil{
 		return false, err
 	}
 	
-	oracleArgument, err := api.GetPriceVoucherFromXOracle(ptb, client.SuiApi, NEMOPACKAGE, SYTYPE, "0x7016aae72cfc67f2fadf55769c0a7dd54291a583b63051a5ed71081cce836ac6::sca::SCA")
+	oracleArgument, err := api.GetPriceVoucherFromXOracle(ptb, client.SuiApi, nemoConfig)
 	if err != nil{
 		return false, err
 	}
 
-	nemoPackageList := []string{"0xbde9dd9441697413cf312a2d4e37721f38814b96d037cb90d5af10b79de1d446", NEMOPACKAGE}
 	if exactAmountOutType == constant.YTTYPE{
-		_, err = api.SwapExactSyForYt(ptb, client.BlockApi, client.SuiApi, NEMOPACKAGE, api.PYSTATE, SYTYPE, sender.Address, nemoPackageList, approxPyOut, netSyTokenization, minYtOut, oracleArgument, depositArgument)
+		_, err = api.SwapExactSyForYt(ptb, client.BlockApi, client.SuiApi, nemoConfig, sender.Address, approxPyOut, netSyTokenization, minYtOut, oracleArgument, depositArgument)
 		if err != nil{
 			return false, err
 		}
 	}else if exactAmountOutType == constant.PTTYPE{
-		_, err = api.SwapExactSyForPt(ptb, client.BlockApi, client.SuiApi, NEMOPACKAGE, api.PYSTATE, SYTYPE, sender.Address, nemoPackageList, approxPyOut, minYtOut, oracleArgument, depositArgument)
+		_, err = api.SwapExactSyForPt(ptb, client.BlockApi, client.SuiApi, nemoConfig, sender.Address, approxPyOut, minYtOut, oracleArgument, depositArgument)
 		if err != nil{
 			return false, err
 		}

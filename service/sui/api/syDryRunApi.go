@@ -11,17 +11,18 @@ import (
 	"github.com/coming-chat/go-sui/v2/sui_types"
 	"github.com/fardream/go-bcs/bcs"
 	"nemo-go-sdk/service/sui/common/constant"
+	"nemo-go-sdk/service/sui/common/models"
 )
 
-func DryRunGetApproxPyOutForNetSyInInternal(client *client.Client, nemoPackage, syType, pyState, marketGlobalConfig, marketState, exactPyType string, netSyIn, minYtOut uint64, sender *account.Account) (approxPyOut uint64, netSyTokenization uint64, err error) {
+func DryRunGetApproxPyOutForNetSyInInternal(client *client.Client, nemoConfig *models.NemoConfig, exactPyType string, netSyIn, minYtOut uint64, sender *account.Account) (approxPyOut uint64, netSyTokenization uint64, err error) {
 	ptb := sui_types.NewProgrammableTransactionBuilder()
 
-	nemoPackageId, err := sui_types.NewObjectIdFromHex(nemoPackage)
+	nemoPackageId, err := sui_types.NewObjectIdFromHex(nemoConfig.NemoContract)
 	if err != nil {
 		return 0, 0, err
 	}
 
-	syStructTag, err := GetStructTag(syType)
+	syStructTag, err := GetStructTag(nemoConfig.SyCoinType)
 	if err != nil {
 		return 0, 0, err
 	}
@@ -54,24 +55,24 @@ func DryRunGetApproxPyOutForNetSyInInternal(client *client.Client, nemoPackage, 
 		return 0, 0, err
 	}
 
-	oracleArgument, err := GetPriceVoucherFromXOracle(ptb, client, nemoPackage, syType, "0x7016aae72cfc67f2fadf55769c0a7dd54291a583b63051a5ed71081cce836ac6::sca::SCA")
+	oracleArgument, err := GetPriceVoucherFromXOracle(ptb, client, nemoConfig)
 	if err != nil{
 		return 0, 0, err
 	}
 
-	ps, err := GetObjectArgument(ptb, client, pyState, false, nemoPackage, moduleName, functionName)
+	ps, err := GetObjectArgument(ptb, client, nemoConfig.PyState, false, nemoConfig.NemoContract, moduleName, functionName)
 	if err != nil {
 		return 0, 0, err
 	}
-	ms, err := GetObjectArgument(ptb, client, marketState, false, nemoPackage, moduleName, functionName)
+	ms, err := GetObjectArgument(ptb, client, nemoConfig.MarketState, false, nemoConfig.NemoContract, moduleName, functionName)
 	if err != nil {
 		return 0, 0, err
 	}
-	mgc, err := GetObjectArgument(ptb, client, marketGlobalConfig, false, nemoPackage, moduleName, functionName)
+	mgc, err := GetObjectArgument(ptb, client, nemoConfig.MarketFactoryConfig, false, nemoConfig.NemoContract, moduleName, functionName)
 	if err != nil {
 		return 0, 0, err
 	}
-	c, err := GetObjectArgument(ptb, client, constant.CLOCK, false, nemoPackage, moduleName, functionName)
+	c, err := GetObjectArgument(ptb, client, constant.CLOCK, false, nemoConfig.NemoContract, moduleName, functionName)
 	if err != nil {
 		return 0, 0, err
 	}
@@ -179,15 +180,15 @@ func DryRunGetApproxPyOutForNetSyInInternal(client *client.Client, nemoPackage, 
 	return approxPyOut, netSyTokenization, nil
 }
 
-func DryRunGetPyOutForExactSyInWithPriceVoucher(client *client.Client, nemoPackage, syType, pyState, marketGlobalConfig, marketState, exactPyType string, netSyIn uint64, priceOracle string, sender *account.Account) (uint64, error){
+func DryRunGetPyOutForExactSyInWithPriceVoucher(client *client.Client, nemoConfig *models.NemoConfig, exactPyType string, netSyIn uint64, priceOracle string, sender *account.Account) (uint64, error){
 	ptb := sui_types.NewProgrammableTransactionBuilder()
 
-	nemoPackageId, err := sui_types.NewObjectIdFromHex(nemoPackage)
+	nemoPackageId, err := sui_types.NewObjectIdFromHex(nemoConfig.NemoContract)
 	if err != nil {
 		return 0, err
 	}
 
-	syStructTag, err := GetStructTag(syType)
+	syStructTag, err := GetStructTag(nemoConfig.SyCoinType)
 	if err != nil {
 		return 0, err
 	}
@@ -220,24 +221,24 @@ func DryRunGetPyOutForExactSyInWithPriceVoucher(client *client.Client, nemoPacka
 		return 0, err
 	}
 
-	oracleArgument, err := GetPriceVoucherFromXOracle(ptb, client, nemoPackage, syType, "0x7016aae72cfc67f2fadf55769c0a7dd54291a583b63051a5ed71081cce836ac6::sca::SCA")
+	oracleArgument, err := GetPriceVoucherFromXOracle(ptb, client, nemoConfig)
 	if err != nil{
 		return 0, err
 	}
 
-	ps, err := GetObjectArgument(ptb, client, pyState, false, nemoPackage, moduleName, functionName)
+	ps, err := GetObjectArgument(ptb, client, nemoConfig.PyState, false, nemoConfig.NemoContract, moduleName, functionName)
 	if err != nil {
 		return 0, err
 	}
-	ms, err := GetObjectArgument(ptb, client, marketState, false, nemoPackage, moduleName, functionName)
+	ms, err := GetObjectArgument(ptb, client, nemoConfig.MarketState, false, nemoConfig.NemoContract, moduleName, functionName)
 	if err != nil {
 		return 0, err
 	}
-	mgc, err := GetObjectArgument(ptb, client, marketGlobalConfig, false, nemoPackage, moduleName, functionName)
+	mgc, err := GetObjectArgument(ptb, client, nemoConfig.MarketFactoryConfig, false, nemoConfig.NemoContract, moduleName, functionName)
 	if err != nil {
 		return 0, err
 	}
-	c, err := GetObjectArgument(ptb, client, constant.CLOCK, false, nemoPackage, moduleName, functionName)
+	c, err := GetObjectArgument(ptb, client, constant.CLOCK, false, nemoConfig.NemoContract, moduleName, functionName)
 	if err != nil {
 		return 0, err
 	}
