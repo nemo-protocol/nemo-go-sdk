@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"github.com/coming-chat/go-sui/v2/client"
 	"github.com/coming-chat/go-sui/v2/move_types"
 	"github.com/coming-chat/go-sui/v2/sui_types"
@@ -252,4 +253,24 @@ func Redeem(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client
 		},
 	)
 	return &command, nil
+}
+
+func SplitCoinFromMerged(ptb *sui_types.ProgrammableTransactionBuilder, mergeCoinArgument sui_types.Argument, netSyIn uint64) (splitCoin, remainingCoin sui_types.Argument, err error) {
+	splitCoinArgument, err := ptb.Pure(netSyIn)
+	if err != nil {
+		return sui_types.Argument{}, sui_types.Argument{}, fmt.Errorf("failed to create split coin argument: %w", err)
+	}
+
+	// 执行 SplitCoins 操作
+	splitResult := ptb.Command(sui_types.Command{
+		SplitCoins: &struct {
+			Argument  sui_types.Argument
+			Arguments []sui_types.Argument
+		}{
+			Argument:  mergeCoinArgument,    // 源 coin
+			Arguments: []sui_types.Argument{splitCoinArgument}, // 要分割出的数量
+		},
+	})
+
+	return splitResult, remainingCoin, nil
 }

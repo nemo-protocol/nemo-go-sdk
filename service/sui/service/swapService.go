@@ -168,12 +168,18 @@ func (s *SuiService)SwapToPy(amountIn, slippage float64, coinType, amountInType,
 		}
 	}
 
-	mergeCoinArgument, remainingCoins, err := api.MergeCoin(ptb, client.SuiApi, remainingCoins, uint64(amountIn))
+	mergeCoinArgument, remainingCoins, err := api.MergeCoin(ptb, client.SuiApi, remainingCoins, netSyIn)
 	if err != nil{
 		return false, err
 	}
 
-	depositArgument, err := api.Deposit(ptb, client.SuiApi, NEMOPACKAGE, coinType, SYTYPE, mergeCoinArgument[0])
+	// 执行 SplitCoin 操作
+	splitResult,_,err := api.SplitCoinFromMerged(ptb, *mergeCoinArgument[0], netSyIn)
+	if err != nil{
+		return false, err
+	}
+
+	depositArgument, err := api.Deposit(ptb, client.SuiApi, NEMOPACKAGE, coinType, SYTYPE, &splitResult)
 	if err != nil{
 		return false, err
 	}
@@ -189,14 +195,36 @@ func (s *SuiService)SwapToPy(amountIn, slippage float64, coinType, amountInType,
 		return false, err
 	}
 
-	pt := ptb.Finish()
-
-	gasPayment := []*sui_types.ObjectRef{gasCoin}
+	// transfer object
+	//transferArgs := []sui_types.Argument{remainMergeCoinArgument}
 
 	senderAddr, err := sui_types.NewObjectIdFromHex(sender.Address)
 	if err != nil {
 		return false, fmt.Errorf("failed to convert sender address: %w", err)
 	}
+
+	//recArg, err := ptb.Pure(senderAddr)
+	//if err != nil {
+	//	return false, err
+	//}
+
+	//ptb.Command(
+	//	sui_types.Command{
+	//		TransferObjects: &struct {
+	//			Arguments []sui_types.Argument
+	//			Argument  sui_types.Argument
+	//		}{
+	//			Arguments: transferArgs,
+	//			Argument:  recArg,
+	//		},
+	//	},
+	//)
+
+	pt := ptb.Finish()
+
+	gasPayment := []*sui_types.ObjectRef{gasCoin}
+
+
 
 	tx := sui_types.NewProgrammable(
 		*senderAddr,
