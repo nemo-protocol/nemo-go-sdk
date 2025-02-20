@@ -73,7 +73,7 @@ func (s *SuiService)MintPy(amountIn float64, sender *account.Account, nemoConfig
 
 	depositArgument, err := api.Deposit(ptb, client.SuiApi, nemoConfig, &splitResult)
 
-	oracleArgument, err := api.GetPriceVoucherFromXOracle(ptb, client.SuiApi, nemoConfig)
+	oracleArgument, err := api.GetPriceVoucher(ptb, client.SuiApi, nemoConfig)
 	if err != nil{
 		return false, err
 	}
@@ -197,7 +197,7 @@ func (s *SuiService)RedeemPy(amountIn float64, sender *account.Account, nemoConf
 		return false, err
 	}
 
-	oracleArgument, err := api.GetPriceVoucherFromXOracle(ptb, client.SuiApi, nemoConfig)
+	oracleArgument, err := api.GetPriceVoucher(ptb, client.SuiApi, nemoConfig)
 	if err != nil{
 		return false, err
 	}

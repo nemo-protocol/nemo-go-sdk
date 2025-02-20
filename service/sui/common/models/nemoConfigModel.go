@@ -15,12 +15,13 @@ type NemoConfig struct {
 	PriceOracle         string   `json:"priceOracle"`
 	HaedalStakeing      string   `json:"haedalStakeing"`
 	NativePool          string   `json:"nativePool"`
-	MetadataId          string   `json:"metadataId"`
+	Metadata            string   `json:"metadata"`
 	ProviderMarket      string   `json:"providerMarket"`
 	ProviderVersion     string   `json:"providerVersion"`
-	LstInfoId           string   `json:"lstInfoId"`
+	LstInfo             string   `json:"lstInfo"`
 	NemoContract        string   `json:"nemoContract"`
 	NemoContractList    []string `json:"nemoContractList"`
+	ProviderProtocol    string   `json:"providerProtocol"`
 }
 
 func InitConfig() *NemoConfig {
@@ -41,6 +42,7 @@ func InitConfig() *NemoConfig {
 		NemoContractList: []string{
 			"0xbde9dd9441697413cf312a2d4e37721f38814b96d037cb90d5af10b79de1d446",
 			"0xa035d268323e40ab99ce8e4b12353bd89a63270935b4969d5bba87aa850c2b19"},
+		ProviderProtocol: "Scallop",
 	}
 	return scallopSui
 }

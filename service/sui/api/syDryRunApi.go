@@ -55,7 +55,7 @@ func DryRunGetApproxPyOutForNetSyInInternal(client *client.Client, nemoConfig *m
 		return 0, 0, err
 	}
 
-	oracleArgument, err := GetPriceVoucherFromXOracle(ptb, client, nemoConfig)
+	oracleArgument, err := GetPriceVoucher(ptb, client, nemoConfig)
 	if err != nil{
 		return 0, 0, err
 	}
@@ -221,7 +221,7 @@ func DryRunGetPyOutForExactSyInWithPriceVoucher(client *client.Client, nemoConfi
 		return 0, err
 	}
 
-	oracleArgument, err := GetPriceVoucherFromXOracle(ptb, client, nemoConfig)
+	oracleArgument, err := GetPriceVoucher(ptb, client, nemoConfig)
 	if err != nil{
 		return 0, err
 	}

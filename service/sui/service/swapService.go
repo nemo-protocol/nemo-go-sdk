@@ -18,7 +18,7 @@ func (s *SuiService)SwapByPy(amountIn, slippage float64, amountInType, exactAmou
 	ptb := sui_types.NewProgrammableTransactionBuilder()
 	suiService := InitSuiService()
 
-	oracleArgument, err := api.GetPriceVoucherFromXOracle(ptb, suiService.SuiApi, nemoConfig)
+	oracleArgument, err := api.GetPriceVoucher(ptb, suiService.SuiApi, nemoConfig)
 	if err != nil{
 		return false, err
 	}
@@ -181,7 +181,7 @@ func (s *SuiService)SwapToPy(amountIn, slippage float64, amountInType, exactAmou
 		return false, err
 	}
 	
-	oracleArgument, err := api.GetPriceVoucherFromXOracle(ptb, client.SuiApi, nemoConfig)
+	oracleArgument, err := api.GetPriceVoucher(ptb, client.SuiApi, nemoConfig)
 	if err != nil{
 		return false, err
 	}
