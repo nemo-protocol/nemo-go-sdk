@@ -9,13 +9,14 @@ import (
 	"github.com/coming-chat/go-sui/v2/sui_types"
 	"github.com/coming-chat/go-sui/v2/types"
 	"github.com/fardream/go-bcs/bcs"
+	"math"
 	"nemo-go-sdk/service/sui/api"
 	"nemo-go-sdk/service/sui/common/constant"
 	"nemo-go-sdk/service/sui/common/models"
 )
 
 func (s *SuiService)MintPy(amountIn float64, sender *account.Account, nemoConfig *models.NemoConfig) (bool, error){
-	netSyIn := uint64(amountIn*1000000000)
+	netSyIn := uint64(amountIn * math.Pow(10, float64(nemoConfig.Decimal)))
 	// create trade builder
 	ptb := sui_types.NewProgrammableTransactionBuilder()
 	client := InitSuiService()
@@ -169,7 +170,7 @@ func (s *SuiService)MintPy(amountIn float64, sender *account.Account, nemoConfig
 }
 
 func (s *SuiService)RedeemPy(amountIn float64, sender *account.Account, nemoConfig *models.NemoConfig)(bool, error){
-	netAmountIn := uint64(amountIn*1000000000)
+	netAmountIn := uint64(amountIn * math.Pow(10, float64(nemoConfig.Decimal)))
 	// create trade builder
 	ptb := sui_types.NewProgrammableTransactionBuilder()
 	client := InitSuiService()
