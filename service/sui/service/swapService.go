@@ -9,9 +9,11 @@ import (
 	"github.com/coming-chat/go-sui/v2/sui_types"
 	"github.com/coming-chat/go-sui/v2/types"
 	"github.com/fardream/go-bcs/bcs"
+	"math"
 	"nemo-go-sdk/service/sui/api"
 	"nemo-go-sdk/service/sui/common/constant"
 	"nemo-go-sdk/service/sui/common/models"
+	"strconv"
 )
 
 func (s *SuiService)SwapByPy(amountIn, slippage float64, amountInType, exactAmountOutType string, sender *account.Account, nemoConfig *models.NemoConfig) (bool, error){
@@ -139,15 +141,23 @@ func (s *SuiService)SwapByPy(amountIn, slippage float64, amountInType, exactAmou
 
 func (s *SuiService)SwapToPy(amountIn, slippage float64, amountInType, exactAmountOutType string, sender *account.Account, nemoConfig *models.NemoConfig) (bool, error){
 	client := InitSuiService()
-	netSyIn := uint64(amountIn*1000000000)
+	actualSyIn := uint64(amountIn * math.Pow(10, float64(nemoConfig.Decimal)))
+	netSyIn := actualSyIn
+	if amountInType == nemoConfig.UnderlyingCoinType{
+		conversionRate,err := strconv.ParseFloat(nemoConfig.ConversionRate, 10)
+		if err != nil{
+			return false, err
+		}
+		netSyIn = uint64(float64(netSyIn) / conversionRate)
+	}
 
-	minYtOut, err := api.DryRunGetPyOutForExactSyInWithPriceVoucher(client.SuiApi, nemoConfig, exactAmountOutType, netSyIn, nemoConfig.PriceOracle, sender)
+	minPyOut, err := api.DryRunGetPyOutForExactSyInWithPriceVoucher(client.SuiApi, nemoConfig, exactAmountOutType, netSyIn, nemoConfig.PriceOracle, sender)
 	if err != nil{
 		return false, err
 	}
-	minYtOut = minYtOut - uint64(float64(minYtOut) * slippage)
+	minPyOut = minPyOut - uint64(float64(minPyOut) * slippage)
 
-	approxPyOut, netSyTokenization, err := api.DryRunGetApproxPyOutForNetSyInInternal(client.SuiApi, nemoConfig, exactAmountOutType, netSyIn, minYtOut, sender)
+	approxPyOut, netSyTokenization, err := api.DryRunGetApproxPyOutForNetSyInInternal(client.SuiApi, nemoConfig, exactAmountOutType, netSyIn, minPyOut, sender)
 	if err != nil{
 		return false, err
 	}
@@ -158,22 +168,29 @@ func (s *SuiService)SwapToPy(amountIn, slippage float64, amountInType, exactAmou
 	if err != nil{
 		return false, err
 	}
-	
-	if !constant.IsGasCoinType(nemoConfig.CoinType){
+
+	splitResult ,_ ,err := api.SplitOrMergeCoin(ptb, client.SuiApi, remainingCoins, actualSyIn)
+	if err != nil{
+		return false, err
+	}
+
+	if !constant.IsGasCoinType(amountInType){
 		_, gasCoin, err = api.RemainCoinAndGas(client.SuiApi, sender.Address, uint64(10000000), constant.GASCOINTYPE)
 		if err != nil{
 			return false, err
 		}
-	}
-
-	mergeCoinArgument, remainingCoins, err := api.MergeCoin(ptb, client.SuiApi, remainingCoins, netSyIn)
-	if err != nil{
-		return false, err
-	}
-
-	splitResult,_,err := api.SplitCoinFromMerged(ptb, *mergeCoinArgument[0], netSyIn)
-	if err != nil{
-		return false, err
+	}else {
+		if constant.IsScallopCoin(nemoConfig.CoinType){
+			marketCoinArgument,err := api.Mint(ptb, client.SuiApi, nemoConfig.UnderlyingCoinType, &splitResult)
+			if err != nil{
+				return false, err
+			}
+			argument,err := api.MintSCoin(ptb, client.SuiApi, nemoConfig.CoinType, nemoConfig.UnderlyingCoinType, marketCoinArgument)
+			if err != nil{
+				return false, err
+			}
+			splitResult = *argument
+		}
 	}
 
 	depositArgument, err := api.Deposit(ptb, client.SuiApi, nemoConfig, &splitResult)
@@ -187,12 +204,12 @@ func (s *SuiService)SwapToPy(amountIn, slippage float64, amountInType, exactAmou
 	}
 
 	if exactAmountOutType == constant.YTTYPE{
-		_, err = api.SwapExactSyForYt(ptb, client.BlockApi, client.SuiApi, nemoConfig, sender.Address, approxPyOut, netSyTokenization, minYtOut, oracleArgument, depositArgument)
+		_, err = api.SwapExactSyForYt(ptb, client.BlockApi, client.SuiApi, nemoConfig, sender.Address, approxPyOut, netSyTokenization, minPyOut, oracleArgument, depositArgument)
 		if err != nil{
 			return false, err
 		}
 	}else if exactAmountOutType == constant.PTTYPE{
-		_, err = api.SwapExactSyForPt(ptb, client.BlockApi, client.SuiApi, nemoConfig, sender.Address, approxPyOut, minYtOut, oracleArgument, depositArgument)
+		_, err = api.SwapExactSyForPt(ptb, client.BlockApi, client.SuiApi, nemoConfig, sender.Address, approxPyOut, minPyOut, oracleArgument, depositArgument)
 		if err != nil{
 			return false, err
 		}

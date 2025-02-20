@@ -17,14 +17,14 @@ var (
 	SCALLOPMINTPACKAGE = "0x3fc1f14ca1017cff1df9cd053ce1f55251e9df3019d728c7265f028bb87f0f97"
 )
 
-func MintSCoin(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, coinType, underlyingCoinType string, coinArgument *sui_types.Argument) (*sui_types.Argument,error) {
+func MintSCoin(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, coinType, underlyingCoinType string, marketCoin *sui_types.Argument) (*sui_types.Argument,error) {
 	scallopMintSPackage, err := sui_types.NewObjectIdFromHex(SCALLOPPACKAGE)
 	if err != nil {
 		return nil, err
 	}
 
 	module := move_types.Identifier("s_coin_converter")
-	function := move_types.Identifier("burn_s_coin")
+	function := move_types.Identifier("mint_s_coin")
 	sCoinStructTag, err := GetStructTag(coinType)
 	if err != nil {
 		return nil, err
@@ -47,11 +47,6 @@ func MintSCoin(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Cli
 		return nil, err
 	}
 	scaTreasuryArgument, err := ptb.Input(sui_types.CallArg{Object: scaTreasuryCallArg})
-	if err != nil {
-		return nil, err
-	}
-
-	marketCoin, err := Mint(ptb, client, underlyingCoinType, coinArgument)
 	if err != nil {
 		return nil, err
 	}
@@ -142,7 +137,7 @@ func BurnSCoin(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Cli
 	}
 
 	module := move_types.Identifier("s_coin_converter")
-	function := move_types.Identifier("mint_s_coin")
+	function := move_types.Identifier("burn_s_coin")
 	sCoinStructTag, err := GetStructTag(coinType)
 	if err != nil {
 		return nil, err

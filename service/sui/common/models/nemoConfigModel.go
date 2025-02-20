@@ -5,6 +5,7 @@ type NemoConfig struct {
 	SyCoinType          string   `json:"syCoinType"`
 	UnderlyingCoinType  string   `json:"underlyingCoinType"`
 	Decimal             uint64   `json:"decimal"`
+	ConversionRate      string   `json:"conversionRate"`
 	PyState             string   `json:"pyState"`
 	Version             string   `json:"version"`
 	YieldFactoryConfig  string   `json:"yieldFactoryConfig"`
@@ -30,6 +31,7 @@ func InitConfig() *NemoConfig {
 		SyCoinType:          "0x36a4c63cd17d48d33e32c3796245b2d1ebe50c2898ee80e682b787fb9b6519d5::sSUI::SSUI",
 		UnderlyingCoinType:  "0x2::sui::SUI",
 		Decimal:             9,
+		ConversionRate:      "1.0580698767",
 		PyState:             "0xe8713fc5aefcbdf4f25fea27a48901e878d7b0a6681f44672672e6914437004c",
 		Version:             "0x4000b5c20e70358a42ae45421c96d2f110817d75b80df30dad5b5d4f1fdad6af",
 		YieldFactoryConfig:  "0x0f3e1b1922a2445a4ed5ec936a348cf6bfe50f829b92da0ba9ed3490ae1f1439",

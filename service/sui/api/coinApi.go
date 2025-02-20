@@ -245,3 +245,50 @@ func MergeCoin(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Cli
 
 	return nil, remainingCoins, errors.New("failed to merge coins")
 }
+
+func SplitOrMergeCoin(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, remainingCoins []CoinData, netSyIn uint64) (splitCoin sui_types.Argument, unusedCoins []CoinData, err error) {
+	sort.Slice(remainingCoins, func(i, j int) bool {
+		balanceI, _ := strconv.ParseUint(remainingCoins[i].Balance, 10, 64)
+		balanceJ, _ := strconv.ParseUint(remainingCoins[j].Balance, 10, 64)
+		return balanceI > balanceJ
+	})
+
+	if len(remainingCoins) > 0 {
+		balance, err := strconv.ParseUint(remainingCoins[0].Balance, 10, 64)
+		if err != nil {
+			return sui_types.Argument{}, nil, err
+		}
+		if balance >= netSyIn{
+			coinArg, err := GetObjectArg(client, remainingCoins[0].CoinObjectId, true, "", "", "")
+			if err != nil {
+				return sui_types.Argument{}, nil, err
+			}
+			primaryCoin, err := ptb.Input(sui_types.CallArg{Object: coinArg})
+			if err != nil {
+				return sui_types.Argument{}, nil, err
+			}
+			splitResult, _, err := SplitCoinFromMerged(ptb, primaryCoin, netSyIn)
+			if err != nil {
+				return sui_types.Argument{}, nil, err
+			}
+			unusedCoins = append(unusedCoins, remainingCoins[1:]...)
+			return splitResult, unusedCoins, nil
+		}
+	}
+
+	mergedCoins, unusedCoins, err := MergeCoin(ptb, client, remainingCoins, netSyIn)
+	if err != nil {
+		return sui_types.Argument{}, remainingCoins, fmt.Errorf("failed to merge coins: %w", err)
+	}
+
+	if len(mergedCoins) == 0 {
+		return sui_types.Argument{}, remainingCoins, errors.New("no coins merged")
+	}
+
+	splitResult, _, err := SplitCoinFromMerged(ptb, *mergedCoins[0], netSyIn)
+	if err != nil {
+		return sui_types.Argument{}, remainingCoins, fmt.Errorf("failed to split merged coin: %w", err)
+	}
+
+	return splitResult, unusedCoins, nil
+}
