@@ -180,7 +180,7 @@ func DryRunGetApproxPyOutForNetSyInInternal(client *client.Client, nemoConfig *m
 	return approxPyOut, netSyTokenization, nil
 }
 
-func DryRunGetPyOutForExactSyInWithPriceVoucher(client *client.Client, nemoConfig *models.NemoConfig, exactPyType string, netSyIn uint64, priceOracle string, sender *account.Account) (uint64, error){
+func DryRunGetPyOutForExactSyInWithPriceVoucher(client *client.Client, nemoConfig *models.NemoConfig, exactPyType string, netSyIn uint64, sender *account.Account) (uint64, error){
 	ptb := sui_types.NewProgrammableTransactionBuilder()
 
 	nemoPackageId, err := sui_types.NewObjectIdFromHex(nemoConfig.NemoContract)
@@ -312,4 +312,131 @@ func DryRunGetPyOutForExactSyInWithPriceVoucher(client *client.Client, nemoConfi
 		}
 	}
 	return minPyOut, nil
+}
+
+func DryRunGetPyInForExactSyOutWithPriceVoucher(client *client.Client, nemoConfig *models.NemoConfig, exactPyType string, pyInAmount uint64, sender *account.Account) (uint64, error){
+	ptb := sui_types.NewProgrammableTransactionBuilder()
+
+	nemoPackageId, err := sui_types.NewObjectIdFromHex(nemoConfig.NemoContract)
+	if err != nil {
+		return 0, err
+	}
+
+	syStructTag, err := GetStructTag(nemoConfig.SyCoinType)
+	if err != nil {
+		return 0, err
+	}
+
+	moduleName := "router"
+	var functionName string
+	if exactPyType == constant.PTTYPE{
+		functionName = "get_sy_amount_out_for_exact_pt_in_with_price_voucher"
+	}else {
+		functionName = "get_sy_amount_out_for_exact_yt_in_with_price_voucher"
+	}
+
+	module := move_types.Identifier(moduleName)
+	function := move_types.Identifier(functionName)
+
+	typeArguments := []move_types.TypeTag{
+		{Struct: syStructTag},
+	}
+
+	exactPtInArg := CreatePureU64CallArg(pyInAmount)
+	exactPtInArgument, err := ptb.Input(exactPtInArg)
+	if err != nil {
+		return 0, err
+	}
+
+	oracleArgument, err := GetPriceVoucher(ptb, client, nemoConfig)
+	if err != nil{
+		return 0, err
+	}
+
+	ps, err := GetObjectArgument(ptb, client, nemoConfig.PyState, false, nemoConfig.NemoContract, moduleName, functionName)
+	if err != nil {
+		return 0, err
+	}
+	mgc, err := GetObjectArgument(ptb, client, nemoConfig.MarketFactoryConfig, false, nemoConfig.NemoContract, moduleName, functionName)
+	if err != nil {
+		return 0, err
+	}
+	ms, err := GetObjectArgument(ptb, client, nemoConfig.MarketState, false, nemoConfig.NemoContract, moduleName, functionName)
+	if err != nil {
+		return 0, err
+	}
+	c, err := GetObjectArgument(ptb, client, constant.CLOCK, false, nemoConfig.NemoContract, moduleName, functionName)
+	if err != nil {
+		return 0, err
+	}
+
+	arguments := []sui_types.Argument{
+		exactPtInArgument,
+		*oracleArgument,
+		ps,
+		mgc,
+		ms,
+		c,
+	}
+
+	ptb.Command(
+		sui_types.Command{
+			MoveCall: &sui_types.ProgrammableMoveCall{
+				Package:       *nemoPackageId,
+				Module:        module,
+				Function:      function,
+				TypeArguments: typeArguments,
+				Arguments:     arguments,
+			},
+		},
+	)
+
+	pt := ptb.Finish()
+
+	txKind := sui_types.TransactionKind{
+		ProgrammableTransaction: &pt,
+	}
+
+	txBytes, err := bcs.Marshal(txKind)
+	if err != nil {
+		return 0, fmt.Errorf("failed to serialize transaction: %w", err)
+	}
+
+	senderAddr, err := sui_types.NewAddressFromHex(sender.Address)
+	if err != nil {
+		return 0, fmt.Errorf("failed to parse sender address: %w", err)
+	}
+
+	result, err := client.DevInspectTransactionBlock(context.Background(), *senderAddr, txBytes, nil, nil)
+	if err != nil {
+		return 0, fmt.Errorf("failed to inspect transaction: %w", err)
+	}
+	if result.Error != nil{
+		return 0, errors.New(fmt.Sprintf("%v", *result.Error))
+	}
+	if len(result.Results) == 0 {
+		return 0, fmt.Errorf("no results returned")
+	}
+
+	lastResult := result.Results[len(result.Results)-1]
+
+	var minSyOut uint64
+	if len(lastResult.ReturnValues) > 0 {
+		firstValue := lastResult.ReturnValues[0]
+		if firstValueArray, ok := firstValue.([]interface{}); ok && len(firstValueArray) > 0 {
+			if innerArray, ok := firstValueArray[0].([]interface{}); ok && len(innerArray) > 0 {
+				byteSlice := make([]byte, len(innerArray))
+				for i, v := range innerArray {
+					if num, ok := v.(float64); ok {
+						byteSlice[i] = byte(num)
+					}
+				}
+				if len(byteSlice) >= 8 {
+					minSyOut = binary.LittleEndian.Uint64(byteSlice)
+					fmt.Printf("Parsed minYtOut: %d\n", minSyOut)
+				}
+			}
+		}
+	}
+	return minSyOut, nil
 }

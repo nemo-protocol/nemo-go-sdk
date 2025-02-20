@@ -17,9 +17,15 @@ import (
 )
 
 func (s *SuiService)SwapByPy(amountIn, slippage float64, amountInType, exactAmountOutType string, sender *account.Account, nemoConfig *models.NemoConfig) (bool, error){
-	ptb := sui_types.NewProgrammableTransactionBuilder()
+	netPyIn := uint64(amountIn * math.Pow(10, float64(nemoConfig.Decimal)))
 	suiService := InitSuiService()
+	minPyOut, err := api.DryRunGetPyInForExactSyOutWithPriceVoucher(suiService.SuiApi, nemoConfig, amountInType, netPyIn, sender)
+	if err != nil{
+		return false, err
+	}
+	minPyOut = minPyOut - uint64(float64(minPyOut) * slippage)
 
+	ptb := sui_types.NewProgrammableTransactionBuilder()
 	oracleArgument, err := api.GetPriceVoucher(ptb, suiService.SuiApi, nemoConfig)
 	if err != nil{
 		return false, err
@@ -27,12 +33,12 @@ func (s *SuiService)SwapByPy(amountIn, slippage float64, amountInType, exactAmou
 
 	var swapArgument *sui_types.Argument
 	if amountInType == constant.PTTYPE{
-		swapArgument, err = api.SwapExactPtForSy(ptb, suiService.BlockApi, suiService.SuiApi, nemoConfig, sender.Address, oracleArgument)
+		swapArgument, err = api.SwapExactPtForSy(ptb, suiService.BlockApi, suiService.SuiApi, nemoConfig, netPyIn, minPyOut, sender.Address, oracleArgument)
 		if err != nil{
 			return false, err
 		}
 	} else if amountInType == constant.YTTYPE{
-		swapArgument, err = api.SwapExactYtForSy(ptb, suiService.BlockApi, suiService.SuiApi, nemoConfig, sender.Address, oracleArgument)
+		swapArgument, err = api.SwapExactYtForSy(ptb, suiService.BlockApi, suiService.SuiApi, nemoConfig, netPyIn, minPyOut, sender.Address, oracleArgument)
 		if err != nil{
 			return false, err
 		}
@@ -40,16 +46,15 @@ func (s *SuiService)SwapByPy(amountIn, slippage float64, amountInType, exactAmou
 		return false, errors.New("swap type error！")
 	}
 
-
 	syRedeemResult, err := api.SyRedeem(ptb, suiService.SuiApi, nemoConfig, swapArgument)
 	if err != nil{
 		return false, err
 	}
 
-	//coin, err := api.BurnSCoin(ptb, suiService.SuiApi, COINTYPE, UNDERLYINGCOINTYPE, syRedeemResult)
-	//if err != nil{
-	//	return false, err
-	//}
+	if exactAmountOutType != nemoConfig.CoinType{
+		syRedeemResult, err = api.SwapToUnderlyingCoin(ptb, suiService.SuiApi, nemoConfig, syRedeemResult)
+	}
+
 	recipientAddr, err := sui_types.NewAddressFromHex(sender.Address)
 	if err != nil {
 		return false, err
@@ -151,7 +156,7 @@ func (s *SuiService)SwapToPy(amountIn, slippage float64, amountInType, exactAmou
 		netSyIn = uint64(float64(netSyIn) / conversionRate)
 	}
 
-	minPyOut, err := api.DryRunGetPyOutForExactSyInWithPriceVoucher(client.SuiApi, nemoConfig, exactAmountOutType, netSyIn, nemoConfig.PriceOracle, sender)
+	minPyOut, err := api.DryRunGetPyOutForExactSyInWithPriceVoucher(client.SuiApi, nemoConfig, exactAmountOutType, netSyIn, sender)
 	if err != nil{
 		return false, err
 	}

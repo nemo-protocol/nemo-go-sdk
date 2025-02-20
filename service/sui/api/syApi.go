@@ -68,7 +68,7 @@ func Deposit(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Clien
 
 func SeedLiquidity() {}
 
-func SwapExactPtForSy(ptb *sui_types.ProgrammableTransactionBuilder, blockClient *sui.ISuiAPI, client *client.Client, nemoConfig *models.NemoConfig, ownerAddress string, oracleArgument *sui_types.Argument) (*sui_types.Argument,error){
+func SwapExactPtForSy(ptb *sui_types.ProgrammableTransactionBuilder, blockClient *sui.ISuiAPI, client *client.Client, nemoConfig *models.NemoConfig, amountIn, minSyOut uint64, ownerAddress string, oracleArgument *sui_types.Argument) (*sui_types.Argument,error){
 	nemoPackageId, err := sui_types.NewObjectIdFromHex(nemoConfig.NemoContract)
 	if err != nil {
 		return nil, err
@@ -140,12 +140,12 @@ func SwapExactPtForSy(ptb *sui_types.ProgrammableTransactionBuilder, blockClient
 		return nil, err
 	}
 
-	ptAmountIn := CreatePureU64CallArg(3)
+	ptAmountIn := CreatePureU64CallArg(amountIn)
 	ptAmountArgument,err := ptb.Input(ptAmountIn)
 	if err != nil {
 		return nil, err
 	}
-	syOut := CreatePureU64CallArg(1)
+	syOut := CreatePureU64CallArg(minSyOut)
 	syOutArgument,err := ptb.Input(syOut)
 	if err != nil {
 		return nil, err
@@ -242,7 +242,7 @@ func CreatePureU64CallArg(value uint64) sui_types.CallArg {
 	}
 }
 
-func SwapExactYtForSy(ptb *sui_types.ProgrammableTransactionBuilder, blockClient *sui.ISuiAPI, client *client.Client, nemoConfig *models.NemoConfig, ownerAddress string, oracleArgument *sui_types.Argument) (*sui_types.Argument,error){
+func SwapExactYtForSy(ptb *sui_types.ProgrammableTransactionBuilder, blockClient *sui.ISuiAPI, client *client.Client, nemoConfig *models.NemoConfig, amountIn, minSyOut uint64, ownerAddress string, oracleArgument *sui_types.Argument) (*sui_types.Argument,error){
 	nemoPackageId, err := sui_types.NewObjectIdFromHex(nemoConfig.NemoContract)
 	if err != nil {
 		return nil, err
@@ -319,12 +319,12 @@ func SwapExactYtForSy(ptb *sui_types.ProgrammableTransactionBuilder, blockClient
 		return nil, err
 	}
 
-	ytAmountIn := CreatePureU64CallArg(4000000)
+	ytAmountIn := CreatePureU64CallArg(amountIn)
 	ytAmountArgument,err := ptb.Input(ytAmountIn)
 	if err != nil {
 		return nil, err
 	}
-	syOut := CreatePureU64CallArg(10)
+	syOut := CreatePureU64CallArg(minSyOut)
 	syOutArgument,err := ptb.Input(syOut)
 	if err != nil {
 		return nil, err

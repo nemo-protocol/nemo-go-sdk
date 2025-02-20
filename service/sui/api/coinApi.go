@@ -8,6 +8,7 @@ import (
 	"github.com/coming-chat/go-sui/v2/client"
 	"github.com/coming-chat/go-sui/v2/sui_types"
 	"nemo-go-sdk/service/sui/common/constant"
+	"nemo-go-sdk/service/sui/common/models"
 	"sort"
 	"strconv"
 )
@@ -291,4 +292,11 @@ func SplitOrMergeCoin(ptb *sui_types.ProgrammableTransactionBuilder, client *cli
 	}
 
 	return splitResult, unusedCoins, nil
+}
+
+func SwapToUnderlyingCoin(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig, coinArgument *sui_types.Argument) (*sui_types.Argument, error){
+	if constant.IsSui(nemoConfig.UnderlyingCoinType){
+		return BurnSCoin(ptb, client, nemoConfig.CoinType, nemoConfig.UnderlyingCoinType, coinArgument)
+	}
+	return nil, errors.New("invalid underlying coin！")
 }
