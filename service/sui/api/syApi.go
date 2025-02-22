@@ -353,7 +353,7 @@ func SwapExactYtForSy(ptb *sui_types.ProgrammableTransactionBuilder, blockClient
 	return &command, nil
 }
 
-func SwapExactSyForYt(ptb *sui_types.ProgrammableTransactionBuilder, blockClient *sui.ISuiAPI, client *client.Client, nemoConfig *models.NemoConfig,ownerAddress string, approxYtOut, netSyTokenization, minYtOut uint64, oracleArgument, coinArgument *sui_types.Argument) (*sui_types.Argument,error){
+func SwapExactSyForYt(ptb *sui_types.ProgrammableTransactionBuilder, blockClient *sui.ISuiAPI, client *client.Client, nemoConfig *models.NemoConfig,ownerAddress string, approxYtOut, netSyTokenization, minYtOut uint64, oracleArgument, coinArgument, pyPositionArgument *sui_types.Argument) (*sui_types.Argument,error){
 	nemoPackageId, err := sui_types.NewObjectIdFromHex(nemoConfig.NemoContract)
 	if err != nil {
 		return nil, err
@@ -376,35 +376,6 @@ func SwapExactSyForYt(ptb *sui_types.ProgrammableTransactionBuilder, blockClient
 	versionArgument,err := GetObjectArgument(ptb, client, nemoConfig.Version, false, nemoConfig.NemoContract, moduleName, functionName)
 	if err != nil {
 		return nil, err
-	}
-
-	pyStateInfo, err := GetObjectFieldByObjectId(client, nemoConfig.PyState)
-	if err != nil{
-		return nil, err
-	}
-	maturity := pyStateInfo["expiry"].(string)
-
-	expectPyPositionTypeList := make([]string, 0)
-	for _, pkg := range nemoConfig.NemoContractList{
-		expectPyPositionTypeList = append(expectPyPositionTypeList, fmt.Sprintf("%v::py_position::PyPosition", pkg))
-	}
-
-	pyPosition,err := GetOwnerObjectByType(blockClient, client, expectPyPositionTypeList, nemoConfig.SyCoinType, maturity, ownerAddress)
-	if err != nil {
-		return nil, err
-	}
-	var pyPositionArgument *sui_types.Argument
-	if pyPosition == ""{
-		pyPositionArgument, err = InitPyPosition(ptb, client, nemoConfig)
-		if err != nil{
-			return nil, err
-		}
-	}else {
-		argument, err := GetObjectArgument(ptb, client, pyPosition, false, nemoConfig.NemoContract, moduleName, functionName)
-		if err != nil{
-			return nil, err
-		}
-		pyPositionArgument = &argument
 	}
 
 	pyStateArgument,err := GetObjectArgument(ptb, client, nemoConfig.PyState, false, nemoConfig.NemoContract, moduleName, functionName)
@@ -466,7 +437,7 @@ func SwapExactSyForYt(ptb *sui_types.ProgrammableTransactionBuilder, blockClient
 	return &command, nil
 }
 
-func SwapExactSyForPt(ptb *sui_types.ProgrammableTransactionBuilder, blockClient *sui.ISuiAPI, client *client.Client, nemoConfig *models.NemoConfig, ownerAddress string, approxPtOut, minYtOut uint64, oracleArgument, coinArgument *sui_types.Argument) (*sui_types.Argument,error){
+func SwapExactSyForPt(ptb *sui_types.ProgrammableTransactionBuilder, blockClient *sui.ISuiAPI, client *client.Client, nemoConfig *models.NemoConfig, ownerAddress string, approxPtOut, minYtOut uint64, oracleArgument, coinArgument, pyPositionArgument *sui_types.Argument) (*sui_types.Argument, error){
 	nemoPackageId, err := sui_types.NewObjectIdFromHex(nemoConfig.NemoContract)
 	if err != nil {
 		return nil, err
@@ -489,35 +460,6 @@ func SwapExactSyForPt(ptb *sui_types.ProgrammableTransactionBuilder, blockClient
 	versionArgument,err := GetObjectArgument(ptb, client, nemoConfig.Version, false, nemoConfig.NemoContract, moduleName, functionName)
 	if err != nil {
 		return nil, err
-	}
-
-	pyStateInfo, err := GetObjectFieldByObjectId(client, nemoConfig.PyState)
-	if err != nil{
-		return nil, err
-	}
-	maturity := pyStateInfo["expiry"].(string)
-
-	expectPyPositionTypeList := make([]string, 0)
-	for _, pkg := range nemoConfig.NemoContractList{
-		expectPyPositionTypeList = append(expectPyPositionTypeList, fmt.Sprintf("%v::py_position::PyPosition", pkg))
-	}
-
-	pyPosition,err := GetOwnerObjectByType(blockClient, client, expectPyPositionTypeList, nemoConfig.SyCoinType, maturity, ownerAddress)
-	if err != nil {
-		return nil, err
-	}
-	var pyPositionArgument *sui_types.Argument
-	if pyPosition == ""{
-		pyPositionArgument, err = InitPyPosition(ptb, client, nemoConfig)
-		if err != nil{
-			return nil, err
-		}
-	}else {
-		argument, err := GetObjectArgument(ptb, client, pyPosition, false, nemoConfig.NemoContract, moduleName, functionName)
-		if err != nil{
-			return nil, err
-		}
-		pyPositionArgument = &argument
 	}
 
 	pyStateArgument,err := GetObjectArgument(ptb, client, nemoConfig.PyState, false, nemoConfig.NemoContract, moduleName, functionName)

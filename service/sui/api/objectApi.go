@@ -41,6 +41,7 @@ func GetObjectMutable(client *client.Client, objectType, contractPackage, module
 	marshal, _ := json.Marshal(objects.Data.Content.Data)
 	packageObject := models.Object{}
 	_ = json.Unmarshal(marshal, &packageObject)
+
 	filterFunc := utils.FindFunctionInBytecode(packageObject.Package.Disassembled[module].(string), function)
 	args := strings.Split(filterFunc, ",")
 	typeList := strings.SplitN(objectType, "::", 3)

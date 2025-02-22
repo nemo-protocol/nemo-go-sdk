@@ -10,12 +10,12 @@ import (
 )
 
 func GetPriceVoucherFromXOracle(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig) (*sui_types.Argument,error) {
-	nemoPackageId, err := sui_types.NewObjectIdFromHex(nemoConfig.NemoContract)
+	nemoPackageId, err := sui_types.NewObjectIdFromHex(nemoConfig.OraclePackage)
 	if err != nil {
 		return nil, err
 	}
 
-	moduleName := "oracle"
+	moduleName := "scallop"
 	functionName := "get_price_voucher_from_x_oracle"
 	module := move_types.Identifier(moduleName)
 	function := move_types.Identifier(functionName)
@@ -37,33 +37,38 @@ func GetPriceVoucherFromXOracle(ptb *sui_types.ProgrammableTransactionBuilder, c
 	typeArguments := make([]move_types.TypeTag, 0)
 	typeArguments = append(typeArguments, syTypeTag, typeTag)
 
-	priceOracleCallArg,err := GetObjectArg(client, nemoConfig.PriceOracle, false, nemoConfig.NemoContract, "oracle", "get_price_voucher_from_x_oracle")
+	priceOracleCallArg,err := GetObjectArg(client, nemoConfig.PriceOracle, false, nemoConfig.OraclePackage, moduleName, functionName)
 	if err != nil {
 		return nil, err
 	}
 
-	scallopVersionCallArg,err := GetObjectArg(client, SCALLOPVERSION, false, nemoConfig.NemoContract, "oracle", "get_price_voucher_from_x_oracle")
+	oracleTicketCallArg,err := GetObjectArg(client, nemoConfig.OracleTicket, false, nemoConfig.OraclePackage, moduleName, functionName)
 	if err != nil {
 		return nil, err
 	}
 
-	scallopMarketCallArg,err := GetObjectArg(client, SCALLOPMARKETOBJECT, false, nemoConfig.NemoContract, "oracle", "get_price_voucher_from_x_oracle")
+	scallopVersionCallArg,err := GetObjectArg(client, SCALLOP_VERSION, false, nemoConfig.OraclePackage, moduleName, functionName)
 	if err != nil {
 		return nil, err
 	}
 
-	syStateCallArg,err := GetObjectArg(client, nemoConfig.SyState, false, nemoConfig.NemoContract, "oracle", "get_price_voucher_from_x_oracle")
+	scallopMarketCallArg,err := GetObjectArg(client, SCALLOP_MARKET_OBJECT, false, nemoConfig.OraclePackage, moduleName, functionName)
 	if err != nil {
 		return nil, err
 	}
 
-	clockCallArg,err := GetObjectArg(client, constant.CLOCK, false, nemoConfig.NemoContract, "oracle", "get_price_voucher_from_x_oracle")
+	syStateCallArg,err := GetObjectArg(client, nemoConfig.SyState, false, nemoConfig.OraclePackage, moduleName, functionName)
+	if err != nil {
+		return nil, err
+	}
+
+	clockCallArg,err := GetObjectArg(client, constant.CLOCK, false, nemoConfig.OraclePackage, moduleName, functionName)
 	if err != nil {
 		return nil, err
 	}
 
 	callArgs := make([]sui_types.CallArg, 0)
-	callArgs = append(callArgs, sui_types.CallArg{Object: priceOracleCallArg}, sui_types.CallArg{Object: scallopVersionCallArg}, sui_types.CallArg{Object: scallopMarketCallArg}, sui_types.CallArg{Object: syStateCallArg}, sui_types.CallArg{Object: clockCallArg})
+	callArgs = append(callArgs, sui_types.CallArg{Object: priceOracleCallArg}, sui_types.CallArg{Object: oracleTicketCallArg}, sui_types.CallArg{Object: scallopVersionCallArg}, sui_types.CallArg{Object: scallopMarketCallArg}, sui_types.CallArg{Object: syStateCallArg}, sui_types.CallArg{Object: clockCallArg})
 	var arguments []sui_types.Argument
 	for _, v := range callArgs {
 		argument, err := ptb.Input(v)
@@ -92,7 +97,7 @@ func GetPriceVoucherFromVolo(ptb *sui_types.ProgrammableTransactionBuilder, clie
 		return nil, err
 	}
 
-	moduleName := "oracle"
+	moduleName := "volo"
 	functionName := "get_price_voucher_from_volo"
 	module := move_types.Identifier(moduleName)
 	function := move_types.Identifier(functionName)
@@ -106,28 +111,33 @@ func GetPriceVoucherFromVolo(ptb *sui_types.ProgrammableTransactionBuilder, clie
 	typeArguments := make([]move_types.TypeTag, 0)
 	typeArguments = append(typeArguments, syTypeTag)
 
-	priceOracleCallArg,err := GetObjectArg(client, nemoConfig.PriceOracle, false, nemoConfig.NemoContract, moduleName, functionName)
+	priceOracleCallArg,err := GetObjectArg(client, nemoConfig.PriceOracle, false, nemoConfig.OraclePackage, moduleName, functionName)
 	if err != nil {
 		return nil, err
 	}
 
-	nativePoolCallArg,err := GetObjectArg(client, nemoConfig.NativePool, false, nemoConfig.NemoContract, moduleName, functionName)
+	oracleTicketCallArg,err := GetObjectArg(client, nemoConfig.OracleTicket, false, nemoConfig.OraclePackage, moduleName, functionName)
 	if err != nil {
 		return nil, err
 	}
 
-	metadataCallArg,err := GetObjectArg(client, nemoConfig.Metadata, false, nemoConfig.NemoContract, moduleName, functionName)
+	nativePoolCallArg,err := GetObjectArg(client, nemoConfig.NativePool, false, nemoConfig.OraclePackage, moduleName, functionName)
 	if err != nil {
 		return nil, err
 	}
 
-	syStateCallArg,err := GetObjectArg(client, nemoConfig.SyState, false, nemoConfig.NemoContract, moduleName, functionName)
+	metadataCallArg,err := GetObjectArg(client, nemoConfig.Metadata, false, nemoConfig.OraclePackage, moduleName, functionName)
+	if err != nil {
+		return nil, err
+	}
+
+	syStateCallArg,err := GetObjectArg(client, nemoConfig.SyState, false, nemoConfig.OraclePackage, moduleName, functionName)
 	if err != nil {
 		return nil, err
 	}
 
 	callArgs := make([]sui_types.CallArg, 0)
-	callArgs = append(callArgs, sui_types.CallArg{Object: priceOracleCallArg}, sui_types.CallArg{Object: nativePoolCallArg}, sui_types.CallArg{Object: metadataCallArg}, sui_types.CallArg{Object: syStateCallArg})
+	callArgs = append(callArgs, sui_types.CallArg{Object: priceOracleCallArg}, sui_types.CallArg{Object: oracleTicketCallArg}, sui_types.CallArg{Object: nativePoolCallArg}, sui_types.CallArg{Object: metadataCallArg}, sui_types.CallArg{Object: syStateCallArg})
 	var arguments []sui_types.Argument
 	for _, v := range callArgs {
 		argument, err := ptb.Input(v)
@@ -156,7 +166,7 @@ func GetPriceVoucherFromSpring(ptb *sui_types.ProgrammableTransactionBuilder, cl
 		return nil, err
 	}
 
-	moduleName := "oracle"
+	moduleName := "spring"
 	functionName := "get_price_voucher_from_spring"
 	module := move_types.Identifier(moduleName)
 	function := move_types.Identifier(functionName)
@@ -170,23 +180,28 @@ func GetPriceVoucherFromSpring(ptb *sui_types.ProgrammableTransactionBuilder, cl
 	typeArguments := make([]move_types.TypeTag, 0)
 	typeArguments = append(typeArguments, syTypeTag)
 
-	priceOracleCallArg,err := GetObjectArg(client, nemoConfig.PriceOracle, false, nemoConfig.NemoContract, moduleName, functionName)
+	priceOracleCallArg,err := GetObjectArg(client, nemoConfig.PriceOracle, false, nemoConfig.OraclePackage, moduleName, functionName)
 	if err != nil {
 		return nil, err
 	}
 
-	lstInfoCallArg,err := GetObjectArg(client, nemoConfig.LstInfo, false, nemoConfig.NemoContract, moduleName, functionName)
+	oracleTicketCallArg,err := GetObjectArg(client, nemoConfig.OracleTicket, false, nemoConfig.OraclePackage, moduleName, functionName)
 	if err != nil {
 		return nil, err
 	}
 
-	syStateCallArg,err := GetObjectArg(client, nemoConfig.SyState, false, nemoConfig.NemoContract, moduleName, functionName)
+	lstInfoCallArg,err := GetObjectArg(client, nemoConfig.LstInfo, false, nemoConfig.OraclePackage, moduleName, functionName)
+	if err != nil {
+		return nil, err
+	}
+
+	syStateCallArg,err := GetObjectArg(client, nemoConfig.SyState, false, nemoConfig.OraclePackage, moduleName, functionName)
 	if err != nil {
 		return nil, err
 	}
 
 	callArgs := make([]sui_types.CallArg, 0)
-	callArgs = append(callArgs, sui_types.CallArg{Object: priceOracleCallArg}, sui_types.CallArg{Object: lstInfoCallArg}, sui_types.CallArg{Object: syStateCallArg})
+	callArgs = append(callArgs, sui_types.CallArg{Object: priceOracleCallArg}, sui_types.CallArg{Object: oracleTicketCallArg}, sui_types.CallArg{Object: lstInfoCallArg}, sui_types.CallArg{Object: syStateCallArg})
 	var arguments []sui_types.Argument
 	for _, v := range callArgs {
 		argument, err := ptb.Input(v)
@@ -215,7 +230,7 @@ func GetPriceVoucherFromAftermath(ptb *sui_types.ProgrammableTransactionBuilder,
 		return nil, err
 	}
 
-	moduleName := "oracle"
+	moduleName := "aftermath"
 	functionName := "get_price_voucher_from_aftermath"
 	module := move_types.Identifier(moduleName)
 	function := move_types.Identifier(functionName)
@@ -229,23 +244,28 @@ func GetPriceVoucherFromAftermath(ptb *sui_types.ProgrammableTransactionBuilder,
 	typeArguments := make([]move_types.TypeTag, 0)
 	typeArguments = append(typeArguments, syTypeTag)
 
-	priceOracleCallArg,err := GetObjectArg(client, nemoConfig.PriceOracle, false, nemoConfig.NemoContract, moduleName, functionName)
+	priceOracleCallArg,err := GetObjectArg(client, nemoConfig.PriceOracle, false, nemoConfig.OraclePackage, moduleName, functionName)
 	if err != nil {
 		return nil, err
 	}
 
-	lstInfoCallArg,err := GetObjectArg(client, nemoConfig.LstInfo, false, nemoConfig.NemoContract, moduleName, functionName)
+	oracleTicketCallArg,err := GetObjectArg(client, nemoConfig.OracleTicket, false, nemoConfig.OraclePackage, moduleName, functionName)
 	if err != nil {
 		return nil, err
 	}
 
-	syStateCallArg,err := GetObjectArg(client, nemoConfig.SyState, false, nemoConfig.NemoContract, moduleName, functionName)
+	lstInfoCallArg,err := GetObjectArg(client, nemoConfig.LstInfo, false, nemoConfig.OraclePackage, moduleName, functionName)
+	if err != nil {
+		return nil, err
+	}
+
+	syStateCallArg,err := GetObjectArg(client, nemoConfig.SyState, false, nemoConfig.OraclePackage, moduleName, functionName)
 	if err != nil {
 		return nil, err
 	}
 
 	callArgs := make([]sui_types.CallArg, 0)
-	callArgs = append(callArgs, sui_types.CallArg{Object: priceOracleCallArg}, sui_types.CallArg{Object: lstInfoCallArg}, sui_types.CallArg{Object: syStateCallArg})
+	callArgs = append(callArgs, sui_types.CallArg{Object: priceOracleCallArg}, sui_types.CallArg{Object: oracleTicketCallArg}, sui_types.CallArg{Object: lstInfoCallArg}, sui_types.CallArg{Object: syStateCallArg})
 	var arguments []sui_types.Argument
 	for _, v := range callArgs {
 		argument, err := ptb.Input(v)
@@ -288,23 +308,28 @@ func GetPriceVoucherFromHasui(ptb *sui_types.ProgrammableTransactionBuilder, cli
 	typeArguments := make([]move_types.TypeTag, 0)
 	typeArguments = append(typeArguments, syTypeTag)
 
-	priceOracleCallArg,err := GetObjectArg(client, nemoConfig.PriceOracle, false, nemoConfig.NemoContract, moduleName, functionName)
+	priceOracleCallArg,err := GetObjectArg(client, nemoConfig.PriceOracle, false, nemoConfig.OraclePackage, moduleName, functionName)
 	if err != nil {
 		return nil, err
 	}
 
-	haedalStakeingCallArg,err := GetObjectArg(client, nemoConfig.HaedalStakeing, false, nemoConfig.NemoContract, moduleName, functionName)
+	oracleTicketCallArg,err := GetObjectArg(client, nemoConfig.OracleTicket, false, nemoConfig.OraclePackage, moduleName, functionName)
 	if err != nil {
 		return nil, err
 	}
 
-	syStateCallArg,err := GetObjectArg(client, nemoConfig.SyState, false, nemoConfig.NemoContract, moduleName, functionName)
+	haedalStakeingCallArg,err := GetObjectArg(client, nemoConfig.HaedalStakeing, false, nemoConfig.OraclePackage, moduleName, functionName)
+	if err != nil {
+		return nil, err
+	}
+
+	syStateCallArg,err := GetObjectArg(client, nemoConfig.SyState, false, nemoConfig.OraclePackage, moduleName, functionName)
 	if err != nil {
 		return nil, err
 	}
 
 	callArgs := make([]sui_types.CallArg, 0)
-	callArgs = append(callArgs, sui_types.CallArg{Object: priceOracleCallArg}, sui_types.CallArg{Object: haedalStakeingCallArg}, sui_types.CallArg{Object: syStateCallArg})
+	callArgs = append(callArgs, sui_types.CallArg{Object: priceOracleCallArg}, sui_types.CallArg{Object: oracleTicketCallArg}, sui_types.CallArg{Object: haedalStakeingCallArg}, sui_types.CallArg{Object: syStateCallArg})
 	var arguments []sui_types.Argument
 	for _, v := range callArgs {
 		argument, err := ptb.Input(v)

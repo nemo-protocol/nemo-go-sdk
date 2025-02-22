@@ -6,7 +6,6 @@ import (
 	"strings"
 )
 
-// ErrorMapping 定义错误码和对应的错误信息
 var ErrorMapping = map[int]string{
 	257:    "Sy zero deposit",
 	258:    "Sy insufficient sharesOut",
@@ -84,13 +83,11 @@ var ErrorMapping = map[int]string{
 	131077: "The computed ratio when converting to a FixedPoint64 would be unrepresentable",
 }
 
-// ErrorResponse 定义错误响应结构
 type ErrorResponse struct {
 	Error  string `json:"error"`
 	Detail string `json:"detail"`
 }
 
-// GetErrorMessage 获取错误信息
 func GetErrorMessage(errorCode int, errorString string) string {
 	if msg, ok := ErrorMapping[errorCode]; ok {
 		return msg
@@ -98,9 +95,7 @@ func GetErrorMessage(errorCode int, errorString string) string {
 	return errorString
 }
 
-// ParseErrorMessage 解析错误信息
 func ParseErrorMessage(errorString string) ErrorResponse {
-	// 处理 OUT_OF_GAS 错误
 	if strings.Contains(errorString, "OUT_OF_GAS") {
 		return ErrorResponse{
 			Error:  "Insufficient liquidity in the pool.",
@@ -108,7 +103,6 @@ func ParseErrorMessage(errorString string) ErrorResponse {
 		}
 	}
 
-	// 使用正则表达式匹配错误码
 	re := regexp.MustCompile(`[^\d]*(\d+)\)`)
 	matches := re.FindStringSubmatch(errorString)
 
@@ -116,18 +110,15 @@ func ParseErrorMessage(errorString string) ErrorResponse {
 	if len(matches) > 1 {
 		errorCode, _ = strconv.Atoi(matches[1])
 	} else if len(matches) > 0 {
-		// 如果没有捕获组，尝试将整个匹配作为十六进制解析
 		errorCode64, _ := strconv.ParseInt(matches[0], 16, 64)
 		errorCode = int(errorCode64)
 	}
 
-	// 构建详细信息
 	detail := ""
 	if errorCode == 790 || errorCode == 793 {
 		detail = "To ensure the capital efficiency of the liquidity pool, Nemo's flash swap is utilized when selling YT, which requires higher liquidity. You can try swapping again later or reduce the selling amount."
 	}
 
-	// 获取错误信息
 	err := errorString
 	if errorCode != 0 {
 		err = GetErrorMessage(errorCode, errorString)

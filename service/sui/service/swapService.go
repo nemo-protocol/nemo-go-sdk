@@ -168,7 +168,7 @@ func (s *SuiService)SwapToPy(amountIn, slippage float64, amountInType, exactAmou
 	}
 
 	ptb := sui_types.NewProgrammableTransactionBuilder()
-	
+
 	remainingCoins, gasCoin, err := api.RemainCoinAndGas(client.SuiApi, sender.Address, uint64(10000000), amountInType)
 	if err != nil{
 		return false, err
@@ -185,17 +185,11 @@ func (s *SuiService)SwapToPy(amountIn, slippage float64, amountInType, exactAmou
 			return false, err
 		}
 	}else {
-		if constant.IsScallopCoin(nemoConfig.CoinType){
-			marketCoinArgument,err := api.Mint(ptb, client.SuiApi, nemoConfig.UnderlyingCoinType, &splitResult)
-			if err != nil{
-				return false, err
-			}
-			argument,err := api.MintSCoin(ptb, client.SuiApi, nemoConfig.CoinType, nemoConfig.UnderlyingCoinType, marketCoinArgument)
-			if err != nil{
-				return false, err
-			}
-			splitResult = *argument
+		argument,err := api.MintToSCoin(ptb, client.SuiApi, nemoConfig, &splitResult)
+		if err != nil{
+			return false, err
 		}
+		splitResult = *argument
 	}
 
 	depositArgument, err := api.Deposit(ptb, client.SuiApi, nemoConfig, &splitResult)
@@ -208,13 +202,45 @@ func (s *SuiService)SwapToPy(amountIn, slippage float64, amountInType, exactAmou
 		return false, err
 	}
 
+	pyStateInfo, err := api.GetObjectFieldByObjectId(client.SuiApi, nemoConfig.PyState)
+	if err != nil{
+		return false, err
+	}
+	maturity := pyStateInfo["expiry"].(string)
+
+	expectPyPositionTypeList := make([]string, 0)
+	for _, pkg := range nemoConfig.NemoContractList{
+		expectPyPositionTypeList = append(expectPyPositionTypeList, fmt.Sprintf("%v::py_position::PyPosition", pkg))
+	}
+
+	pyPosition,err := api.GetOwnerObjectByType(client.BlockApi, client.SuiApi, expectPyPositionTypeList, nemoConfig.SyCoinType, maturity, sender.Address)
+	if err != nil {
+		return false, err
+	}
+	var pyPositionArgument *sui_types.Argument
+	// transfer object
+	transferArgs := make([]sui_types.Argument, 0)
+	if pyPosition == ""{
+		pyPositionArgument, err = api.InitPyPosition(ptb, client.SuiApi, nemoConfig)
+		if err != nil{
+			return false, err
+		}
+		transferArgs = append(transferArgs, *pyPositionArgument)
+	}else {
+		argument, err := api.GetObjectArgument(ptb, client.SuiApi, pyPosition, false, nemoConfig.NemoContract, "", "")
+		if err != nil{
+			return false, err
+		}
+		pyPositionArgument = &argument
+	}
+
 	if exactAmountOutType == constant.YTTYPE{
-		_, err = api.SwapExactSyForYt(ptb, client.BlockApi, client.SuiApi, nemoConfig, sender.Address, approxPyOut, netSyTokenization, minPyOut, oracleArgument, depositArgument)
+		_, err = api.SwapExactSyForYt(ptb, client.BlockApi, client.SuiApi, nemoConfig, sender.Address, approxPyOut, netSyTokenization, minPyOut, oracleArgument, depositArgument, pyPositionArgument)
 		if err != nil{
 			return false, err
 		}
 	}else if exactAmountOutType == constant.PTTYPE{
-		_, err = api.SwapExactSyForPt(ptb, client.BlockApi, client.SuiApi, nemoConfig, sender.Address, approxPyOut, minPyOut, oracleArgument, depositArgument)
+		_, err = api.SwapExactSyForPt(ptb, client.BlockApi, client.SuiApi, nemoConfig, sender.Address, approxPyOut, minPyOut, oracleArgument, depositArgument, pyPositionArgument)
 		if err != nil{
 			return false, err
 		}
@@ -222,31 +248,29 @@ func (s *SuiService)SwapToPy(amountIn, slippage float64, amountInType, exactAmou
 		return false, errors.New("swap type error！")
 	}
 
-
-	// transfer object
-	//transferArgs := []sui_types.Argument{remainMergeCoinArgument}
-
 	senderAddr, err := sui_types.NewObjectIdFromHex(sender.Address)
 	if err != nil {
 		return false, fmt.Errorf("failed to convert sender address: %w", err)
 	}
 
-	//recArg, err := ptb.Pure(senderAddr)
-	//if err != nil {
-	//	return false, err
-	//}
+	recArg, err := ptb.Pure(senderAddr)
+	if err != nil {
+		return false, err
+	}
 
-	//ptb.Command(
-	//	sui_types.Command{
-	//		TransferObjects: &struct {
-	//			Arguments []sui_types.Argument
-	//			Argument  sui_types.Argument
-	//		}{
-	//			Arguments: transferArgs,
-	//			Argument:  recArg,
-	//		},
-	//	},
-	//)
+	if len(transferArgs) > 0{
+		ptb.Command(
+			sui_types.Command{
+				TransferObjects: &struct {
+					Arguments []sui_types.Argument
+					Argument  sui_types.Argument
+				}{
+					Arguments: transferArgs,
+					Argument:  recArg,
+				},
+			},
+		)
+	}
 
 	pt := ptb.Finish()
 
