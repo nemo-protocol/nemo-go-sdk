@@ -269,10 +269,10 @@ func Redeem(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client
 	return &command, nil
 }
 
-func SplitCoinFromMerged(ptb *sui_types.ProgrammableTransactionBuilder, mergeCoinArgument sui_types.Argument, netSyIn uint64) (splitCoin, remainingCoin sui_types.Argument, err error) {
+func SplitCoinFromMerged(ptb *sui_types.ProgrammableTransactionBuilder, mergeCoinArgument sui_types.Argument, netSyIn uint64) (splitCoin sui_types.Argument, err error) {
 	splitCoinArgument, err := ptb.Pure(netSyIn)
 	if err != nil {
-		return sui_types.Argument{}, sui_types.Argument{}, fmt.Errorf("failed to create split coin argument: %w", err)
+		return sui_types.Argument{}, fmt.Errorf("failed to create split coin argument: %w", err)
 	}
 
 	splitResult := ptb.Command(sui_types.Command{
@@ -280,12 +280,26 @@ func SplitCoinFromMerged(ptb *sui_types.ProgrammableTransactionBuilder, mergeCoi
 			Argument  sui_types.Argument
 			Arguments []sui_types.Argument
 		}{
-			Argument:  mergeCoinArgument,                       // 源 coin
-			Arguments: []sui_types.Argument{splitCoinArgument}, // 要分割出的数量
+			Argument:  mergeCoinArgument,
+			Arguments: []sui_types.Argument{splitCoinArgument},
 		},
 	})
 
-	return splitResult, remainingCoin, nil
+	if splitResult.Result == nil {
+		return sui_types.Argument{}, fmt.Errorf("split coins command failed")
+	}
+
+	splitCoin = sui_types.Argument{
+		NestedResult: &struct {
+			Result1 uint16
+			Result2 uint16
+		}{
+			Result1: *splitResult.Result,
+			Result2: 0,  // 第一个分割结果
+		},
+	}
+
+	return splitCoin, nil
 }
 
 func MintToSCoin(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig, sCoinArgument *sui_types.Argument) (underlyingCoinArgument *sui_types.Argument, err error) {

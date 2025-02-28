@@ -207,7 +207,7 @@ func MergeCoin(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Cli
 	}
 
 	if len(coinsToMerge) > 0 {
-		mergeResult := ptb.Command(
+		ptb.Command(
 			sui_types.Command{
 				MergeCoins: &struct {
 					Argument  sui_types.Argument
@@ -218,17 +218,6 @@ func MergeCoin(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Cli
 				},
 			},
 		)
-
-		if mergeResult.Result == nil {
-			return nil, remainingCoins, errors.New("merge coins command should give a Result")
-		}
-
-		resultArg := &sui_types.Argument{
-			NestedResult: &struct {
-				Result1 uint16
-				Result2 uint16
-			}{Result1: *mergeResult.Result, Result2: 0},
-		}
 
 		usedIndexes := make(map[int]bool)
 		for _, idx := range bestCombination {
@@ -241,7 +230,7 @@ func MergeCoin(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Cli
 			}
 		}
 
-		return []*sui_types.Argument{resultArg}, unusedCoins, nil
+		return []*sui_types.Argument{&primaryCoin}, unusedCoins, nil
 	}
 
 	return nil, remainingCoins, errors.New("failed to merge coins")
@@ -268,7 +257,7 @@ func SplitOrMergeCoin(ptb *sui_types.ProgrammableTransactionBuilder, client *cli
 			if err != nil {
 				return sui_types.Argument{}, nil, err
 			}
-			splitResult, _, err := SplitCoinFromMerged(ptb, primaryCoin, netSyIn)
+			splitResult, err := SplitCoinFromMerged(ptb, primaryCoin, netSyIn)
 			if err != nil {
 				return sui_types.Argument{}, nil, err
 			}
@@ -286,7 +275,7 @@ func SplitOrMergeCoin(ptb *sui_types.ProgrammableTransactionBuilder, client *cli
 		return sui_types.Argument{}, remainingCoins, errors.New("no coins merged")
 	}
 
-	splitResult, _, err := SplitCoinFromMerged(ptb, *mergedCoins[0], netSyIn)
+	splitResult, err := SplitCoinFromMerged(ptb, *mergedCoins[0], netSyIn)
 	if err != nil {
 		return sui_types.Argument{}, remainingCoins, fmt.Errorf("failed to split merged coin: %w", err)
 	}

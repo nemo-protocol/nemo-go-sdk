@@ -67,7 +67,7 @@ func (s *SuiService)MintPy(amountIn float64, sender *account.Account, nemoConfig
 		return false, err
 	}
 
-	splitResult,_,err := api.SplitCoinFromMerged(ptb, *mergeCoinArgument[0], netSyIn)
+	splitResult,err := api.SplitCoinFromMerged(ptb, *mergeCoinArgument[0], netSyIn)
 	if err != nil{
 		return false, err
 	}

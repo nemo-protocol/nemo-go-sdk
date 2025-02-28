@@ -122,11 +122,17 @@ func (s *SuiService)AddLiquidity(amountFloat float64, sender *account.Account, a
 	}
 	fmt.Printf("previousMarketPosition:%v\n",previousMarketPosition)
 
+
 	if previousMarketPosition != "" {
-		marketPosition,err = api.MergeAllLpPositions(ptb, client.SuiApi, nemoConfig, previousMarketPosition, marketPosition)
+		previousMarketPositionArgument,err := api.GetObjectArgument(ptb, client.SuiApi, previousMarketPosition, false, nemoConfig.NemoContract, "market_position", "join")
 		if err != nil {
 			return false, err
 		}
+		_, err = api.MergeAllLpPositions(ptb, client.SuiApi, nemoConfig, &previousMarketPositionArgument, marketPosition)
+		if err != nil {
+			return false, err
+		}
+		marketPosition = &previousMarketPositionArgument
 	}
 
 	// change recipient address
@@ -143,7 +149,6 @@ func (s *SuiService)AddLiquidity(amountFloat float64, sender *account.Account, a
 
 	// transfer object
 	transferArgs = append(transferArgs, *marketPosition)
-
 	ptb.Command(
 		sui_types.Command{
 			TransferObjects: &struct {
