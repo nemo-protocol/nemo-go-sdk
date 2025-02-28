@@ -92,7 +92,7 @@ func GetPriceVoucherFromXOracle(ptb *sui_types.ProgrammableTransactionBuilder, c
 }
 
 func GetPriceVoucherFromVolo(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig) (*sui_types.Argument,error) {
-	nemoPackageId, err := sui_types.NewObjectIdFromHex(nemoConfig.NemoContract)
+	nemoPackageId, err := sui_types.NewObjectIdFromHex(nemoConfig.OraclePackage)
 	if err != nil {
 		return nil, err
 	}
@@ -161,7 +161,7 @@ func GetPriceVoucherFromVolo(ptb *sui_types.ProgrammableTransactionBuilder, clie
 }
 
 func GetPriceVoucherFromSpring(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig) (*sui_types.Argument,error) {
-	nemoPackageId, err := sui_types.NewObjectIdFromHex(nemoConfig.NemoContract)
+	nemoPackageId, err := sui_types.NewObjectIdFromHex(nemoConfig.OraclePackage)
 	if err != nil {
 		return nil, err
 	}
@@ -225,7 +225,7 @@ func GetPriceVoucherFromSpring(ptb *sui_types.ProgrammableTransactionBuilder, cl
 }
 
 func GetPriceVoucherFromAftermath(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig) (*sui_types.Argument,error) {
-	nemoPackageId, err := sui_types.NewObjectIdFromHex(nemoConfig.NemoContract)
+	nemoPackageId, err := sui_types.NewObjectIdFromHex(nemoConfig.OraclePackage)
 	if err != nil {
 		return nil, err
 	}
@@ -289,12 +289,12 @@ func GetPriceVoucherFromAftermath(ptb *sui_types.ProgrammableTransactionBuilder,
 }
 
 func GetPriceVoucherFromHasui(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig) (*sui_types.Argument,error) {
-	nemoPackageId, err := sui_types.NewObjectIdFromHex(nemoConfig.NemoContract)
+	nemoPackageId, err := sui_types.NewObjectIdFromHex(nemoConfig.OraclePackage)
 	if err != nil {
 		return nil, err
 	}
 
-	moduleName := "oracle"
+	moduleName := "haedal"
 	functionName := "get_price_voucher_from_haSui"
 	module := move_types.Identifier(moduleName)
 	function := move_types.Identifier(functionName)

@@ -275,7 +275,6 @@ func SplitCoinFromMerged(ptb *sui_types.ProgrammableTransactionBuilder, mergeCoi
 		return sui_types.Argument{}, sui_types.Argument{}, fmt.Errorf("failed to create split coin argument: %w", err)
 	}
 
-	// 执行 SplitCoins 操作
 	splitResult := ptb.Command(sui_types.Command{
 		SplitCoins: &struct {
 			Argument  sui_types.Argument

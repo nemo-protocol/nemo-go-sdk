@@ -8,35 +8,125 @@ import (
 	"github.com/coming-chat/go-sui/v2/sui_types"
 	"github.com/coming-chat/go-sui/v2/types"
 	"github.com/fardream/go-bcs/bcs"
+	"math"
 	"nemo-go-sdk/service/sui/api"
+	"nemo-go-sdk/service/sui/common/constant"
 	"nemo-go-sdk/service/sui/common/models"
+	"strconv"
 )
 
-func (s *SuiService)AddLiquidity(amountFloat float64, sender *account.Account, nemoConfig *models.NemoConfig)(bool, error){
+func (s *SuiService)AddLiquidity(amountFloat float64, sender *account.Account, amountInType string, nemoConfig *models.NemoConfig)(bool, error){
+	amountSyIn := uint64(amountFloat * math.Pow(10, float64(nemoConfig.Decimal)))
 	// create trade builder
 	ptb := sui_types.NewProgrammableTransactionBuilder()
 	client := InitSuiService()
 
-	arg1, err := api.InitPyPosition(ptb, client.SuiApi, nemoConfig)
+	if amountInType == nemoConfig.UnderlyingCoinType{
+		conversionRate,err := strconv.ParseFloat(nemoConfig.ConversionRate, 10)
+		if err != nil{
+			return false, err
+		}
+		amountSyIn = uint64(float64(amountSyIn) / conversionRate)
+	}
+
+	fmt.Printf("\n===amountSyIn:%v===\n",amountSyIn)
+	minLpOut,err := api.DryRunGetLpOutForSingleSyIn(s.SuiApi, models.InitConfig(), amountSyIn, sender)
+	if err != nil{
+		return false, err
+	}
+	fmt.Printf("\n===minLpOut:%v===\n",minLpOut)
+
+	ptValue,err := api.DryRunSingleLiquidityAddPtOut(s.SuiApi, models.InitConfig(), amountSyIn, sender)
 	if err != nil{
 		return false, err
 	}
 
-	amountIn := uint64(amountFloat * 1000000000)
-	remainingCoins, gasCoin, err := api.RemainCoinAndGas(client.SuiApi, sender.Address, uint64(10000000), nemoConfig.CoinType)
+	remainingCoins, gasCoin, err := api.RemainCoinAndGas(client.SuiApi, sender.Address, uint64(30000000), amountInType)
 	if err != nil{
 		return false, err
 	}
 
-	arg2, remainingCoins, err := api.MergeCoin(ptb, client.SuiApi, remainingCoins, amountIn)
+	splitResult ,_ ,err := api.SplitOrMergeCoin(ptb, client.SuiApi, remainingCoins, amountSyIn)
 	if err != nil{
 		return false, err
 	}
 
+	if !constant.IsGasCoinType(amountInType){
+		_, gasCoin, err = api.RemainCoinAndGas(client.SuiApi, sender.Address, uint64(30000000), constant.GASCOINTYPE)
+		if err != nil{
+			return false, err
+		}
+	}else {
+		argument,err := api.MintToSCoin(ptb, client.SuiApi, nemoConfig, &splitResult)
+		if err != nil{
+			return false, err
+		}
+		splitResult = *argument
+	}
 
-	sCoin, err := api.MintSCoin(ptb, client.SuiApi, nemoConfig.CoinType, nemoConfig.UnderlyingCoinType, arg2[0])
+	pyStateInfo, err := api.GetObjectFieldByObjectId(client.SuiApi, nemoConfig.PyState)
 	if err != nil{
 		return false, err
+	}
+	maturity := pyStateInfo["expiry"].(string)
+
+	expectPyPositionTypeList := make([]string, 0)
+	for _, pkg := range nemoConfig.NemoContractList{
+		expectPyPositionTypeList = append(expectPyPositionTypeList, fmt.Sprintf("%v::py_position::PyPosition", pkg))
+	}
+
+	pyPosition,err := api.GetOwnerObjectByType(client.BlockApi, client.SuiApi, expectPyPositionTypeList, nemoConfig.SyCoinType, maturity, sender.Address)
+	if err != nil {
+		return false, err
+	}
+	var pyPositionArgument *sui_types.Argument
+	// transfer object
+	transferArgs := make([]sui_types.Argument, 0)
+	if pyPosition == ""{
+		pyPositionArgument, err = api.InitPyPosition(ptb, client.SuiApi, nemoConfig)
+		if err != nil{
+			return false, err
+		}
+		transferArgs = append(transferArgs, *pyPositionArgument)
+	}else {
+		argument, err := api.GetObjectArgument(ptb, client.SuiApi, pyPosition, false, nemoConfig.NemoContract, "", "")
+		if err != nil{
+			return false, err
+		}
+		pyPositionArgument = &argument
+	}
+
+	depositArgument, err := api.Deposit(ptb, client.SuiApi, nemoConfig, &splitResult)
+	if err != nil{
+		return false, err
+	}
+
+	oracleArgument, err := api.GetPriceVoucher(ptb, client.SuiApi, nemoConfig)
+	if err != nil{
+		return false, err
+	}
+
+	marketPosition, err := api.AddLiquiditySingleSy(ptb, client.SuiApi, nemoConfig, minLpOut, ptValue, oracleArgument, pyPositionArgument, depositArgument)
+	if err != nil{
+		return false, err
+	}
+
+	expectMarketPositionTypeList := make([]string, 0)
+	for _, pkg := range nemoConfig.NemoContractList{
+		expectMarketPositionTypeList = append(expectMarketPositionTypeList, fmt.Sprintf("%v::market_position::MarketPosition", pkg))
+	}
+
+	previousMarketPosition,err := api.GetOwnerMarketPositionByType(client.BlockApi, client.SuiApi, expectMarketPositionTypeList, nemoConfig.SyCoinType, maturity, sender.Address)
+	if err != nil {
+		return false, err
+	}
+	fmt.Printf("previousMarketPosition:%v\n",previousMarketPosition)
+
+	if previousMarketPosition != "" {
+		marketPosition,err = api.MergeAllLpPositions(ptb, client.SuiApi, nemoConfig, previousMarketPosition, marketPosition)
+		if err != nil {
+			return false, err
+		}
 	}
 
 	// change recipient address
@@ -45,13 +135,14 @@ func (s *SuiService)AddLiquidity(amountFloat float64, sender *account.Account, n
 		return false, err
 	}
 
+
 	recArg, err := ptb.Pure(*recipientAddr)
 	if err != nil {
 		return false, err
 	}
 
 	// transfer object
-	transferArgs := []sui_types.Argument{*arg1, *sCoin}
+	transferArgs = append(transferArgs, *marketPosition)
 
 	ptb.Command(
 		sui_types.Command{
@@ -78,7 +169,7 @@ func (s *SuiService)AddLiquidity(amountFloat float64, sender *account.Account, n
 		*senderAddr,
 		gasPayment,
 		pt,
-		10000000, // gasBudget
+		30000000, // gasBudget
 		1000,     // gasPrice
 	)
 
@@ -118,6 +209,6 @@ func (s *SuiService)AddLiquidity(amountFloat float64, sender *account.Account, n
 	return true, nil
 }
 
-func (s *SuiService)RedeemLiquidity(expectOut float64, sender *account.Account, nemoConfig *models.NemoConfig)(bool, error){
+func (s *SuiService)RedeemLiquidity(expectOut float64, sender *account.Account, amountInType string, nemoConfig *models.NemoConfig)(bool, error){
 	return false, nil
 }

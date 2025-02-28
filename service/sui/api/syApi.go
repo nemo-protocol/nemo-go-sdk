@@ -695,3 +695,74 @@ func RedeemPy(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Clie
 	)
 	return &command, nil
 }
+
+func AddLiquiditySingleSy(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig, minLpAmount, ptValue uint64, priceOracleArgument, pyPositionArgument, depositArgument *sui_types.Argument) (*sui_types.Argument,error) {
+	nemoPackageId, err := sui_types.NewObjectIdFromHex(nemoConfig.NemoContract)
+	if err != nil {
+		return nil, err
+	}
+
+	moduleName := "router"
+	functionName := "add_liquidity_single_sy"
+	module := move_types.Identifier(moduleName)
+	function := move_types.Identifier(functionName)
+	syStructTag, err := GetStructTag(nemoConfig.SyCoinType)
+	if err != nil {
+		return nil, err
+	}
+	syTypeTag := move_types.TypeTag{
+		Struct: syStructTag,
+	}
+	typeArguments := make([]move_types.TypeTag, 0)
+	typeArguments = append(typeArguments, syTypeTag)
+
+	versionArgument,err := GetObjectArgument(ptb, client, nemoConfig.Version, false, nemoConfig.NemoContract, moduleName, functionName)
+	if err != nil {
+		return nil, err
+	}
+
+	pyStateArgument,err := GetObjectArgument(ptb, client, nemoConfig.PyState, false, nemoConfig.NemoContract, moduleName, functionName)
+	if err != nil {
+		return nil, err
+	}
+
+	marketFactoryConfigArgument,err := GetObjectArgument(ptb, client, nemoConfig.MarketFactoryConfig, false, nemoConfig.NemoContract, moduleName, functionName)
+	if err != nil {
+		return nil, err
+	}
+
+	marketStateArgument,err := GetObjectArgument(ptb, client, nemoConfig.MarketState, false, nemoConfig.NemoContract, moduleName, functionName)
+	if err != nil {
+		return nil, err
+	}
+
+	clockArgument,err := GetObjectArgument(ptb, client, constant.CLOCK, false, nemoConfig.NemoContract, moduleName, functionName)
+	if err != nil {
+		return nil, err
+	}
+
+	minLpAmountArgument,err := ptb.Pure(minLpAmount)
+	if err != nil {
+		return nil, err
+	}
+
+	ptValueArgument,err := ptb.Pure(ptValue)
+	if err != nil {
+		return nil, err
+	}
+
+	var arguments []sui_types.Argument
+	arguments = append(arguments, versionArgument, *depositArgument, ptValueArgument, minLpAmountArgument, *priceOracleArgument, *pyPositionArgument, pyStateArgument, marketFactoryConfigArgument, marketStateArgument, clockArgument)
+	command := ptb.Command(
+		sui_types.Command{
+			MoveCall: &sui_types.ProgrammableMoveCall{
+				Package:       *nemoPackageId,
+				Module:        module,
+				Function:      function,
+				TypeArguments: typeArguments,
+				Arguments:     arguments,
+			},
+		},
+	)
+	return &command, nil
+}

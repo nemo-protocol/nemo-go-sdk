@@ -440,3 +440,248 @@ func DryRunGetPyInForExactSyOutWithPriceVoucher(client *client.Client, nemoConfi
 	}
 	return minSyOut, nil
 }
+
+func DryRunGetLpOutForSingleSyIn(client *client.Client, nemoConfig *models.NemoConfig, syInAmount uint64, sender *account.Account) (uint64, error){
+	ptb := sui_types.NewProgrammableTransactionBuilder()
+
+	nemoPackageId, err := sui_types.NewObjectIdFromHex(nemoConfig.NemoContract)
+	if err != nil {
+		return 0, err
+	}
+
+	syStructTag, err := GetStructTag(nemoConfig.SyCoinType)
+	if err != nil {
+		return 0, err
+	}
+
+	moduleName := "router"
+	functionName := "get_lp_out_for_single_sy_in"
+	module := move_types.Identifier(moduleName)
+	function := move_types.Identifier(functionName)
+
+	typeArguments := []move_types.TypeTag{
+		{Struct: syStructTag},
+	}
+
+	syInArg := CreatePureU64CallArg(syInAmount)
+	syInArgument, err := ptb.Input(syInArg)
+	if err != nil {
+		return 0, err
+	}
+
+	oracleArgument, err := GetPriceVoucher(ptb, client, nemoConfig)
+	if err != nil{
+		return 0, err
+	}
+
+	ps, err := GetObjectArgument(ptb, client, nemoConfig.PyState, false, nemoConfig.NemoContract, moduleName, functionName)
+	if err != nil {
+		return 0, err
+	}
+	mfc, err := GetObjectArgument(ptb, client, nemoConfig.MarketFactoryConfig, false, nemoConfig.NemoContract, moduleName, functionName)
+	if err != nil {
+		return 0, err
+	}
+	ms, err := GetObjectArgument(ptb, client, nemoConfig.MarketState, false, nemoConfig.NemoContract, moduleName, functionName)
+	if err != nil {
+		return 0, err
+	}
+	c, err := GetObjectArgument(ptb, client, constant.CLOCK, false, nemoConfig.NemoContract, moduleName, functionName)
+	if err != nil {
+		return 0, err
+	}
+
+	arguments := []sui_types.Argument{
+		syInArgument,
+		*oracleArgument,
+		ps,
+		mfc,
+		ms,
+		c,
+	}
+
+	ptb.Command(
+		sui_types.Command{
+			MoveCall: &sui_types.ProgrammableMoveCall{
+				Package:       *nemoPackageId,
+				Module:        module,
+				Function:      function,
+				TypeArguments: typeArguments,
+				Arguments:     arguments,
+			},
+		},
+	)
+
+	pt := ptb.Finish()
+
+	txKind := sui_types.TransactionKind{
+		ProgrammableTransaction: &pt,
+	}
+
+	txBytes, err := bcs.Marshal(txKind)
+	if err != nil {
+		return 0, fmt.Errorf("failed to serialize transaction: %w", err)
+	}
+
+	senderAddr, err := sui_types.NewAddressFromHex(sender.Address)
+	if err != nil {
+		return 0, fmt.Errorf("failed to parse sender address: %w", err)
+	}
+
+	result, err := client.DevInspectTransactionBlock(context.Background(), *senderAddr, txBytes, nil, nil)
+	if err != nil {
+		return 0, fmt.Errorf("failed to inspect transaction: %w", err)
+	}
+	if result.Error != nil{
+		return 0, errors.New(fmt.Sprintf("%v", *result.Error))
+	}
+	if len(result.Results) == 0 {
+		return 0, fmt.Errorf("no results returned")
+	}
+
+	lastResult := result.Results[len(result.Results)-1]
+
+	var lpOut uint64
+	if len(lastResult.ReturnValues) > 0 {
+		firstValue := lastResult.ReturnValues[0]
+		if firstValueArray, ok := firstValue.([]interface{}); ok && len(firstValueArray) > 0 {
+			if innerArray, ok := firstValueArray[0].([]interface{}); ok && len(innerArray) > 0 {
+				byteSlice := make([]byte, len(innerArray))
+				for i, v := range innerArray {
+					if num, ok := v.(float64); ok {
+						byteSlice[i] = byte(num)
+					}
+				}
+				if len(byteSlice) >= 8 {
+					lpOut = binary.LittleEndian.Uint64(byteSlice)
+					fmt.Printf("Parsed lpOut: %d\n", lpOut)
+				}
+			}
+		}
+	}
+	return lpOut, nil
+}
+
+func DryRunSingleLiquidityAddPtOut(client *client.Client, nemoConfig *models.NemoConfig, syInAmount uint64, sender *account.Account) (uint64, error){
+	ptb := sui_types.NewProgrammableTransactionBuilder()
+
+	nemoPackageId, err := sui_types.NewObjectIdFromHex(nemoConfig.NemoContract)
+	if err != nil {
+		return 0, err
+	}
+
+	syStructTag, err := GetStructTag(nemoConfig.SyCoinType)
+	if err != nil {
+		return 0, err
+	}
+
+	moduleName := "offchain"
+	functionName := "single_liquidity_add_pt_out"
+	module := move_types.Identifier(moduleName)
+	function := move_types.Identifier(functionName)
+
+	typeArguments := []move_types.TypeTag{
+		{Struct: syStructTag},
+	}
+
+	syInArg := CreatePureU64CallArg(syInAmount)
+	syInArgument, err := ptb.Input(syInArg)
+	if err != nil {
+		return 0, err
+	}
+
+	oracleArgument, err := GetPriceVoucher(ptb, client, nemoConfig)
+	if err != nil{
+		return 0, err
+	}
+
+	mfc, err := GetObjectArgument(ptb, client, nemoConfig.MarketFactoryConfig, false, nemoConfig.NemoContract, moduleName, functionName)
+	if err != nil {
+		return 0, err
+	}
+
+	ps, err := GetObjectArgument(ptb, client, nemoConfig.PyState, false, nemoConfig.NemoContract, moduleName, functionName)
+	if err != nil {
+		return 0, err
+	}
+
+	ms, err := GetObjectArgument(ptb, client, nemoConfig.MarketState, false, nemoConfig.NemoContract, moduleName, functionName)
+	if err != nil {
+		return 0, err
+	}
+
+	c, err := GetObjectArgument(ptb, client, constant.CLOCK, false, nemoConfig.NemoContract, moduleName, functionName)
+	if err != nil {
+		return 0, err
+	}
+
+	arguments := []sui_types.Argument{
+		syInArgument,
+		*oracleArgument,
+		mfc,
+		ps,
+		ms,
+		c,
+	}
+
+	ptb.Command(
+		sui_types.Command{
+			MoveCall: &sui_types.ProgrammableMoveCall{
+				Package:       *nemoPackageId,
+				Module:        module,
+				Function:      function,
+				TypeArguments: typeArguments,
+				Arguments:     arguments,
+			},
+		},
+	)
+
+	pt := ptb.Finish()
+
+	txKind := sui_types.TransactionKind{
+		ProgrammableTransaction: &pt,
+	}
+
+	txBytes, err := bcs.Marshal(txKind)
+	if err != nil {
+		return 0, fmt.Errorf("failed to serialize transaction: %w", err)
+	}
+
+	senderAddr, err := sui_types.NewAddressFromHex(sender.Address)
+	if err != nil {
+		return 0, fmt.Errorf("failed to parse sender address: %w", err)
+	}
+
+	result, err := client.DevInspectTransactionBlock(context.Background(), *senderAddr, txBytes, nil, nil)
+	if err != nil {
+		return 0, fmt.Errorf("failed to inspect transaction: %w", err)
+	}
+	if result.Error != nil{
+		return 0, errors.New(fmt.Sprintf("%v", *result.Error))
+	}
+	if len(result.Results) == 0 {
+		return 0, fmt.Errorf("no results returned")
+	}
+
+	lastResult := result.Results[len(result.Results)-1]
+
+	var ptValue uint64
+	if len(lastResult.ReturnValues) > 0 {
+		firstValue := lastResult.ReturnValues[0]
+		if firstValueArray, ok := firstValue.([]interface{}); ok && len(firstValueArray) > 0 {
+			if innerArray, ok := firstValueArray[0].([]interface{}); ok && len(innerArray) > 0 {
+				byteSlice := make([]byte, len(innerArray))
+				for i, v := range innerArray {
+					if num, ok := v.(float64); ok {
+						byteSlice[i] = byte(num)
+					}
+				}
+				if len(byteSlice) >= 8 {
+					ptValue = binary.LittleEndian.Uint64(byteSlice)
+					fmt.Printf("Parsed ptValue: %d\n", ptValue)
+				}
+			}
+		}
+	}
+	return ptValue, nil
+}
