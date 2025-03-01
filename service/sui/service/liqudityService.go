@@ -256,7 +256,17 @@ func (s *SuiService)RedeemLiquidity(amountIn float64, sender *account.Account, e
 	if err != nil{
 		return false, err
 	}
-	transferArgs = append(transferArgs, *yieldToken)
+
+	if expectOutType != nemoConfig.CoinType{
+		underlyingToken, err := api.SwapToUnderlyingCoin(ptb, client.SuiApi, nemoConfig, yieldToken)
+		if err != nil{
+			return false, err
+		}
+		transferArgs = append(transferArgs, *underlyingToken)
+	}else {
+		transferArgs = append(transferArgs, *yieldToken)
+	}
+
 
 	// change recipient address
 	recipientAddr, err := sui_types.NewAddressFromHex(sender.Address)

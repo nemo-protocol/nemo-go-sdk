@@ -24,3 +24,13 @@ yt Coin swap to source Coin
 ```bigquery
 s.SwapByPy(0.000000001, 0.005, constant.YTTYPE, models.InitConfig().CoinType, sender, models.InitConfig())	
 ```
+
+add Liquidity
+```bigquery
+s.AddLiquidity(0.00001, sender, models.InitConfig().UnderlyingCoinType, models.InitConfig())
+```
+
+redeem Liquidity
+```bigquery
+s.RedeemLiquidity(0.00001, sender, models.InitConfig().UnderlyingCoinType, models.InitConfig())
+```
