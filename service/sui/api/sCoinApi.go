@@ -501,8 +501,6 @@ func MintHaedalCoin(ptb *sui_types.ProgrammableTransactionBuilder, client *clien
 		return nil, err
 	}
 
-
-
 	var arguments []sui_types.Argument
 
 	arguments = append(arguments, systemStateArgument, haedalStakingArgument, *coinArgument,addressArgument)

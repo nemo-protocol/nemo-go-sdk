@@ -214,6 +214,127 @@ func (s *SuiService)AddLiquidity(amountFloat float64, sender *account.Account, a
 	return true, nil
 }
 
-func (s *SuiService)RedeemLiquidity(expectOut float64, sender *account.Account, amountInType string, nemoConfig *models.NemoConfig)(bool, error){
-	return false, nil
+func (s *SuiService)RedeemLiquidity(amountIn float64, sender *account.Account, expectOutType string, nemoConfig *models.NemoConfig)(bool, error){
+	amountLpIn := uint64(amountIn * math.Pow(10, float64(nemoConfig.Decimal)))
+	// create trade builder
+	ptb := sui_types.NewProgrammableTransactionBuilder()
+	client := InitSuiService()
+
+	pyStateInfo, err := api.GetObjectFieldByObjectId(client.SuiApi, nemoConfig.PyState)
+	if err != nil{
+		return false, err
+	}
+	maturity := pyStateInfo["expiry"].(string)
+
+	expectPyPositionTypeList := make([]string, 0)
+	for _, pkg := range nemoConfig.NemoContractList{
+		expectPyPositionTypeList = append(expectPyPositionTypeList, fmt.Sprintf("%v::py_position::PyPosition", pkg))
+	}
+
+	pyPosition,err := api.GetOwnerObjectByType(client.BlockApi, client.SuiApi, expectPyPositionTypeList, nemoConfig.SyCoinType, maturity, sender.Address)
+	if err != nil {
+		return false, err
+	}
+
+	expectMarketPositionTypeList := make([]string, 0)
+	for _, pkg := range nemoConfig.NemoContractList{
+		expectMarketPositionTypeList = append(expectMarketPositionTypeList, fmt.Sprintf("%v::market_position::MarketPosition", pkg))
+	}
+
+	previousMarketPosition,err := api.GetOwnerMarketPositionByType(client.BlockApi, client.SuiApi, expectMarketPositionTypeList, nemoConfig.SyCoinType, maturity, sender.Address)
+	if err != nil {
+		return false, err
+	}
+
+	transferArgs := make([]sui_types.Argument, 0)
+	syCoinArgument, err := api.BurnLp(ptb, client.SuiApi, nemoConfig, amountLpIn, pyPosition, previousMarketPosition)
+	if err != nil {
+		return false, err
+	}
+
+	yieldToken,err := api.SyRedeem(ptb, client.SuiApi, nemoConfig, syCoinArgument)
+	if err != nil{
+		return false, err
+	}
+	transferArgs = append(transferArgs, *yieldToken)
+
+	// change recipient address
+	recipientAddr, err := sui_types.NewAddressFromHex(sender.Address)
+	if err != nil {
+		return false, err
+	}
+
+	recArg, err := ptb.Pure(*recipientAddr)
+	if err != nil {
+		return false, err
+	}
+
+	ptb.Command(
+		sui_types.Command{
+			TransferObjects: &struct {
+				Arguments []sui_types.Argument
+				Argument  sui_types.Argument
+			}{
+				Arguments: transferArgs,
+				Argument:  recArg,
+			},
+		},
+	)
+
+	pt := ptb.Finish()
+
+	_, gasCoin, err := api.RemainCoinAndGas(client.SuiApi, sender.Address, uint64(30000000), constant.GASCOINTYPE)
+	if err != nil{
+		return false, err
+	}
+
+	gasPayment := []*sui_types.ObjectRef{gasCoin}
+
+	senderAddr, err := sui_types.NewObjectIdFromHex(sender.Address)
+	if err != nil {
+		return false, fmt.Errorf("failed to convert sender address: %w", err)
+	}
+
+	tx := sui_types.NewProgrammable(
+		*senderAddr,
+		gasPayment,
+		pt,
+		30000000, // gasBudget
+		1000,     // gasPrice
+	)
+
+	txBytes, err := bcs.Marshal(tx)
+	if err != nil {
+		return false, fmt.Errorf("failed to serialize transaction: %w", err)
+	}
+
+	// signature
+	signature, err := sender.SignSecureWithoutEncode(txBytes, sui_types.DefaultIntent())
+	if err != nil {
+		return false, fmt.Errorf("failed to sign transaction: %w", err)
+	}
+
+	options := types.SuiTransactionBlockResponseOptions{
+		ShowInput:          true,
+		ShowEffects:        true,
+		ShowEvents:         true,
+		ShowObjectChanges:  true,
+		ShowBalanceChanges: true,
+	}
+
+	resp, err := client.SuiApi.ExecuteTransactionBlock(
+		context.Background(),
+		txBytes,
+		[]any{signature},
+		&options,
+		types.TxnRequestTypeWaitForLocalExecution,
+	)
+	if err != nil {
+		return false, fmt.Errorf("failed to execute transaction: %w", err)
+	}
+
+	b,_ := json.Marshal(resp)
+	fmt.Printf("\n==resp:%+v==\n",string(b))
+
+	return true, nil
 }
