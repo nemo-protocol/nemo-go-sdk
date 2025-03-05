@@ -39,11 +39,13 @@ func safeDivide(numerator, denominator decimal.Decimal) decimal.Decimal {
 func calculatePtApy(underlyingPrice, ptPrice, daysToExpiry decimal.Decimal) decimal.Decimal{
 	fmt.Printf("\n==underlyingPrice:%v, ptPrice:%v, daysToExpiry:%v==\n",underlyingPrice, ptPrice, daysToExpiry)
 	ratio := underlyingPrice.Div(ptPrice)
-	exponent := decimal.NewFromInt(365).Div(daysToExpiry)
-	return ratio.Pow(exponent).Sub(decimal.NewFromInt(1)).Mul(decimal.NewFromInt(100))
+	exponent := decimal.NewFromFloat(365).Div(daysToExpiry)
+	rf,_ := ratio.Float64()
+	ef,_ := exponent.Float64()
+	return decimal.NewFromFloat(math.Pow(rf,ef)).Sub(decimal.NewFromInt(1)).Mul(decimal.NewFromInt(100))
 }
 
-func CalculatePoolApy(coinInfo CoinInfo, marketState MarketState, ptIn, syOut int64) string {
+func CalculatePoolApy(coinInfo CoinInfo, marketState MarketState, ytIn, syOut int64) string {
 	// Convert strings to decimals
 	coinPrice, _ := decimal.NewFromString(coinInfo.CoinPrice)
 	underlyingPrice, _ := decimal.NewFromString(coinInfo.UnderlyingPrice)
@@ -53,11 +55,12 @@ func CalculatePoolApy(coinInfo CoinInfo, marketState MarketState, ptIn, syOut in
 	totalSy, _ := decimal.NewFromString(marketState.TotalSy)
 
 	// Calculate days to expiry
-	daysToExpiry := decimal.NewFromInt((coinInfo.Maturity/1000 - time.Now().Unix()) / 86400)
+	daysToExpiry := decimal.NewFromFloat(float64(coinInfo.Maturity/1000 - time.Now().Unix()) / float64(86400))
 
 	// Calculate TVL
-	ptPrice := safeDivide(coinPrice.Mul(decimal.NewFromInt(syOut)), decimal.NewFromInt(ptIn))
-	fmt.Printf("\nsyOut:%v,ptIn:%v,ptPrice:%v\n",syOut,ptIn,ptPrice)
+	ytPrice := safeDivide(coinPrice.Mul(decimal.NewFromInt(syOut)), decimal.NewFromInt(ytIn))
+	ptPrice := underlyingPrice.Sub(ytPrice)
+	fmt.Printf("\nsyOut:%v,ytIn:%v,ptPrice:%v\n",syOut,ytIn,ptPrice)
 	ptTvl := totalPt.Mul(ptPrice).Div(decimal.NewFromInt(int64(math.Pow(10, float64(coinInfo.Decimal)))))
 	syTvl := totalSy.Mul(coinPrice).Div(decimal.NewFromInt(int64(math.Pow(10, float64(coinInfo.Decimal)))))
 	tvl := syTvl.Add(ptTvl)
@@ -71,9 +74,9 @@ func CalculatePoolApy(coinInfo CoinInfo, marketState MarketState, ptIn, syOut in
 	fmt.Printf("\n==scaledPtApy:%v,ptApy:%v，scaledUnderlyingApy：%v==\n", scaledPtApy,ptApy,scaledUnderlyingApy)
 
 	// Calculate swap fee APY
-	swapFeeRateForLpHolder := safeDivide(swapFeeForLpHolder.Mul(coinPrice), tvl)
-	expiryRate := safeDivide(decimal.NewFromInt(365), daysToExpiry)
-	swapFeeApy := swapFeeRateForLpHolder.Add(decimal.NewFromInt(1)).Pow(expiryRate).Sub(decimal.NewFromInt(1)).Mul(decimal.NewFromInt(100))
+	swapFeeRateForLpHolder,_ := safeDivide(swapFeeForLpHolder.Mul(coinPrice), tvl).Float64()
+	expiryRate,_ := safeDivide(decimal.NewFromFloat(365), daysToExpiry).Float64()
+	swapFeeApy := decimal.NewFromFloat(math.Pow(swapFeeRateForLpHolder + 1,expiryRate)).Sub(decimal.NewFromInt(1)).Mul(decimal.NewFromInt(100))
 	fmt.Printf("\nswapFeeApy:%v\n",swapFeeApy)
 
 	// Calculate incentive APY
