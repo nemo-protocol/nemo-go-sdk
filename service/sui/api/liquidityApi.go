@@ -120,7 +120,7 @@ func RedeemDueInterest(ptb *sui_types.ProgrammableTransactionBuilder, client *cl
 	}
 
 	var arguments []sui_types.Argument
-	arguments = append(arguments, versionArgument, *priceOracleArgument, pyPositionArgument, pyStateArgument, yieldFactoryConfigArgument, clockArgument)
+	arguments = append(arguments, versionArgument, pyPositionArgument, pyStateArgument, *priceOracleArgument, yieldFactoryConfigArgument, clockArgument)
 	command := ptb.Command(
 		sui_types.Command{
 			MoveCall: &sui_types.ProgrammableMoveCall{

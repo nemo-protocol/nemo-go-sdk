@@ -1,5 +1,12 @@
 package models
 
+import (
+	"encoding/json"
+	"fmt"
+	"nemo-go-sdk/utils"
+	"strconv"
+)
+
 type NemoConfig struct {
 	CoinType             string   `json:"coinType"`
 	SyCoinType           string   `json:"syCoinType"`
@@ -28,7 +35,48 @@ type NemoConfig struct {
 	OracleVoucherPackage string   `json:"oracleVoucherPackageId"`
 }
 
-func InitConfig() *NemoConfig {
+type NemoConfigInfo struct {
+	CoinType             string   `json:"coinType"`
+	SyCoinType           string   `json:"syCoinType"`
+	UnderlyingCoinType   string   `json:"underlyingCoinType"`
+	Decimal              string   `json:"decimal"`
+	ConversionRate       string   `json:"conversionRate"`
+	PyState              string   `json:"pyStateId"`
+	Version              string   `json:"version"`
+	YieldFactoryConfig   string   `json:"yieldFactoryConfigId"`
+	MarketFactoryConfig  string   `json:"marketFactoryConfigId"`
+	MarketState          string   `json:"marketStateId"`
+	SyState              string   `json:"syStateId"`
+	PyStore              string   `json:"pyStoreId"`
+	PriceOracle          string   `json:"priceOracleConfigId"`
+	HaedalStakeing       string   `json:"haedalStakeingId"`
+	NativePool           string   `json:"nativePool"`
+	Metadata             string   `json:"metadataId"`
+	ProviderMarket       string   `json:"providerMarket"`
+	ProviderVersion      string   `json:"providerVersion"`
+	NemoContract         string   `json:"nemoContractId"`
+	NemoContractList     []string `json:"nemoContractIdList"`
+	ProviderProtocol     string   `json:"underlyingProtocol"`
+	OraclePackage        string   `json:"oraclePackageId"`
+	OracleTicket         string   `json:"oracleTicket"`
+	OracleVoucherPackage string   `json:"oracleVoucherPackageId"`
+}
+
+type NemoInfoResponse struct {
+	NemoConfigInfo NemoConfigInfo `json:"data"`
+}
+
+type NemoPage struct {
+	Id       string `json:"id"`
+	CoinType string `json:"coinType"`
+}
+
+type NemoPageResponse struct {
+	NemoPage []NemoPage `json:"data"`
+}
+
+func InitConfig() []NemoConfig {
+	/**
 	scallopSui := &NemoConfig{
 		CoinType:            "0xaafc4f740de0dd0dde642a31148fb94517087052f19afb0f7bed1dc41a50c77b::scallop_sui::SCALLOP_SUI",
 		SyCoinType:          "0x53a8c1ffcdac36d993ce3c454d001eca57224541d1953d827ef96ac6d7f8142e::sSUI::SSUI",
@@ -51,5 +99,60 @@ func InitConfig() *NemoConfig {
 		OracleTicket:         "0x0fa9dc987f71878b91d389c145aab67f462744b695054578ca4ae4d6ced01099",
 		OracleVoucherPackage: "0x8783841625738f73a6b0085f5dad270b4b0bd2e5cdb278dc95201e45bd1a332b",
 	}
-	return scallopSui
+	*/
+	url := "https://app.nemoprotocol.com/api/v1/market/coinInfo"
+	pageByte,err := utils.SendGetRpc(url)
+	if err != nil{
+		return nil
+	}
+
+	response := NemoPageResponse{}
+	_ = json.Unmarshal(pageByte, &response)
+
+	infoUrl := "https://app.nemoprotocol.com/api/v1/market/config/detail?id=%v"
+	infoList := make([]NemoConfig, 0)
+	for _,v := range response.NemoPage{
+		infoByte,err := utils.SendGetRpc(fmt.Sprintf(infoUrl, v.Id))
+		if err != nil{
+			return nil
+		}
+		info := NemoInfoResponse{}
+		err = json.Unmarshal(infoByte, &info)
+		if err != nil{
+			continue
+		}
+		innerInfo := FormatStruct(info.NemoConfigInfo)
+		infoList = append(infoList, innerInfo)
+	}
+	return infoList
+}
+
+func FormatStruct(resInfo NemoConfigInfo) NemoConfig{
+	innerInfo := NemoConfig{}
+	innerInfo.CoinType = resInfo.CoinType
+	innerInfo.SyCoinType = resInfo.SyCoinType
+	innerInfo.UnderlyingCoinType = resInfo.UnderlyingCoinType
+	decimal,_ := strconv.ParseInt(resInfo.Decimal, 10, 64)
+	innerInfo.Decimal = uint64(decimal)
+	innerInfo.ConversionRate = resInfo.ConversionRate
+	innerInfo.PyState = resInfo.PyState
+	innerInfo.Version = resInfo.Version
+	innerInfo.YieldFactoryConfig = resInfo.YieldFactoryConfig
+	innerInfo.MarketFactoryConfig = resInfo.MarketFactoryConfig
+	innerInfo.MarketState = resInfo.MarketState
+	innerInfo.SyState = resInfo.SyState
+	innerInfo.PyStore = resInfo.PyStore
+	innerInfo.PriceOracle = resInfo.PriceOracle
+	innerInfo.HaedalStakeing = resInfo.HaedalStakeing
+	innerInfo.NativePool = resInfo.NativePool
+	innerInfo.Metadata = resInfo.Metadata
+	innerInfo.ProviderMarket = resInfo.ProviderMarket
+	innerInfo.ProviderVersion = resInfo.ProviderVersion
+	innerInfo.NemoContract = resInfo.NemoContract
+	innerInfo.NemoContractList = resInfo.NemoContractList
+	innerInfo.ProviderProtocol = resInfo.ProviderProtocol
+	innerInfo.OraclePackage = resInfo.OraclePackage
+	innerInfo.OracleTicket = resInfo.OracleTicket
+	innerInfo.OracleVoucherPackage = resInfo.OracleVoucherPackage
+	return innerInfo
 }

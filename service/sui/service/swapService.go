@@ -13,6 +13,7 @@ import (
 	"nemo-go-sdk/service/sui/api"
 	"nemo-go-sdk/service/sui/common/constant"
 	"nemo-go-sdk/service/sui/common/models"
+	"nemo-go-sdk/service/sui/common/nemoError"
 	"strconv"
 )
 
@@ -138,8 +139,12 @@ func (s *SuiService)SwapByPy(amountIn, slippage float64, amountInType, exactAmou
 		return false, fmt.Errorf("failed to execute transaction: %w", err)
 	}
 
-	b,_ := json.Marshal(resp)
-	fmt.Printf("\n==resp:%+v==\n",string(b))
+	b,_ := json.Marshal(resp.Effects.Data)
+	fmt.Printf("\n==response:%v==\n",string(b))
+	errorMsg := nemoError.GetError(string(b))
+	if errorMsg != ""{
+		return false, errors.New(errorMsg)
+	}
 
 	return false, nil
 }
@@ -316,8 +321,12 @@ func (s *SuiService)SwapToPy(amountIn, slippage float64, amountInType, exactAmou
 		return false, fmt.Errorf("failed to execute transaction: %w", err)
 	}
 
-	b,_ := json.Marshal(resp)
-	fmt.Printf("\n==resp:%+v==\n",string(b))
+	b,_ := json.Marshal(resp.Effects.Data)
+	fmt.Printf("\n==response:%v==\n",string(b))
+	errorMsg := nemoError.GetError(string(b))
+	if errorMsg != ""{
+		return false, errors.New(errorMsg)
+	}
 
 	return false, nil
 }

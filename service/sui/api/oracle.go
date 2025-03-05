@@ -160,13 +160,12 @@ func GetPriceVoucherFromVolo(ptb *sui_types.ProgrammableTransactionBuilder, clie
 	return &command, nil
 }
 
-func GetPriceVoucherFromSpring(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig) (*sui_types.Argument,error) {
+func GetPriceVoucherFromSpring(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig, lstInfo string, moduleName string) (*sui_types.Argument,error) {
 	nemoPackageId, err := sui_types.NewObjectIdFromHex(nemoConfig.OraclePackage)
 	if err != nil {
 		return nil, err
 	}
 
-	moduleName := "spring"
 	functionName := "get_price_voucher_from_spring"
 	module := move_types.Identifier(moduleName)
 	function := move_types.Identifier(functionName)
@@ -174,11 +173,18 @@ func GetPriceVoucherFromSpring(ptb *sui_types.ProgrammableTransactionBuilder, cl
 	if err != nil {
 		return nil, err
 	}
+	coinTypeStructTag, err := GetStructTag(nemoConfig.CoinType)
+	if err != nil {
+		return nil, err
+	}
 	syTypeTag := move_types.TypeTag{
 		Struct: syStructTag,
 	}
+	coinTypeTypeTag := move_types.TypeTag{
+		Struct: coinTypeStructTag,
+	}
 	typeArguments := make([]move_types.TypeTag, 0)
-	typeArguments = append(typeArguments, syTypeTag)
+	typeArguments = append(typeArguments, syTypeTag, coinTypeTypeTag)
 
 	priceOracleCallArg,err := GetObjectArg(client, nemoConfig.PriceOracle, false, nemoConfig.OraclePackage, moduleName, functionName)
 	if err != nil {
@@ -190,7 +196,7 @@ func GetPriceVoucherFromSpring(ptb *sui_types.ProgrammableTransactionBuilder, cl
 		return nil, err
 	}
 
-	lstInfoCallArg,err := GetObjectArg(client, nemoConfig.LstInfo, false, nemoConfig.OraclePackage, moduleName, functionName)
+	lstInfoCallArg,err := GetObjectArg(client, lstInfo, false, nemoConfig.OraclePackage, moduleName, functionName)
 	if err != nil {
 		return nil, err
 	}
@@ -358,11 +364,13 @@ func GetPriceVoucher(ptb *sui_types.ProgrammableTransactionBuilder, client *clie
 	}else if constant.IsVSui(nemoConfig.CoinType){
 		return GetPriceVoucherFromVolo(ptb, client, nemoConfig)
 	}else if constant.IsSpringSui(nemoConfig.CoinType){
-		return GetPriceVoucherFromSpring(ptb, client, nemoConfig)
+		return GetPriceVoucherFromSpring(ptb, client, nemoConfig, constant.SPRINGLSTINFO, "spring")
 	}else if constant.IsAfSui(nemoConfig.CoinType) {
 		return GetPriceVoucherFromAftermath(ptb, client, nemoConfig)
 	}else if constant.IsHaSui(nemoConfig.CoinType) {
 		return GetPriceVoucherFromHasui(ptb, client, nemoConfig)
+	}else if constant.IsStSui(nemoConfig.CoinType){
+		return GetPriceVoucherFromSpring(ptb, client, nemoConfig, constant.ALPHAFILSTINFO, "alphafi")
 	}
 	return nil, errors.New("coinType oracle not support！")
 }

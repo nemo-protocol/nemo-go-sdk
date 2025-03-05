@@ -1,6 +1,7 @@
-package error
+package nemoError
 
 import (
+	"encoding/json"
 	"regexp"
 	"strconv"
 	"strings"
@@ -83,6 +84,18 @@ var ErrorMapping = map[int]string{
 	131077: "The computed ratio when converting to a FixedPoint64 would be unrepresentable",
 }
 
+type DigestErrorResponse struct {
+	V1 V1 `json:"v1"`
+}
+
+type V1 struct {
+	Status Status `json:"status"`
+}
+
+type Status struct {
+	Error string `json:"error"`
+}
+
 type ErrorResponse struct {
 	Error  string `json:"error"`
 	Detail string `json:"detail"`
@@ -128,4 +141,10 @@ func ParseErrorMessage(errorString string) ErrorResponse {
 		Error:  err,
 		Detail: detail,
 	}
+}
+
+func GetError(msg string) string {
+	e := DigestErrorResponse{}
+	_ = json.Unmarshal([]byte(msg), &e)
+	return ParseErrorMessage(e.V1.Status.Error).Error
 }

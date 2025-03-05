@@ -12,7 +12,6 @@ import (
 
 var (
 	SCALLOP_PACKAGE = "0x80ca577876dec91ae6d22090e56c39bc60dce9086ab0729930c6900bc4162b4c"
-	SCOIN_TREASURY  = "0x5c1678c8261ac9eec024d4d630006a9f55c80dc0b1aa38a003fcb1d425818c6b"
 
 	SCALLOP_VERSION       = "0x07871c4b3c847a0f674510d4978d5cf6f960452795e8ff6f189fd2088a3f6ac7"
 	SCALLOP_MARKET_OBJECT = "0xa757975255146dc9686aa823b7838b507f315d704f428cbadad2f4ea061939d9"
@@ -35,6 +34,27 @@ var (
 	HAEDAL_PACKAGE = "0x3f45767c1aa95b25422f675800f02d8a813ec793a00b60667d071a77ba7178a2"
 	HAEDAL_STAKING = "0x47b224762220393057ebf4f70501b6e657c3e56684737568439a04f80849b2ca"
 )
+
+// 定义一个 map 来存储 coinType 和 treasury 的映射关系
+var sCoinMap = map[string]string{
+	"0xaafc4f740de0dd0dde642a31148fb94517087052f19afb0f7bed1dc41a50c77b::scallop_sui::SCALLOP_SUI":                     "0x5c1678c8261ac9eec024d4d630006a9f55c80dc0b1aa38a003fcb1d425818c6b",
+	"0xea346ce428f91ab007210443efcea5f5cdbbb3aae7e9affc0ca93f9203c31f0c::scallop_cetus::SCALLOP_CETUS":                 "0xa283c63488773c916cb3d6c64109536160d5eb496caddc721eb39aad2977d735",
+	"0x5ca17430c1d046fae9edeaa8fd76c7b4193a00d764a0ecfa9418d733ad27bc1e::scallop_sca::SCALLOP_SCA":                     "0xe04bfc95e00252bd654ee13c08edef9ac5e4b6ae4074e8390db39e9a0109c529",
+	"0xad4d71551d31092230db1fd482008ea42867dbf27b286e9c70a79d2a6191d58d::scallop_wormhole_usdc::SCALLOP_WORMHOLE_USDC": "0x50c5cfcbcca3aaacab0984e4d7ad9a6ad034265bebb440f0d1cd688ec20b2548",
+	"0xe6e5a012ec20a49a3d1d57bd2b67140b96cd4d3400b9d79e541f7bdbab661f95::scallop_wormhole_usdt::SCALLOP_WORMHOLE_USDT": "0x1f02e2fed702b477732d4ad6044aaed04f2e8e586a169153694861a901379df0",
+	"0x67540ceb850d418679e69f1fb6b2093d6df78a2a699ffc733f7646096d552e9b::scallop_wormhole_eth::SCALLOP_WORMHOLE_ETH":   "0x4b7f5da0e306c9d52490a0c1d4091e653d6b89778b9b4f23c877e534e4d9cd21",
+	"0x00671b1fa2a124f5be8bdae8b91ee711462c5d9e31bda232e70fd9607b523c88::scallop_af_sui::SCALLOP_AF_SUI":               "0x55f4dfe9e40bc4cc11c70fcb1f3daefa2bdc330567c58d4f0792fbd9f9175a62",
+	"0x9a2376943f7d22f88087c259c5889925f332ca4347e669dc37d54c2bf651af3c::scallop_ha_sui::SCALLOP_HA_SUI":               "0x404ccc1404d74a90eb6f9c9d4b6cda6d417fb03189f80d9070a35e5dab1df0f5",
+	"0xe1a1cc6bcf0001a015eab84bcc6713393ce20535f55b8b6f35c142e057a25fbe::scallop_v_sui::SCALLOP_V_SUI":                 "0xc06688ee1af25abc286ffb1d18ce273d1d5907cd1064c25f4e8ca61ea989c1d1",
+	"0x1392650f2eca9e3f6ffae3ff89e42a3590d7102b80e2b430f674730bc30d3259::scallop_wormhole_sol::SCALLOP_WORMHOLE_SOL":   "0x760fd66f5be869af4382fa32b812b3c67f0eca1bb1ed7a5578b21d56e1848819",
+	"0x2cf76a9cf5d3337961d1154283234f94da2dcff18544dfe5cbdef65f319591b5::scallop_wormhole_btc::SCALLOP_WORMHOLE_BTC":   "0xe2883934ea42c99bc998bbe0f01dd6d27aa0e27a56455707b1b34e6a41c20baa",
+	"0x854950aa624b1df59fe64e630b2ba7c550642e9342267a33061d59fb31582da5::scallop_usdc::SCALLOP_USDC":                   "0xbe6b63021f3d82e0e7e977cdd718ed7c019cf2eba374b7b546220402452f938e",
+	"0xb14f82d8506d139eacef109688d1b71e7236bcce9b2c0ad526abcd6aa5be7de0::scallop_sb_eth::SCALLOP_SB_ETH":               "0xfd0f02def6358a1f266acfa1493d4707ee8387460d434fb667d63d755ff907ed",
+	"0x6711551c1e7652a270d9fbf0eee25d99594c157cde3cb5fbb49035eb59b1b001::scallop_fdusd::SCALLOP_FDUSD":                 "0xdad9bc6293e694f67a5274ea51b596e0bdabfafc585ae6d7e82888e65f1a03e0",
+	"0xeb7a05a3224837c5e5503575aed0be73c091d1ce5e43aa3c3e716e0ae614608f::scallop_deep::SCALLOP_DEEP":                   "0xc63838fabe37b25ad897392d89876d920f5e0c6a406bf3abcb84753d2829bc88",
+	"0xe56d5167f427cbe597da9e8150ef5c337839aaf46891d62468dcf80bdd8e10d1::scallop_fud::SCALLOP_FUD":                     "0xf25212f11d182decff7a86165699a73e3d5787aced203ca539f43cfbc10db867",
+	"0xb1d7df34829d1513b73ba17cb7ad90c88d1e104bb65ab8f62f13e0cc103783d3::scallop_sb_usdt::SCALLOP_SB_USDT":             "0x58bdf6a9752e3a60144d0b70e8608d630dfd971513e2b2bfa7282f5eaa7d04d8",
+}
 
 func MintSCoin(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, coinType, underlyingCoinType string, marketCoin *sui_types.Argument) (*sui_types.Argument, error) {
 	scallopMintSPackage, err := sui_types.NewObjectIdFromHex(SCALLOP_PACKAGE)
@@ -61,7 +81,12 @@ func MintSCoin(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Cli
 	typeArguments := make([]move_types.TypeTag, 0)
 	typeArguments = append(typeArguments, type1Tag, type2Tag)
 
-	scaTreasuryCallArg, err := GetObjectArg(client, SCOIN_TREASURY, false, SCALLOP_PACKAGE, "s_coin_converter", "mint_s_coin")
+	scallopTreasury,err := GetTreasuryByCoinType(coinType)
+	if err != nil{
+		return nil, err
+	}
+
+	scaTreasuryCallArg, err := GetObjectArg(client, scallopTreasury, false, SCALLOP_PACKAGE, "s_coin_converter", "mint_s_coin")
 	if err != nil {
 		return nil, err
 	}
@@ -174,7 +199,12 @@ func BurnSCoin(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Cli
 	typeArguments := make([]move_types.TypeTag, 0)
 	typeArguments = append(typeArguments, type1Tag, type2Tag)
 
-	scaTreasuryCallArg, err := GetObjectArg(client, SCOIN_TREASURY, false, SCALLOP_PACKAGE, "s_coin_converter", "mint_s_coin")
+	scallopTreasury,err := GetTreasuryByCoinType(coinType)
+	if err != nil{
+		return nil, err
+	}
+
+	scaTreasuryCallArg, err := GetObjectArg(client, scallopTreasury, false, SCALLOP_PACKAGE, "s_coin_converter", "mint_s_coin")
 	if err != nil {
 		return nil, err
 	}
@@ -295,7 +325,7 @@ func SplitCoinFromMerged(ptb *sui_types.ProgrammableTransactionBuilder, mergeCoi
 			Result2 uint16
 		}{
 			Result1: *splitResult.Result,
-			Result2: 0,  // 第一个分割结果
+			Result2: 0, // 第一个分割结果
 		},
 	}
 
@@ -319,7 +349,7 @@ func MintToSCoin(ptb *sui_types.ProgrammableTransactionBuilder, client *client.C
 		return MintSpringCoin(ptb, client, nemoConfig, sCoinArgument)
 	} else if constant.IsVSui(nemoConfig.CoinType) {
 		return MintVoloCoin(ptb, client, nemoConfig, sCoinArgument)
-	} else if constant.IsHaSui(nemoConfig.CoinType){
+	} else if constant.IsHaSui(nemoConfig.CoinType) {
 		return MintHaedalCoin(ptb, client, nemoConfig, sCoinArgument)
 	}
 	return nil, errors.New("coin not support！")
@@ -368,11 +398,11 @@ func MintAftermathCoin(ptb *sui_types.ProgrammableTransactionBuilder, client *cl
 	command := ptb.Command(
 		sui_types.Command{
 			MoveCall: &sui_types.ProgrammableMoveCall{
-				Package:   *scallopMintSPackage,
-				Module:    module,
-				Function:  function,
+				Package:       *scallopMintSPackage,
+				Module:        module,
+				Function:      function,
 				TypeArguments: typeArguments,
-				Arguments: arguments,
+				Arguments:     arguments,
 			},
 		},
 	)
@@ -503,7 +533,7 @@ func MintHaedalCoin(ptb *sui_types.ProgrammableTransactionBuilder, client *clien
 
 	var arguments []sui_types.Argument
 
-	arguments = append(arguments, systemStateArgument, haedalStakingArgument, *coinArgument,addressArgument)
+	arguments = append(arguments, systemStateArgument, haedalStakingArgument, *coinArgument, addressArgument)
 	command := ptb.Command(
 		sui_types.Command{
 			MoveCall: &sui_types.ProgrammableMoveCall{
@@ -516,4 +546,11 @@ func MintHaedalCoin(ptb *sui_types.ProgrammableTransactionBuilder, client *clien
 		},
 	)
 	return &command, nil
+}
+
+func GetTreasuryByCoinType(coinType string) (string, error) {
+	if treasury, exists := sCoinMap[coinType]; exists {
+		return treasury, nil
+	}
+	return "", fmt.Errorf("coinType not found: %s", coinType)
 }

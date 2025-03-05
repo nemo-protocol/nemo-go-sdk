@@ -18,6 +18,7 @@ var (
 	SPRINGSUI     = "0x83556891f4a0f233ce7b05cfe7f957d4020492a34f5405b2cb9377d060bef4bf::spring_sui::SPRING_SUI"
 	AFSUI         = "0xf325ce1300e8dac124071d3152c5c5ee6174914f8bc2161e88329cf579246efc::afsui::AFSUI"
 	HASUI         = "0xbde4ba4c2e274a60ce15c1cfff9e5c42e41654ac8b6d906a57efa4bd3c29f47d::hasui::HASUI"
+	STSUI         = "0xd1b72982e40348d069bb1ff701e634c117bb5f741f44dff91e472d3b01461e55::stsui::STSUI"
 
 	SUI   = "0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI"
 	SCA   = "0x7016aae72cfc67f2fadf55769c0a7dd54291a583b63051a5ed71081cce836ac6::sca::SCA"
@@ -57,6 +58,10 @@ func IsHaSui(coinType string) bool {
 
 func IsSui(coinType string) bool{
 	return coinType == GASCOINTYPE || coinType == SUI
+}
+
+func IsStSui(coinType string) bool{
+	return coinType == STSUI
 }
 
 func IsDeep(coinType string) bool{

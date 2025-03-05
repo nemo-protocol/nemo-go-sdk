@@ -13,6 +13,7 @@ import (
 	"nemo-go-sdk/service/sui/api"
 	"nemo-go-sdk/service/sui/common/constant"
 	"nemo-go-sdk/service/sui/common/models"
+	"nemo-go-sdk/service/sui/common/nemoError"
 	"strconv"
 )
 
@@ -31,13 +32,13 @@ func (s *SuiService)AddLiquidity(amountFloat float64, sender *account.Account, a
 	}
 
 	fmt.Printf("\n===amountSyIn:%v===\n",amountSyIn)
-	minLpOut,err := api.DryRunGetLpOutForSingleSyIn(s.SuiApi, models.InitConfig(), amountSyIn, sender)
+	minLpOut,err := api.DryRunGetLpOutForSingleSyIn(s.SuiApi, nemoConfig, amountSyIn, sender)
 	if err != nil{
 		return false, err
 	}
 	fmt.Printf("\n===minLpOut:%v===\n",minLpOut)
 
-	ptValue,err := api.DryRunSingleLiquidityAddPtOut(s.SuiApi, models.InitConfig(), amountSyIn, sender)
+	ptValue,err := api.DryRunSingleLiquidityAddPtOut(s.SuiApi, nemoConfig, amountSyIn, sender)
 	if err != nil{
 		return false, err
 	}
@@ -209,8 +210,12 @@ func (s *SuiService)AddLiquidity(amountFloat float64, sender *account.Account, a
 		return false, fmt.Errorf("failed to execute transaction: %w", err)
 	}
 
-	b,_ := json.Marshal(resp)
-	fmt.Printf("\n==resp:%+v==\n",string(b))
+	b,_ := json.Marshal(resp.Effects.Data)
+	fmt.Printf("\n==response:%v==\n",string(b))
+	errorMsg := nemoError.GetError(string(b))
+	if errorMsg != ""{
+		return false, errors.New(errorMsg)
+	}
 
 	return true, nil
 }
@@ -344,8 +349,12 @@ func (s *SuiService)RedeemLiquidity(amountIn float64, sender *account.Account, e
 		return false, fmt.Errorf("failed to execute transaction: %w", err)
 	}
 
-	b,_ := json.Marshal(resp)
-	fmt.Printf("\n==resp:%+v==\n",string(b))
+	b,_ := json.Marshal(resp.Effects.Data)
+	fmt.Printf("\n==response:%v==\n",string(b))
+	errorMsg := nemoError.GetError(string(b))
+	if errorMsg != ""{
+		return false, errors.New(errorMsg)
+	}
 
 	return true, nil
 }
@@ -358,6 +367,7 @@ func (s *SuiService)ClaimYtReward(nemoConfig *models.NemoConfig, sender *account
 	if err != nil{
 		return false, err
 	}
+	fmt.Printf("pyposition:%v",pyPosition)
 
 	if pyPosition == ""{
 		return false, errors.New("pyPosition not found")
@@ -378,9 +388,16 @@ func (s *SuiService)ClaimYtReward(nemoConfig *models.NemoConfig, sender *account
 		return false, err
 	}
 
-	underlyingCoinArgument, err := api.BurnSCoin(ptb, client.SuiApi, nemoConfig.CoinType, nemoConfig.UnderlyingCoinType, sCoinArgument)
-	if err != nil{
-		return false, err
+	transferArgs := make([]sui_types.Argument, 0)
+	if constant.IsScallopCoin(nemoConfig.CoinType){
+		underlyingCoinArgument, err := api.BurnSCoin(ptb, client.SuiApi, nemoConfig.CoinType, nemoConfig.UnderlyingCoinType, sCoinArgument)
+		if err != nil{
+			return false, err
+		}
+
+		transferArgs = append(transferArgs, *underlyingCoinArgument)
+	}else {
+		transferArgs = append(transferArgs, *sCoinArgument)
 	}
 
 	// change recipient address
@@ -393,9 +410,6 @@ func (s *SuiService)ClaimYtReward(nemoConfig *models.NemoConfig, sender *account
 	if err != nil {
 		return false, err
 	}
-
-	transferArgs := make([]sui_types.Argument, 0)
-	transferArgs = append(transferArgs, *underlyingCoinArgument)
 
 	ptb.Command(
 		sui_types.Command{
@@ -461,8 +475,12 @@ func (s *SuiService)ClaimYtReward(nemoConfig *models.NemoConfig, sender *account
 		return false, fmt.Errorf("failed to execute transaction: %w", err)
 	}
 
-	b,_ := json.Marshal(resp)
-	fmt.Printf("\n==resp:%+v==\n",string(b))
+	b,_ := json.Marshal(resp.Effects.Data)
+	fmt.Printf("\n==response:%v==\n",string(b))
+	errorMsg := nemoError.GetError(string(b))
+	if errorMsg != ""{
+		return false, errors.New(errorMsg)
+	}
 
 	return true, nil
 }
@@ -559,8 +577,12 @@ func (s *SuiService)ClaimLpReward(nemoConfig *models.NemoConfig, sender *account
 		return false, fmt.Errorf("failed to execute transaction: %w", err)
 	}
 
-	b,_ := json.Marshal(resp)
-	fmt.Printf("\n==resp:%+v==\n",string(b))
+	b,_ := json.Marshal(resp.Effects.Data)
+	fmt.Printf("\n==response:%v==\n",string(b))
+	errorMsg := nemoError.GetError(string(b))
+	if errorMsg != ""{
+		return false, errors.New(errorMsg)
+	}
 
 	return true, nil
 }
