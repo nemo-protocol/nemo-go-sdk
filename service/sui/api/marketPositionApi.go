@@ -1,6 +1,8 @@
 package api
 
 import (
+	"fmt"
+	"github.com/block-vision/sui-go-sdk/sui"
 	"github.com/coming-chat/go-sui/v2/client"
 	"github.com/coming-chat/go-sui/v2/move_types"
 	"github.com/coming-chat/go-sui/v2/sui_types"
@@ -47,4 +49,23 @@ func MergeAllLpPositions(ptb *sui_types.ProgrammableTransactionBuilder, client *
 		},
 	)
 	return &command, nil
+}
+
+func GetMarketPosition(blockApi *sui.ISuiAPI, client *client.Client, nemoConfig *models.NemoConfig, address string) (string,error){
+	pyStateInfo, err := GetObjectFieldByObjectId(client, nemoConfig.PyState)
+	if err != nil{
+		return "", err
+	}
+	maturity := pyStateInfo["expiry"].(string)
+
+	expectMarketPositionTypeList := make([]string, 0)
+	for _, pkg := range nemoConfig.NemoContractList{
+		expectMarketPositionTypeList = append(expectMarketPositionTypeList, fmt.Sprintf("%v::market_position::MarketPosition", pkg))
+	}
+
+	previousMarketPosition,err := GetOwnerMarketPositionByType(blockApi, client, expectMarketPositionTypeList, nemoConfig.SyCoinType, maturity, address)
+	if err != nil {
+		return "", err
+	}
+	return previousMarketPosition, nil
 }

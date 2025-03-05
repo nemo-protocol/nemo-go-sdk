@@ -3,6 +3,7 @@ package api
 import (
 	"errors"
 	"fmt"
+	"github.com/block-vision/sui-go-sdk/sui"
 	"github.com/coming-chat/go-sui/v2/client"
 	"github.com/coming-chat/go-sui/v2/move_types"
 	"github.com/coming-chat/go-sui/v2/sui_types"
@@ -127,4 +128,23 @@ func GetStructTag(syType string) (*move_types.StructTag, error) {
 	}
 
 	return structTag, nil
+}
+
+func GetPyPosition(nemoConfig *models.NemoConfig, address string, client *client.Client, blockApi *sui.ISuiAPI) (string, error){
+	pyStateInfo, err := GetObjectFieldByObjectId(client, nemoConfig.PyState)
+	if err != nil{
+		return "", err
+	}
+	maturity := pyStateInfo["expiry"].(string)
+
+	expectPyPositionTypeList := make([]string, 0)
+	for _, pkg := range nemoConfig.NemoContractList{
+		expectPyPositionTypeList = append(expectPyPositionTypeList, fmt.Sprintf("%v::py_position::PyPosition", pkg))
+	}
+
+	pyPosition,err := GetOwnerObjectByType(blockApi, client, expectPyPositionTypeList, nemoConfig.SyCoinType, maturity, address)
+	if err != nil {
+		return "", err
+	}
+	return pyPosition, nil
 }

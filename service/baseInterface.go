@@ -12,4 +12,6 @@ type ContractInterface interface {
 	RedeemLiquidity(expectOut float64, sender *account.Account, expectOutType string, nemoConfig *models.NemoConfig)(bool, error)
 	SwapByPy(amountIn, slippage float64, amountInType, exactAmountOutType string, sender *account.Account, nemoConfig *models.NemoConfig)(bool, error)
 	SwapToPy(amountIn, slippage float64, amountInType, exactAmountOutType string, sender *account.Account, nemoConfig *models.NemoConfig)(bool, error)
+	ClaimYtReward(nemoConfig *models.NemoConfig, sender *account.Account) (bool, error)
+	ClaimLpReward(nemoConfig *models.NemoConfig, sender *account.Account) (bool, error)
 }
