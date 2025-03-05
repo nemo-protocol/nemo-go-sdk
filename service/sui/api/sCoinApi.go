@@ -33,6 +33,10 @@ var (
 
 	HAEDAL_PACKAGE = "0x3f45767c1aa95b25422f675800f02d8a813ec793a00b60667d071a77ba7178a2"
 	HAEDAL_STAKING = "0x47b224762220393057ebf4f70501b6e657c3e56684737568439a04f80849b2ca"
+
+	ALPHAFI_PACKAGE = "0x059f94b85c07eb74d2847f8255d8cc0a67c9a8dcc039eabf9f8b9e23a0de2700"
+	ALPHAFI_STAKING = "0x1adb343ab351458e151bc392fbf1558b3332467f23bda45ae67cd355a57fd5f5"
+
 )
 
 // 定义一个 map 来存储 coinType 和 treasury 的映射关系
@@ -351,6 +355,8 @@ func MintToSCoin(ptb *sui_types.ProgrammableTransactionBuilder, client *client.C
 		return MintVoloCoin(ptb, client, nemoConfig, sCoinArgument)
 	} else if constant.IsHaSui(nemoConfig.CoinType) {
 		return MintHaedalCoin(ptb, client, nemoConfig, sCoinArgument)
+	} else if constant.IsStSui(nemoConfig.CoinType) {
+		return MintStCoin(ptb, client, nemoConfig, sCoinArgument)
 	}
 	return nil, errors.New("coin not support！")
 }
@@ -534,6 +540,54 @@ func MintHaedalCoin(ptb *sui_types.ProgrammableTransactionBuilder, client *clien
 	var arguments []sui_types.Argument
 
 	arguments = append(arguments, systemStateArgument, haedalStakingArgument, *coinArgument, addressArgument)
+	command := ptb.Command(
+		sui_types.Command{
+			MoveCall: &sui_types.ProgrammableMoveCall{
+				Package:       *scallopMintSPackage,
+				Module:        module,
+				Function:      function,
+				TypeArguments: typeArguments,
+				Arguments:     arguments,
+			},
+		},
+	)
+	return &command, nil
+}
+
+func MintStCoin(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig, coinArgument *sui_types.Argument) (underlyingCoinArgument *sui_types.Argument, err error) {
+	scallopMintSPackage, err := sui_types.NewObjectIdFromHex(ALPHAFI_PACKAGE)
+	if err != nil {
+		return nil, err
+	}
+
+	moduleName := "liquid_staking"
+	functionName := "mint"
+	module := move_types.Identifier(moduleName)
+	function := move_types.Identifier(functionName)
+
+	coinTypeStructTag, err := GetStructTag(nemoConfig.CoinType)
+	if err != nil {
+		return nil, err
+	}
+	type1Tag := move_types.TypeTag{
+		Struct: coinTypeStructTag,
+	}
+	typeArguments := make([]move_types.TypeTag, 0)
+	typeArguments = append(typeArguments, type1Tag)
+
+	systemStateArgument, err := GetObjectArgument(ptb, client, SYSTEM_STATE, false, ALPHAFI_PACKAGE, moduleName, functionName)
+	if err != nil {
+		return nil, err
+	}
+
+	alphafiStakingArgument, err := GetObjectArgument(ptb, client, ALPHAFI_STAKING, false, ALPHAFI_PACKAGE, moduleName, functionName)
+	if err != nil {
+		return nil, err
+	}
+
+	var arguments []sui_types.Argument
+
+	arguments = append(arguments, alphafiStakingArgument, systemStateArgument, *coinArgument)
 	command := ptb.Command(
 		sui_types.Command{
 			MoveCall: &sui_types.ProgrammableMoveCall{
