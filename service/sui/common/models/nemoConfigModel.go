@@ -47,8 +47,8 @@ func InitConfig() *NemoConfig {
 		NemoContractList: []string{
 			"0x2b71664477755b90f9fb71c9c944d5d0d3832fec969260e3f18efc7d855f57c4"},
 		ProviderProtocol:     "Scallop",
-		OraclePackage:        "0x8d0145043ce10a7d95c27be80169b23f7b3be8993e63ee705982af6ad43e77d0",
-		OracleTicket:         "0xa8b7319b326a6e4d1d4baaebbcbd5287fb82484081f0679e68cb5286171d3bd7",
+		OraclePackage:        "0xee1ff66985a76b2c0170935fb29144b4007827ed2c4f3d6a1189578afb92bcdd",
+		OracleTicket:         "0x0fa9dc987f71878b91d389c145aab67f462744b695054578ca4ae4d6ced01099",
 		OracleVoucherPackage: "0x8783841625738f73a6b0085f5dad270b4b0bd2e5cdb278dc95201e45bd1a332b",
 	}
 	return scallopSui

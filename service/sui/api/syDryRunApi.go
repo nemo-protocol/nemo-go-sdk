@@ -433,7 +433,7 @@ func DryRunGetPyInForExactSyOutWithPriceVoucher(client *client.Client, nemoConfi
 				}
 				if len(byteSlice) >= 8 {
 					minSyOut = binary.LittleEndian.Uint64(byteSlice)
-					fmt.Printf("Parsed minYtOut: %d\n", minSyOut)
+					fmt.Printf("Parsed minSyOut: %d\n", minSyOut)
 				}
 			}
 		}
