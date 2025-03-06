@@ -45,7 +45,35 @@ func calculatePtApy(underlyingPrice, ptPrice, daysToExpiry decimal.Decimal) deci
 	return decimal.NewFromFloat(math.Pow(rf,ef)).Sub(decimal.NewFromInt(1)).Mul(decimal.NewFromInt(100))
 }
 
-func CalculatePoolApy(coinInfo CoinInfo, marketState MarketState, ytIn, syOut int64) string {
+func CalculateYtAPY(underlyingInterestApyDec, ytPriceInAsset, yearsToExpiryDec decimal.Decimal) decimal.Decimal {
+	yearsToExpiryResult,_ := yearsToExpiryDec.Float64()
+	if yearsToExpiryResult <= 0 {
+		return decimal.NewFromInt(0)
+	}
+
+	addResult,_ := underlyingInterestApyDec.Add(decimal.NewFromInt(1)).Float64()
+	yearsToExpiryDecResult,_ := yearsToExpiryDec.Float64()
+
+	interestReturns := decimal.NewFromFloat(math.Pow(addResult, yearsToExpiryDecResult)).
+		Sub(decimal.NewFromInt(1))
+
+	rewardsReturns := decimal.NewFromInt(0)
+
+	ytReturns := interestReturns.Add(rewardsReturns)
+
+	ytReturnsAfterFee := ytReturns.Mul(decimal.NewFromFloat(0.965))
+
+	divResult1,_ := safeDivide(ytReturnsAfterFee, ytPriceInAsset).Float64()
+	divResult2,_ := decimal.NewFromInt(1).Div(yearsToExpiryDec).Float64()
+
+	ytApy := decimal.NewFromFloat(math.Pow(divResult1, divResult2)).
+		Sub(decimal.NewFromInt(1)).
+		Mul(decimal.NewFromInt(100))
+
+	return ytApy
+}
+
+func CalculatePoolApy(coinInfo CoinInfo, marketState MarketState, ytIn, syOut int64) (string, string, string) {
 	// Convert strings to decimals
 	coinPrice := decimal.NewFromFloat(coinInfo.CoinPrice)
 	underlyingPrice := decimal.NewFromFloat(coinInfo.UnderlyingPrice)
@@ -56,6 +84,7 @@ func CalculatePoolApy(coinInfo CoinInfo, marketState MarketState, ytIn, syOut in
 
 	// Calculate days to expiry
 	daysToExpiry := decimal.NewFromFloat(float64(coinInfo.Maturity/1000 - time.Now().Unix()) / float64(86400))
+	yearToExpiry := decimal.NewFromFloat(float64(coinInfo.Maturity/1000 - time.Now().Unix()) / float64(31536000))
 
 	// Calculate TVL
 	ytPrice := safeDivide(coinPrice.Mul(decimal.NewFromInt(syOut)), decimal.NewFromInt(ytIn))
@@ -69,6 +98,8 @@ func CalculatePoolApy(coinInfo CoinInfo, marketState MarketState, ytIn, syOut in
 	rSy := safeDivide(totalSy, totalSy.Add(totalPt))
 	rPt := safeDivide(totalPt, totalSy.Add(totalPt))
 	ptApy := calculatePtApy(underlyingPrice, ptPrice, daysToExpiry)
+	fmt.Printf("yearToExpiry:%v\n",yearToExpiry)
+	ytApy := CalculateYtAPY(underlyingApy, safeDivide(ytPrice, underlyingPrice), yearToExpiry)
 	scaledUnderlyingApy := rSy.Mul(underlyingApy).Mul(decimal.NewFromInt(100))
 	scaledPtApy := rPt.Mul(ptApy)
 	fmt.Printf("\n==scaledPtApy:%v,ptApy:%v，scaledUnderlyingApy：%v==\n", scaledPtApy,ptApy,scaledUnderlyingApy)
@@ -92,5 +123,5 @@ func CalculatePoolApy(coinInfo CoinInfo, marketState MarketState, ytIn, syOut in
 	// Calculate pool APY
 	poolApy := scaledUnderlyingApy.Add(scaledPtApy).Add(swapFeeApy).Add(incentiveApy)
 
-	return poolApy.String()
+	return poolApy.String(), ptApy.String(), ytApy.String()
 }
