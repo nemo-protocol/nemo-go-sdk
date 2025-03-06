@@ -22,7 +22,7 @@ func (s *SuiService)SwapByPy(amountIn, slippage float64, amountInType, exactAmou
 	suiService := InitSuiService()
 	minPyOut, err := api.DryRunGetPyInForExactSyOutWithPriceVoucher(suiService.SuiApi, nemoConfig, amountInType, netPyIn, sender)
 	if err != nil{
-		return false, err
+		return false, errors.New(fmt.Sprintf("%v",nemoError.ParseErrorMessage(err.Error())))
 	}
 	minPyOut = minPyOut - uint64(float64(minPyOut) * slippage)
 
@@ -54,6 +54,9 @@ func (s *SuiService)SwapByPy(amountIn, slippage float64, amountInType, exactAmou
 
 	if exactAmountOutType != nemoConfig.CoinType{
 		syRedeemResult, err = api.SwapToUnderlyingCoin(ptb, suiService.SuiApi, nemoConfig, syRedeemResult)
+		if err != nil{
+			return false, err
+		}
 	}
 
 	recipientAddr, err := sui_types.NewAddressFromHex(sender.Address)
@@ -140,7 +143,7 @@ func (s *SuiService)SwapByPy(amountIn, slippage float64, amountInType, exactAmou
 	}
 
 	b,_ := json.Marshal(resp.Effects.Data)
-	fmt.Printf("\n==response:%v==\n",string(b))
+	fmt.Printf("\n==response:%+v==\n",resp)
 	errorMsg := nemoError.GetError(string(b))
 	if errorMsg != ""{
 		return false, errors.New(errorMsg)
@@ -163,13 +166,13 @@ func (s *SuiService)SwapToPy(amountIn, slippage float64, amountInType, exactAmou
 
 	minPyOut, err := api.DryRunGetPyOutForExactSyInWithPriceVoucher(client.SuiApi, nemoConfig, exactAmountOutType, netSyIn, sender)
 	if err != nil{
-		return false, err
+		return false, errors.New(fmt.Sprintf("%v",nemoError.ParseErrorMessage(err.Error())))
 	}
 	minPyOut = minPyOut - uint64(float64(minPyOut) * slippage)
 
 	approxPyOut, netSyTokenization, err := api.DryRunGetApproxPyOutForNetSyInInternal(client.SuiApi, nemoConfig, exactAmountOutType, netSyIn, minPyOut, sender)
 	if err != nil{
-		return false, err
+		return false, errors.New(fmt.Sprintf("%v",nemoError.ParseErrorMessage(err.Error())))
 	}
 
 	ptb := sui_types.NewProgrammableTransactionBuilder()
@@ -189,7 +192,9 @@ func (s *SuiService)SwapToPy(amountIn, slippage float64, amountInType, exactAmou
 		if err != nil{
 			return false, err
 		}
-	}else {
+	}
+
+	if amountInType == nemoConfig.UnderlyingCoinType {
 		argument,err := api.MintToSCoin(ptb, client.SuiApi, nemoConfig, &splitResult)
 		if err != nil{
 			return false, err
@@ -207,21 +212,11 @@ func (s *SuiService)SwapToPy(amountIn, slippage float64, amountInType, exactAmou
 		return false, err
 	}
 
-	pyStateInfo, err := api.GetObjectFieldByObjectId(client.SuiApi, nemoConfig.PyState)
-	if err != nil{
-		return false, err
-	}
-	maturity := pyStateInfo["expiry"].(string)
-
-	expectPyPositionTypeList := make([]string, 0)
-	for _, pkg := range nemoConfig.NemoContractList{
-		expectPyPositionTypeList = append(expectPyPositionTypeList, fmt.Sprintf("%v::py_position::PyPosition", pkg))
-	}
-
-	pyPosition,err := api.GetOwnerObjectByType(client.BlockApi, client.SuiApi, expectPyPositionTypeList, nemoConfig.SyCoinType, maturity, sender.Address)
+	pyPosition,err := api.GetPyPosition(nemoConfig, sender.Address, client.SuiApi, client.BlockApi)
 	if err != nil {
 		return false, err
 	}
+
 	var pyPositionArgument *sui_types.Argument
 	// transfer object
 	transferArgs := make([]sui_types.Argument, 0)
@@ -322,7 +317,7 @@ func (s *SuiService)SwapToPy(amountIn, slippage float64, amountInType, exactAmou
 	}
 
 	b,_ := json.Marshal(resp.Effects.Data)
-	fmt.Printf("\n==response:%v==\n",string(b))
+	fmt.Printf("\n==response:%+v==\n",resp)
 	errorMsg := nemoError.GetError(string(b))
 	if errorMsg != ""{
 		return false, errors.New(errorMsg)

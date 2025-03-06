@@ -606,5 +606,5 @@ func GetTreasuryByCoinType(coinType string) (string, error) {
 	if treasury, exists := sCoinMap[coinType]; exists {
 		return treasury, nil
 	}
-	return "", fmt.Errorf("coinType not found: %s", coinType)
+	return "", fmt.Errorf("coinType not found: %s, not support redeem to underlying coin", coinType)
 }

@@ -22,17 +22,7 @@ func (s *SuiService)MintPy(amountIn float64, sender *account.Account, nemoConfig
 	ptb := sui_types.NewProgrammableTransactionBuilder()
 	client := InitSuiService()
 
-	pyStateInfo, err := api.GetObjectFieldByObjectId(client.SuiApi, nemoConfig.PyState)
-	if err != nil{
-		return false, err
-	}
-	maturity := pyStateInfo["expiry"].(string)
-
-	expectPyPositionTypeList := make([]string, 0)
-	for _, pkg := range nemoConfig.NemoContractList{
-		expectPyPositionTypeList = append(expectPyPositionTypeList, fmt.Sprintf("%v::py_position::PyPosition", pkg))
-	}
-	pyPosition,err := api.GetOwnerObjectByType(client.BlockApi, client.SuiApi, expectPyPositionTypeList, nemoConfig.SyCoinType, maturity, sender.Address)
+	pyPosition,err := api.GetPyPosition(nemoConfig, sender.Address, client.SuiApi, client.BlockApi)
 	if err != nil {
 		return false, err
 	}
@@ -165,7 +155,7 @@ func (s *SuiService)MintPy(amountIn float64, sender *account.Account, nemoConfig
 	}
 
 	b,_ := json.Marshal(resp.Effects.Data)
-	fmt.Printf("\n==response:%v==\n",string(b))
+	fmt.Printf("\n==response:%+v==\n",resp)
 	errorMsg := nemoError.GetError(string(b))
 	if errorMsg != ""{
 		return false, errors.New(errorMsg)
@@ -180,22 +170,12 @@ func (s *SuiService)RedeemPy(amountIn float64, sender *account.Account, nemoConf
 	ptb := sui_types.NewProgrammableTransactionBuilder()
 	client := InitSuiService()
 
-	pyStateInfo, err := api.GetObjectFieldByObjectId(client.SuiApi, nemoConfig.PyState)
-	if err != nil{
-		return false, err
-	}
-	maturity := pyStateInfo["expiry"].(string)
-	
-	expectPyPositionTypeList := make([]string, 0)
-	for _, pkg := range nemoConfig.NemoContractList{
-		expectPyPositionTypeList = append(expectPyPositionTypeList, fmt.Sprintf("%v::py_position::PyPosition", pkg))
-	}
-	pyPosition,err := api.GetOwnerObjectByType(client.BlockApi, client.SuiApi, expectPyPositionTypeList, nemoConfig.SyCoinType, maturity, sender.Address)
+	pyPosition,err := api.GetPyPosition(nemoConfig, sender.Address, client.SuiApi, client.BlockApi)
 	if err != nil {
 		return false, err
 	}
 	if pyPosition == ""{
-		return false, errors.New("pyPosition not exist！")
+		return false, errors.New("pyPosition not found")
 	}
 
 	pyPositionArgument, err := api.GetObjectArgument(ptb, client.SuiApi, pyPosition, false, nemoConfig.NemoContract, "yield_factory", "redeem_py")
@@ -295,7 +275,7 @@ func (s *SuiService)RedeemPy(amountIn float64, sender *account.Account, nemoConf
 	}
 
 	b,_ := json.Marshal(resp.Effects.Data)
-	fmt.Printf("\n==response:%v==\n",string(b))
+	fmt.Printf("\n==response:%+v==\n",resp)
 	errorMsg := nemoError.GetError(string(b))
 	if errorMsg != ""{
 		return false, errors.New(errorMsg)

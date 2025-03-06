@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/binary"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/coming-chat/go-sui/v2/account"
@@ -10,10 +11,60 @@ import (
 	"github.com/coming-chat/go-sui/v2/move_types"
 	"github.com/coming-chat/go-sui/v2/sui_types"
 	"github.com/fardream/go-bcs/bcs"
+	"github.com/shopspring/decimal"
 	"math"
 	"nemo-go-sdk/service/sui/common/constant"
 	"nemo-go-sdk/service/sui/common/models"
 )
+
+type PoolRewarderInfo struct {
+	TotalReward       string `json:"total_reward"`
+	EndTime           string `json:"end_time"`
+	LastRewardTime    string `json:"last_reward_time"`
+	RewardHarvested   string `json:"reward_harvested"`
+	RewardDebt        string `json:"reward_debt"`
+	RewardToken       RewardToken `json:"reward_token"`
+	AccPerShare       string `json:"acc_per_share"`
+	Active            bool   `json:"active"`
+	EmissionPerSecond string `json:"emission_per_second"`
+	ID                ID     `json:"id"`
+	Owner             string `json:"owner"`
+	StartTime         string `json:"start_time"`
+}
+
+type RewardToken struct {
+	Type   string `json:"type"`
+	Fields struct {
+		Name string `json:"name"`
+	} `json:"fields"`
+}
+
+type ID struct {
+	ID string `json:"id"`
+}
+
+type RawMarketState struct {
+	TotalSy    string `json:"total_sy"`
+	TotalPt    string `json:"total_pt"`
+	LpSupply   string `json:"lp_supply"`
+	MarketCap  string `json:"market_cap"`
+	RewardPool struct {
+		Fields struct {
+			Rewarders struct {
+				Fields struct {
+					Contents []struct {
+						Fields struct {
+							Key   string `json:"key"`
+							Value struct {
+								Fields PoolRewarderInfo `json:"fields"`
+							} `json:"value"`
+						} `json:"fields"`
+					} `json:"contents"`
+				} `json:"fields"`
+			} `json:"rewarders"`
+		} `json:"fields"`
+	} `json:"reward_pool"`
+}
 
 func DryRunGetApproxPyOutForNetSyInInternal(client *client.Client, nemoConfig *models.NemoConfig, exactPyType string, netSyIn, minYtOut uint64, sender *account.Account) (approxPyOut uint64, netSyTokenization uint64, err error) {
 	ptb := sui_types.NewProgrammableTransactionBuilder()
@@ -791,4 +842,47 @@ func GetYtInAndSyOut(client *client.Client, nemoConfig *models.NemoConfig, sende
 		return GetYtInAndSyOut(client, nemoConfig, sender, ytIn / 100, retryTime + 1)
 	}
 	return ytIn, syOut, nil
+}
+func CalculateDailyEmission(emissionPerSecond, tokenType string, decimalPlaces int) float64 {
+	emissionPerSecondDec, err := decimal.NewFromString(emissionPerSecond)
+	if err != nil {
+		fmt.Println("Invalid emissionPerSecond:", err)
+		return 0
+	}
+
+	dailyEmission := emissionPerSecondDec.
+		Mul(decimal.NewFromInt(60 * 60 * 24)).
+		Div(decimal.NewFromFloat(math.Pow10(decimalPlaces)))
+
+	dailyEmissionFloat, _ := dailyEmission.Float64()
+	return dailyEmissionFloat
+}
+
+func GetRewarders(marketStateInfo map[string]interface{}, decimal int, sourceMarketState *MarketState, nemoConfig *models.NemoConfig) {
+	byteBody,err := json.Marshal(marketStateInfo)
+	if err != nil {
+		return
+	}
+	var marketState RawMarketState
+	err = json.Unmarshal(byteBody, &marketState)
+	if err != nil {
+		fmt.Println("Error parsing JSON:", err)
+		return
+	}
+	for _, content := range marketState.RewardPool.Fields.Rewarders.Fields.Contents {
+		rewarder := content.Fields.Value.Fields
+		dailyEmission := CalculateDailyEmission(rewarder.EmissionPerSecond, rewarder.RewardToken.Fields.Name, decimal)
+		rewardName := fmt.Sprintf("0x%v",rewarder.RewardToken.Fields.Name)
+		if constant.IsSui(rewardName) && constant.IsSui(nemoConfig.UnderlyingCoinType) || rewardName == nemoConfig.UnderlyingCoinType{
+			sourceMarketState.RewardMetrics = append(sourceMarketState.RewardMetrics, RewardMetric{
+				TokenPrice: nemoConfig.UnderlyingCoinPrice,
+				DailyEmission: fmt.Sprintf("%0.10f",dailyEmission),
+			})
+		}else if rewardName == nemoConfig.CoinType{
+			sourceMarketState.RewardMetrics = append(sourceMarketState.RewardMetrics, RewardMetric{
+				TokenPrice: nemoConfig.CoinPrice,
+				DailyEmission: fmt.Sprintf("%0.10f",dailyEmission),
+			})
+		}
+	}
 }

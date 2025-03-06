@@ -113,7 +113,7 @@ func RemainCoinAndGas(client *client.Client, address string, expectGas uint64, c
 
 func MergeCoin(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, remainingCoins []CoinData, minMergeAmount uint64) ([]*sui_types.Argument, []CoinData, error) {
 	if len(remainingCoins) == 0 {
-		return nil, nil, errors.New("no coins to merge")
+		return nil, nil, errors.New("no coins to merge,please get one more coin exclude gas coin")
 	}
 
 	sort.Slice(remainingCoins, func(i, j int) bool {

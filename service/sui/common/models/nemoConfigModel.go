@@ -12,6 +12,7 @@ type NemoConfig struct {
 	CoinType             string   `json:"coinType"`
 	SyCoinType           string   `json:"syCoinType"`
 	UnderlyingCoinType   string   `json:"underlyingCoinType"`
+	UnderlyingCoinPrice  string   `json:"UnderlyingCoinPrice"`
 	UnderlyingApy        string   `json:"underlyingApy"`
 	Decimal              uint64   `json:"decimal"`
 	ConversionRate       string   `json:"conversionRate"`
@@ -107,8 +108,8 @@ func InitConfig() []NemoConfig {
 	}
 	*/
 	url := "https://app.nemoprotocol.com/api/v1/market/coinInfo"
-	pageByte,err := utils.SendGetRpc(url)
-	if err != nil{
+	pageByte, err := utils.SendGetRpc(url)
+	if err != nil {
 		return nil
 	}
 
@@ -117,14 +118,14 @@ func InitConfig() []NemoConfig {
 
 	infoUrl := "https://app.nemoprotocol.com/api/v1/market/config/detail?id=%v"
 	infoList := make([]NemoConfig, 0)
-	for _,v := range response.NemoPage{
-		infoByte,err := utils.SendGetRpc(fmt.Sprintf(infoUrl, v.Id))
-		if err != nil{
+	for _, v := range response.NemoPage {
+		infoByte, err := utils.SendGetRpc(fmt.Sprintf(infoUrl, v.Id))
+		if err != nil {
 			return nil
 		}
 		info := NemoInfoResponse{}
 		err = json.Unmarshal(infoByte, &info)
-		if err != nil{
+		if err != nil {
 			continue
 		}
 		innerInfo := FormatStruct(info.NemoConfigInfo)
@@ -133,12 +134,12 @@ func InitConfig() []NemoConfig {
 	return infoList
 }
 
-func FormatStruct(resInfo NemoConfigInfo) NemoConfig{
+func FormatStruct(resInfo NemoConfigInfo) NemoConfig {
 	innerInfo := NemoConfig{}
 	innerInfo.CoinType = resInfo.CoinType
 	innerInfo.SyCoinType = resInfo.SyCoinType
 	innerInfo.UnderlyingCoinType = resInfo.UnderlyingCoinType
-	decimal,_ := strconv.ParseInt(resInfo.Decimal, 10, 64)
+	decimal, _ := strconv.ParseInt(resInfo.Decimal, 10, 64)
 	innerInfo.Decimal = uint64(decimal)
 	innerInfo.ConversionRate = resInfo.ConversionRate
 	innerInfo.PyState = resInfo.PyState

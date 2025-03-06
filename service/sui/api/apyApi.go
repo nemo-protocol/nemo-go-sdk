@@ -84,7 +84,8 @@ func CalculatePoolApy(coinInfo CoinInfo, marketState MarketState, ytIn, syOut in
 	for _, reward := range marketState.RewardMetrics {
 		tokenPrice, _ := decimal.NewFromString(reward.TokenPrice)
 		dailyEmission, _ := decimal.NewFromString(reward.DailyEmission)
-		apy := safeDivide(tokenPrice.Mul(dailyEmission), tvl).Add(decimal.NewFromInt(1)).Pow(decimal.NewFromInt(365)).Sub(decimal.NewFromInt(1)).Mul(decimal.NewFromInt(100))
+		divResult,_ := safeDivide(tokenPrice.Mul(dailyEmission), tvl).Add(decimal.NewFromInt(1)).Float64()
+		apy := decimal.NewFromFloat(math.Pow(divResult, 365)).Sub(decimal.NewFromInt(1)).Mul(decimal.NewFromInt(100))
 		incentiveApy = incentiveApy.Add(apy)
 	}
 
