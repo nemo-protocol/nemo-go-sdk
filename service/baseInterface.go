@@ -14,5 +14,5 @@ type ContractInterface interface {
 	SwapToPy(amountIn, slippage float64, amountInType, exactAmountOutType string, sender *account.Account, nemoConfig *models.NemoConfig)(bool, error)
 	ClaimYtReward(nemoConfig *models.NemoConfig, sender *account.Account) (bool, error)
 	ClaimLpReward(nemoConfig *models.NemoConfig, sender *account.Account) (bool, error)
-	QueryPoolApy(nemoConfig *models.NemoConfig, sender *account.Account) (*models.ApyModel, error)
+	QueryPoolApy(nemoConfig *models.NemoConfig) (*models.ApyModel, error)
 }

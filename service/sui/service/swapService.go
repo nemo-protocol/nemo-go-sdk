@@ -20,7 +20,7 @@ import (
 func (s *SuiService)SwapByPy(amountIn, slippage float64, amountInType, exactAmountOutType string, sender *account.Account, nemoConfig *models.NemoConfig) (bool, error){
 	netPyIn := uint64(amountIn * math.Pow(10, float64(nemoConfig.Decimal)))
 	suiService := InitSuiService()
-	minPyOut, err := api.DryRunGetPyInForExactSyOutWithPriceVoucher(suiService.SuiApi, nemoConfig, amountInType, netPyIn, sender)
+	minPyOut, err := api.DryRunGetPyInForExactSyOutWithPriceVoucher(suiService.SuiApi, nemoConfig, amountInType, netPyIn, sender.Address)
 	if err != nil{
 		return false, errors.New(fmt.Sprintf("%v",nemoError.ParseErrorMessage(err.Error())))
 	}

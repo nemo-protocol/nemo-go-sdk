@@ -366,7 +366,7 @@ func DryRunGetPyOutForExactSyInWithPriceVoucher(client *client.Client, nemoConfi
 	return minPyOut, nil
 }
 
-func DryRunGetPyInForExactSyOutWithPriceVoucher(client *client.Client, nemoConfig *models.NemoConfig, exactPyType string, pyInAmount uint64, sender *account.Account) (uint64, error){
+func DryRunGetPyInForExactSyOutWithPriceVoucher(client *client.Client, nemoConfig *models.NemoConfig, exactPyType string, pyInAmount uint64, address string) (uint64, error){
 	ptb := sui_types.NewProgrammableTransactionBuilder()
 
 	nemoPackageId, err := sui_types.NewObjectIdFromHex(nemoConfig.NemoContract)
@@ -454,7 +454,7 @@ func DryRunGetPyInForExactSyOutWithPriceVoucher(client *client.Client, nemoConfi
 		return 0, fmt.Errorf("failed to serialize transaction: %w", err)
 	}
 
-	senderAddr, err := sui_types.NewAddressFromHex(sender.Address)
+	senderAddr, err := sui_types.NewAddressFromHex(address)
 	if err != nil {
 		return 0, fmt.Errorf("failed to parse sender address: %w", err)
 	}
@@ -738,7 +738,7 @@ func DryRunSingleLiquidityAddPtOut(client *client.Client, nemoConfig *models.Nem
 	return ptValue, nil
 }
 
-func DryRunConversionRate(client *client.Client, nemoConfig *models.NemoConfig, sender *account.Account) (float64, error){
+func DryRunConversionRate(client *client.Client, nemoConfig *models.NemoConfig, address string) (float64, error){
 	ptb := sui_types.NewProgrammableTransactionBuilder()
 
 	nemoPackageId, err := sui_types.NewObjectIdFromHex(nemoConfig.OracleVoucherPackage)
@@ -792,7 +792,7 @@ func DryRunConversionRate(client *client.Client, nemoConfig *models.NemoConfig, 
 		return 0, fmt.Errorf("failed to serialize transaction: %w", err)
 	}
 
-	senderAddr, err := sui_types.NewAddressFromHex(sender.Address)
+	senderAddr, err := sui_types.NewAddressFromHex(address)
 	if err != nil {
 		return 0, fmt.Errorf("failed to parse sender address: %w", err)
 	}
@@ -833,13 +833,13 @@ func DryRunConversionRate(client *client.Client, nemoConfig *models.NemoConfig, 
 	return float64(ptValue) / math.Pow(2, 64) + 1, nil
 }
 
-func GetYtInAndSyOut(client *client.Client, nemoConfig *models.NemoConfig, sender *account.Account, ytIn, retryTime uint64) (uint64, uint64, error){
-	syOut, err := DryRunGetPyInForExactSyOutWithPriceVoucher(client, nemoConfig, constant.YTTYPE, uint64(ytIn), sender)
+func GetYtInAndSyOut(client *client.Client, nemoConfig *models.NemoConfig, address string, ytIn, retryTime uint64) (uint64, uint64, error){
+	syOut, err := DryRunGetPyInForExactSyOutWithPriceVoucher(client, nemoConfig, constant.YTTYPE, ytIn, address)
 	if err != nil{
 		if retryTime > 3{
 			return 0 , 0, err
 		}
-		return GetYtInAndSyOut(client, nemoConfig, sender, ytIn / 100, retryTime + 1)
+		return GetYtInAndSyOut(client, nemoConfig, address, ytIn / 100, retryTime + 1)
 	}
 	return ytIn, syOut, nil
 }
@@ -884,5 +884,26 @@ func GetRewarders(marketStateInfo map[string]interface{}, decimal int, sourceMar
 				DailyEmission: fmt.Sprintf("%0.10f",dailyEmission),
 			})
 		}
+	}
+}
+
+func GetYtInitInAmount(coinType string) uint64{
+	switch coinType{
+	case constant.SCALLOPSSUI:
+		return 1000000
+	case constant.SCALLOPDEEP:
+		return 1000000
+	case constant.SCALLOPUSDC:
+		return 1000000
+	case constant.SCALLOPSCA:
+		return 1000000
+	case constant.SCALLOPSBUSDT:
+		return 1000000
+	case constant.SCALLOPSBETH:
+		return 100
+	case constant.STSUI:
+		return 1000000
+	default:
+		return 1000000
 	}
 }

@@ -576,10 +576,10 @@ func (s *SuiService)ClaimLpReward(nemoConfig *models.NemoConfig, sender *account
 	return true, nil
 }
 
-func (s *SuiService)QueryPoolApy(nemoConfig *models.NemoConfig, sender *account.Account) (*models.ApyModel, error){
+func (s *SuiService)QueryPoolApy(nemoConfig *models.NemoConfig) (*models.ApyModel, error){
 	client := InitSuiService()
 
-	conversionRate,err := api.DryRunConversionRate(client.SuiApi, nemoConfig, sender)
+	conversionRate,err := api.DryRunConversionRate(client.SuiApi, nemoConfig, "0x1")
 	if err != nil{
 		return nil, errors.New(fmt.Sprintf("%v",nemoError.ParseErrorMessage(err.Error())))
 	}
@@ -591,7 +591,7 @@ func (s *SuiService)QueryPoolApy(nemoConfig *models.NemoConfig, sender *account.
 	underlyingPrice := coinPrice / conversionRate
 	nemoConfig.UnderlyingCoinPrice = fmt.Sprintf("%0.10f",underlyingPrice)
 
-	ytIn, syOut, err := api.GetYtInAndSyOut(client.SuiApi, nemoConfig, sender, 10000000, 0)
+	ytIn, syOut, err := api.GetYtInAndSyOut(client.SuiApi, nemoConfig, "0x1", api.GetYtInitInAmount(nemoConfig.CoinType), 0)
 	if err != nil{
 		return nil, errors.New(fmt.Sprintf("%v",nemoError.ParseErrorMessage(err.Error())))
 	}
