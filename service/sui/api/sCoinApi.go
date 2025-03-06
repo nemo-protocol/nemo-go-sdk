@@ -6,8 +6,8 @@ import (
 	"github.com/coming-chat/go-sui/v2/client"
 	"github.com/coming-chat/go-sui/v2/move_types"
 	"github.com/coming-chat/go-sui/v2/sui_types"
-	"nemo-go-sdk/service/sui/common/constant"
-	"nemo-go-sdk/service/sui/common/models"
+	"github.com/nemo-protocol/nemo-go-sdk/service/sui/common/constant"
+	"github.com/nemo-protocol/nemo-go-sdk/service/sui/common/models"
 )
 
 var (

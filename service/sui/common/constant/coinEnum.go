@@ -1,6 +1,6 @@
 package constant
 
-import "nemo-go-sdk/utils"
+import "github.com/nemo-protocol/nemo-go-sdk/utils"
 
 var (
 	GASCOINTYPE = "0x2::sui::SUI"

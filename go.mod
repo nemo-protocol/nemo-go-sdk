@@ -1,4 +1,4 @@
-module nemo-go-sdk
+module github.com/nemo-protocol/nemo-go-sdk
 
 go 1.22.5
 

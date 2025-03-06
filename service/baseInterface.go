@@ -2,7 +2,7 @@ package service
 
 import (
 	"github.com/coming-chat/go-sui/v2/account"
-	"nemo-go-sdk/service/sui/common/models"
+	"github.com/nemo-protocol/nemo-go-sdk/service/sui/common/models"
 )
 
 type ContractInterface interface {

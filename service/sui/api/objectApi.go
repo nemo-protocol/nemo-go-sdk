@@ -10,8 +10,8 @@ import (
 	"github.com/coming-chat/go-sui/v2/client"
 	"github.com/coming-chat/go-sui/v2/sui_types"
 	"github.com/coming-chat/go-sui/v2/types"
-	"nemo-go-sdk/service/sui/common/models"
-	"nemo-go-sdk/utils"
+	"github.com/nemo-protocol/nemo-go-sdk/service/sui/common/models"
+	"github.com/nemo-protocol/nemo-go-sdk/utils"
 	"strings"
 )
 

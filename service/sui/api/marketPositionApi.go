@@ -6,8 +6,8 @@ import (
 	"github.com/coming-chat/go-sui/v2/client"
 	"github.com/coming-chat/go-sui/v2/move_types"
 	"github.com/coming-chat/go-sui/v2/sui_types"
-	"nemo-go-sdk/service/sui/common/constant"
-	"nemo-go-sdk/service/sui/common/models"
+	"github.com/nemo-protocol/nemo-go-sdk/service/sui/common/constant"
+	"github.com/nemo-protocol/nemo-go-sdk/service/sui/common/models"
 )
 
 func MergeAllLpPositions(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig, previousMarketPositionArgument, marketPositionArgument *sui_types.Argument) (*sui_types.Argument,error) {

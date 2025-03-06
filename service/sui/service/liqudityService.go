@@ -10,10 +10,10 @@ import (
 	"github.com/coming-chat/go-sui/v2/types"
 	"github.com/fardream/go-bcs/bcs"
 	"math"
-	"nemo-go-sdk/service/sui/api"
-	"nemo-go-sdk/service/sui/common/constant"
-	"nemo-go-sdk/service/sui/common/models"
-	"nemo-go-sdk/service/sui/common/nemoError"
+	"github.com/nemo-protocol/nemo-go-sdk/service/sui/api"
+	"github.com/nemo-protocol/nemo-go-sdk/service/sui/common/constant"
+	"github.com/nemo-protocol/nemo-go-sdk/service/sui/common/models"
+	"github.com/nemo-protocol/nemo-go-sdk/service/sui/common/nemoError"
 	"strconv"
 )
 

@@ -3,7 +3,7 @@ package models
 import (
 	"encoding/json"
 	"fmt"
-	"nemo-go-sdk/utils"
+	"github.com/nemo-protocol/nemo-go-sdk/utils"
 	"strconv"
 )
 
