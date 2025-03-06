@@ -9,11 +9,11 @@ import (
 )
 
 type CoinInfo struct {
-	CoinPrice          string
-	UnderlyingPrice    string
-	UnderlyingApy      string
-	SwapFeeForLpHolder string
-	Decimal            int
+	CoinPrice          float64
+	UnderlyingPrice    float64
+	UnderlyingApy      float64
+	SwapFeeForLpHolder float64
+	Decimal            uint64
 	Maturity           int64
 }
 
@@ -47,10 +47,10 @@ func calculatePtApy(underlyingPrice, ptPrice, daysToExpiry decimal.Decimal) deci
 
 func CalculatePoolApy(coinInfo CoinInfo, marketState MarketState, ytIn, syOut int64) string {
 	// Convert strings to decimals
-	coinPrice, _ := decimal.NewFromString(coinInfo.CoinPrice)
-	underlyingPrice, _ := decimal.NewFromString(coinInfo.UnderlyingPrice)
-	underlyingApy, _ := decimal.NewFromString(coinInfo.UnderlyingApy)
-	swapFeeForLpHolder, _ := decimal.NewFromString(coinInfo.SwapFeeForLpHolder)
+	coinPrice := decimal.NewFromFloat(coinInfo.CoinPrice)
+	underlyingPrice := decimal.NewFromFloat(coinInfo.UnderlyingPrice)
+	underlyingApy := decimal.NewFromFloat(coinInfo.UnderlyingApy)
+	swapFeeForLpHolder := decimal.NewFromFloat(coinInfo.SwapFeeForLpHolder)
 	totalPt, _ := decimal.NewFromString(marketState.TotalPt)
 	totalSy, _ := decimal.NewFromString(marketState.TotalSy)
 

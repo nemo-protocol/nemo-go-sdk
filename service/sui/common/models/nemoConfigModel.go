@@ -8,9 +8,11 @@ import (
 )
 
 type NemoConfig struct {
+	CoinPrice            string   `json:"coinPrice"`
 	CoinType             string   `json:"coinType"`
 	SyCoinType           string   `json:"syCoinType"`
 	UnderlyingCoinType   string   `json:"underlyingCoinType"`
+	UnderlyingApy        string   `json:"underlyingApy"`
 	Decimal              uint64   `json:"decimal"`
 	ConversionRate       string   `json:"conversionRate"`
 	PyState              string   `json:"pyState"`
@@ -33,12 +35,15 @@ type NemoConfig struct {
 	OraclePackage        string   `json:"oraclePackageId"`
 	OracleTicket         string   `json:"oracleTicket"`
 	OracleVoucherPackage string   `json:"oracleVoucherPackageId"`
+	SwapFeeForLpHolder   string   `json:"swapFeeForLpHolder"`
 }
 
 type NemoConfigInfo struct {
+	CoinPrice            string   `json:"coinPrice"`
 	CoinType             string   `json:"coinType"`
 	SyCoinType           string   `json:"syCoinType"`
 	UnderlyingCoinType   string   `json:"underlyingCoinType"`
+	UnderlyingApy        string   `json:"underlyingApy"`
 	Decimal              string   `json:"decimal"`
 	ConversionRate       string   `json:"conversionRate"`
 	PyState              string   `json:"pyStateId"`
@@ -60,6 +65,7 @@ type NemoConfigInfo struct {
 	OraclePackage        string   `json:"oraclePackageId"`
 	OracleTicket         string   `json:"oracleTicket"`
 	OracleVoucherPackage string   `json:"oracleVoucherPackageId"`
+	SwapFeeForLpHolder   string   `json:"swapFeeForLpHolder"`
 }
 
 type NemoInfoResponse struct {
@@ -154,5 +160,8 @@ func FormatStruct(resInfo NemoConfigInfo) NemoConfig{
 	innerInfo.OraclePackage = resInfo.OraclePackage
 	innerInfo.OracleTicket = resInfo.OracleTicket
 	innerInfo.OracleVoucherPackage = resInfo.OracleVoucherPackage
+	innerInfo.CoinPrice = resInfo.CoinPrice
+	innerInfo.UnderlyingApy = resInfo.UnderlyingApy
+	innerInfo.SwapFeeForLpHolder = resInfo.SwapFeeForLpHolder
 	return innerInfo
 }

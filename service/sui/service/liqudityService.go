@@ -586,3 +586,54 @@ func (s *SuiService)ClaimLpReward(nemoConfig *models.NemoConfig, sender *account
 
 	return true, nil
 }
+
+func (s *SuiService)QueryPoolApy(nemoConfig *models.NemoConfig, sender *account.Account) (*models.ApyModel, error){
+	client := InitSuiService()
+
+	conversionRate,err := api.DryRunConversionRate(client.SuiApi, nemoConfig, sender)
+	if err != nil{
+		return nil, err
+	}
+
+	coinPrice,err := strconv.ParseFloat(nemoConfig.CoinPrice, 64)
+	if err != nil{
+		return nil, err
+	}
+	underlyingPrice := coinPrice / conversionRate
+
+	ytIn, syOut, err := api.GetYtInAndSyOut(client.SuiApi, nemoConfig, sender, 10000000, 0)
+	if err != nil{
+		return nil, err
+	}
+	fmt.Printf("ytin:%v, syout:%v",ytIn,syOut)
+	pyStateInfo, err := api.GetObjectFieldByObjectId(client.SuiApi, nemoConfig.PyState)
+	if err != nil{
+		return nil, err
+	}
+	maturity := pyStateInfo["expiry"].(string)
+
+	marketStateInfo, err := api.GetObjectFieldByObjectId(client.SuiApi, nemoConfig.MarketState)
+	if err != nil{
+		return nil, err
+	}
+
+	coinInfo := api.CoinInfo{}
+	coinInfo.CoinPrice = coinPrice
+	coinInfo.Decimal = nemoConfig.Decimal
+	coinInfo.UnderlyingPrice = underlyingPrice
+	coinInfo.UnderlyingApy,_ = strconv.ParseFloat(nemoConfig.UnderlyingApy, 64)
+	coinInfo.Maturity,_ = strconv.ParseInt(maturity, 10, 64)
+	coinInfo.SwapFeeForLpHolder,_ = strconv.ParseFloat(nemoConfig.SwapFeeForLpHolder, 64)
+
+	marketState := api.MarketState{}
+	marketState.TotalPt = marketStateInfo["total_pt"].(string)
+	marketState.LpSupply = marketStateInfo["lp_supply"].(string)
+	marketState.TotalSy = marketStateInfo["total_sy"].(string)
+	poolApy := api.CalculatePoolApy(coinInfo, marketState, int64(ytIn), int64(syOut))
+	response := &models.ApyModel{
+		PoolApy: poolApy,
+	}
+
+	return response, nil
+}
+

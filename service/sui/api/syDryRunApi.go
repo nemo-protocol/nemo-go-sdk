@@ -10,6 +10,7 @@ import (
 	"github.com/coming-chat/go-sui/v2/move_types"
 	"github.com/coming-chat/go-sui/v2/sui_types"
 	"github.com/fardream/go-bcs/bcs"
+	"math"
 	"nemo-go-sdk/service/sui/common/constant"
 	"nemo-go-sdk/service/sui/common/models"
 )
@@ -684,4 +685,110 @@ func DryRunSingleLiquidityAddPtOut(client *client.Client, nemoConfig *models.Nem
 		}
 	}
 	return ptValue, nil
+}
+
+func DryRunConversionRate(client *client.Client, nemoConfig *models.NemoConfig, sender *account.Account) (float64, error){
+	ptb := sui_types.NewProgrammableTransactionBuilder()
+
+	nemoPackageId, err := sui_types.NewObjectIdFromHex(nemoConfig.OracleVoucherPackage)
+	if err != nil {
+		return 0, err
+	}
+
+	syStructTag, err := GetStructTag(nemoConfig.SyCoinType)
+	if err != nil {
+		return 0, err
+	}
+
+	moduleName := "oracle_voucher"
+	functionName := "get_price"
+	module := move_types.Identifier(moduleName)
+	function := move_types.Identifier(functionName)
+
+	typeArguments := []move_types.TypeTag{
+		{Struct: syStructTag},
+	}
+
+	oracleArgument, err := GetPriceVoucher(ptb, client, nemoConfig)
+	if err != nil{
+		return 0, err
+	}
+
+	arguments := []sui_types.Argument{
+		*oracleArgument,
+	}
+
+	ptb.Command(
+		sui_types.Command{
+			MoveCall: &sui_types.ProgrammableMoveCall{
+				Package:       *nemoPackageId,
+				Module:        module,
+				Function:      function,
+				TypeArguments: typeArguments,
+				Arguments:     arguments,
+			},
+		},
+	)
+
+	pt := ptb.Finish()
+
+	txKind := sui_types.TransactionKind{
+		ProgrammableTransaction: &pt,
+	}
+
+	txBytes, err := bcs.Marshal(txKind)
+	if err != nil {
+		return 0, fmt.Errorf("failed to serialize transaction: %w", err)
+	}
+
+	senderAddr, err := sui_types.NewAddressFromHex(sender.Address)
+	if err != nil {
+		return 0, fmt.Errorf("failed to parse sender address: %w", err)
+	}
+
+	result, err := client.DevInspectTransactionBlock(context.Background(), *senderAddr, txBytes, nil, nil)
+	if err != nil {
+		return 0, fmt.Errorf("failed to inspect transaction: %w", err)
+	}
+	if result.Error != nil{
+		return 0, errors.New(fmt.Sprintf("%v", *result.Error))
+	}
+	if len(result.Results) == 0 {
+		return 0, fmt.Errorf("no results returned")
+	}
+
+	lastResult := result.Results[len(result.Results)-1]
+
+	var ptValue uint64
+	if len(lastResult.ReturnValues) > 0 {
+		firstValue := lastResult.ReturnValues[0]
+		if firstValueArray, ok := firstValue.([]interface{}); ok && len(firstValueArray) > 0 {
+			if innerArray, ok := firstValueArray[0].([]interface{}); ok && len(innerArray) > 0 {
+				byteSlice := make([]byte, len(innerArray))
+				for i, v := range innerArray {
+					if num, ok := v.(float64); ok {
+						byteSlice[i] = byte(num)
+					}
+				}
+				if len(byteSlice) >= 8 {
+					ptValue = binary.LittleEndian.Uint64(byteSlice)
+					fmt.Printf("Parsed ptValue: %d\n", ptValue)
+				}
+			}
+		}
+	}
+
+
+	return float64(ptValue) / math.Pow(2, 64) + 1, nil
+}
+
+func GetYtInAndSyOut(client *client.Client, nemoConfig *models.NemoConfig, sender *account.Account, ytIn, retryTime uint64) (uint64, uint64, error){
+	syOut, err := DryRunGetPyInForExactSyOutWithPriceVoucher(client, nemoConfig, constant.YTTYPE, uint64(ytIn), sender)
+	if err != nil{
+		if retryTime > 3{
+			return 0 , 0, err
+		}
+		return GetYtInAndSyOut(client, nemoConfig, sender, ytIn / 100, retryTime + 1)
+	}
+	return ytIn, syOut, nil
 }
