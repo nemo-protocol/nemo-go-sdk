@@ -38,7 +38,7 @@ func GetObjectMutable(client *client.Client, objectType, contractPackage, module
 	objects,_ := client.GetObject(context.Background(), *contractPackageAddr, &types.SuiObjectDataOptions{
 		ShowType: true, ShowContent: true, ShowBcs: true, ShowOwner: true, ShowPreviousTransaction: true, ShowStorageRebate: true, ShowDisplay: true,
 	})
-	if objects == nil || objects.Data == nil || objects.Data.Content == nil || objects.Data.Content.Data == nil{
+	if objects == nil || objects.Data == nil || objects.Data.Content == nil {
 		return false
 	}
 	marshal, err := json.Marshal(objects.Data.Content.Data)
