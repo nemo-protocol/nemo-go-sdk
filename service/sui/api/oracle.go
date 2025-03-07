@@ -323,8 +323,15 @@ func GetPriceVoucherFromHasui(ptb *sui_types.ProgrammableTransactionBuilder, cli
 	syTypeTag := move_types.TypeTag{
 		Struct: syStructTag,
 	}
+	coinTypeStructTag, err := GetStructTag(nemoConfig.CoinType)
+	if err != nil {
+		return nil, err
+	}
+	coinTypeTag := move_types.TypeTag{
+		Struct: coinTypeStructTag,
+	}
 	typeArguments := make([]move_types.TypeTag, 0)
-	typeArguments = append(typeArguments, syTypeTag)
+	typeArguments = append(typeArguments, syTypeTag, coinTypeTag)
 
 	priceOracleCallArg,err := GetObjectArg(client, nemoConfig.PriceOracle, false, nemoConfig.OraclePackage, moduleName, functionName)
 	if err != nil {

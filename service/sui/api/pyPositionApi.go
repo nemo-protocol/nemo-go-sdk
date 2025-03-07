@@ -78,6 +78,9 @@ func GetObjectArgument(ptb *sui_types.ProgrammableTransactionBuilder, client *cl
 }
 
 func GetObjectArg(client *client.Client, shareObject string, isCoin bool, contractPackage, module, function string) (*sui_types.ObjectArg, error) {
+	if shareObject == ""{
+		return nil, errors.New("share Object is null")
+	}
 	hexObject, err := sui_types.NewObjectIdFromHex(shareObject)
 	if err != nil {
 		return nil, err
