@@ -260,7 +260,12 @@ func GetPriceVoucherFromAftermath(ptb *sui_types.ProgrammableTransactionBuilder,
 		return nil, err
 	}
 
-	lstInfoCallArg,err := GetObjectArg(client, nemoConfig.LstInfo, false, nemoConfig.OraclePackage, moduleName, functionName)
+	stakeSuiValutCallArg,err := GetObjectArg(client, STAKED_SUI_VAULT, false, nemoConfig.OraclePackage, moduleName, functionName)
+	if err != nil {
+		return nil, err
+	}
+
+	safeCallArg,err := GetObjectArg(client, SAFE, false, nemoConfig.OraclePackage, moduleName, functionName)
 	if err != nil {
 		return nil, err
 	}
@@ -271,7 +276,7 @@ func GetPriceVoucherFromAftermath(ptb *sui_types.ProgrammableTransactionBuilder,
 	}
 
 	callArgs := make([]sui_types.CallArg, 0)
-	callArgs = append(callArgs, sui_types.CallArg{Object: priceOracleCallArg}, sui_types.CallArg{Object: oracleTicketCallArg}, sui_types.CallArg{Object: lstInfoCallArg}, sui_types.CallArg{Object: syStateCallArg})
+	callArgs = append(callArgs, sui_types.CallArg{Object: priceOracleCallArg}, sui_types.CallArg{Object: oracleTicketCallArg}, sui_types.CallArg{Object: stakeSuiValutCallArg}, sui_types.CallArg{Object: safeCallArg}, sui_types.CallArg{Object: syStateCallArg})
 	var arguments []sui_types.Argument
 	for _, v := range callArgs {
 		argument, err := ptb.Input(v)
