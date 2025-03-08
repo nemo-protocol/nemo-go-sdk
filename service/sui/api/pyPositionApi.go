@@ -89,7 +89,9 @@ func GetObjectArg(client *client.Client, shareObject string, isCoin bool, contra
 	if err != nil {
 		return nil, err
 	}
-
+	if sourceObjectData.Data == nil{
+		return nil, errors.New("get share Object fail")
+	}
 	if !isCoin && sourceObjectData.Data.Owner.AddressOwner == nil{
 		return &sui_types.ObjectArg{
 			SharedObject: &struct {

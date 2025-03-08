@@ -531,11 +531,8 @@ func MintHaedalCoin(ptb *sui_types.ProgrammableTransactionBuilder, client *clien
 		return nil, err
 	}
 
-	address := "0x0000000000000000000000000000000000000000000000000000000000000000"
-	addressArgument, err := GetObjectArgument(ptb, client, address, false, HAEDAL_PACKAGE, moduleName, functionName)
-	if err != nil {
-		return nil, err
-	}
+	address,_ := sui_types.NewAddressFromHex("0x0000000000000000000000000000000000000000000000000000000000000000")
+	addressArgument, err := ptb.Pure(*address)
 
 	var arguments []sui_types.Argument
 
