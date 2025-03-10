@@ -128,6 +128,7 @@ func CalculatePoolApy(coinInfo CoinInfo, marketState MarketState, ytIn, syOut in
 		LpSupply: marketState.LpSupply,
 		RewardMetrics: make([]models.RewardMetrics, 0),
 	}
+	response.Incentives = make([]models.Incentives, 0)
 	for _, reward := range marketState.RewardMetrics {
 		tokenPrice, _ := decimal.NewFromString(reward.TokenPrice)
 		dailyEmission, _ := decimal.NewFromString(reward.DailyEmission)
