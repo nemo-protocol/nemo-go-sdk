@@ -9,10 +9,10 @@ import (
 	"github.com/coming-chat/go-sui/v2/sui_types"
 	"github.com/nemo-protocol/nemo-go-sdk/service/sui/common/constant"
 	"github.com/nemo-protocol/nemo-go-sdk/service/sui/common/models"
+	"github.com/nemo-protocol/nemo-go-sdk/utils"
 	"sort"
 	"strconv"
 )
-
 
 type CoinData struct {
 	CoinType            string `json:"coinType"`
@@ -25,6 +25,17 @@ type CoinData struct {
 
 type CoinPage struct {
 	Data        []CoinData `json:"data"`
+	NextCursor  string     `json:"nextCursor,omitempty"`
+	HasNextPage bool       `json:"hasNextPage"`
+}
+
+type PriceInfo struct {
+	Logo  string `json:"logo"`
+	Price string `json:"price"`
+}
+
+type PricePage struct {
+	Data        map[string]PriceInfo `json:"data"`
 	NextCursor  string     `json:"nextCursor,omitempty"`
 	HasNextPage bool       `json:"hasNextPage"`
 }
@@ -62,7 +73,7 @@ func RemainCoinAndGas(client *client.Client, address string, expectGas uint64, c
 			continue
 		}
 
-		if balance >= expectGas && constant.IsGasCoinType(coinType){
+		if balance >= expectGas && constant.IsGasCoinType(coinType) {
 			diff := balance - expectGas
 			if diff < minDiff {
 				if gasCoin != nil {
@@ -80,12 +91,12 @@ func RemainCoinAndGas(client *client.Client, address string, expectGas uint64, c
 		totalBalance += balance
 	}
 
-	if gasCoin == nil && constant.IsGasCoinType(coinType){
+	if gasCoin == nil && constant.IsGasCoinType(coinType) {
 		return nil, nil, errors.New("no suitable coin for gas found")
 	}
 
 	var gasObjectRef *sui_types.ObjectRef
-	if gasCoin != nil{
+	if gasCoin != nil {
 		coinId, err := sui_types.NewObjectIdFromHex(gasCoin.CoinObjectId)
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to parse coin ID: %w", err)
@@ -248,7 +259,7 @@ func SplitOrMergeCoin(ptb *sui_types.ProgrammableTransactionBuilder, client *cli
 		if err != nil {
 			return sui_types.Argument{}, nil, err
 		}
-		if balance >= netSyIn{
+		if balance >= netSyIn {
 			coinArg, err := GetObjectArg(client, remainingCoins[0].CoinObjectId, true, "", "", "")
 			if err != nil {
 				return sui_types.Argument{}, nil, err
@@ -283,9 +294,21 @@ func SplitOrMergeCoin(ptb *sui_types.ProgrammableTransactionBuilder, client *cli
 	return splitResult, unusedCoins, nil
 }
 
-func SwapToUnderlyingCoin(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig, coinArgument *sui_types.Argument) (*sui_types.Argument, error){
-	if constant.IsSui(nemoConfig.UnderlyingCoinType){
+func SwapToUnderlyingCoin(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig, coinArgument *sui_types.Argument) (*sui_types.Argument, error) {
+	if constant.IsSui(nemoConfig.UnderlyingCoinType) {
 		return BurnSCoin(ptb, client, nemoConfig.CoinType, nemoConfig.UnderlyingCoinType, coinArgument)
 	}
 	return nil, errors.New("invalid underlying coin！")
+}
+
+func GetCoinPriceInfo() map[string]PriceInfo {
+	priceInfoUrl := "https://app.nemoprotocol.com/api/v1/market/info"
+	priceInfoByte, err := utils.SendGetRpc(priceInfoUrl)
+	if err != nil {
+		return map[string]PriceInfo{}
+	}
+	pricePage := &PricePage{}
+	_ = json.Unmarshal(priceInfoByte, pricePage)
+
+	return pricePage.Data
 }

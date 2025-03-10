@@ -27,6 +27,7 @@ type MarketState struct {
 
 type RewardMetric struct {
 	TokenPrice    string
+	TokenLogo     string
 	DailyEmission string
 	CoinType      string
 }
@@ -128,6 +129,7 @@ func CalculatePoolApy(coinInfo CoinInfo, marketState MarketState, ytIn, syOut in
 		incentives := models.Incentives{
 			Apy: apy.String(),
 			TokenType: reward.CoinType,
+			TokenLogo: reward.TokenLogo,
 		}
 		response.Incentives = append(response.Incentives, incentives)
 	}

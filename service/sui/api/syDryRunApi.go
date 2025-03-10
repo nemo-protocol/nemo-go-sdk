@@ -15,6 +15,8 @@ import (
 	"math"
 	"github.com/nemo-protocol/nemo-go-sdk/service/sui/common/constant"
 	"github.com/nemo-protocol/nemo-go-sdk/service/sui/common/models"
+	"strconv"
+	"time"
 )
 
 type PoolRewarderInfo struct {
@@ -858,7 +860,7 @@ func CalculateDailyEmission(emissionPerSecond, tokenType string, decimalPlaces i
 	return dailyEmissionFloat
 }
 
-func GetRewarders(marketStateInfo map[string]interface{}, decimal int, sourceMarketState *MarketState, nemoConfig *models.NemoConfig) {
+func GetRewarders(marketStateInfo map[string]interface{}, decimal int, sourceMarketState *MarketState, priceInfoMap map[string]PriceInfo) {
 	byteBody,err := json.Marshal(marketStateInfo)
 	if err != nil {
 		return
@@ -869,23 +871,25 @@ func GetRewarders(marketStateInfo map[string]interface{}, decimal int, sourceMar
 		fmt.Println("Error parsing JSON:", err)
 		return
 	}
+
 	for _, content := range marketState.RewardPool.Fields.Rewarders.Fields.Contents {
+		endtime,_ := strconv.ParseInt(content.Fields.Value.Fields.EndTime, 10 ,64)
+		if endtime < time.Now().Unix() * 1000{
+			continue
+		}
 		rewarder := content.Fields.Value.Fields
 		dailyEmission := CalculateDailyEmission(rewarder.EmissionPerSecond, rewarder.RewardToken.Fields.Name, decimal)
 		rewardName := fmt.Sprintf("0x%v",rewarder.RewardToken.Fields.Name)
-		if constant.IsSui(rewardName) && constant.IsSui(nemoConfig.UnderlyingCoinType) || rewardName == nemoConfig.UnderlyingCoinType{
-			sourceMarketState.RewardMetrics = append(sourceMarketState.RewardMetrics, RewardMetric{
-				TokenPrice: nemoConfig.UnderlyingCoinPrice,
-				DailyEmission: fmt.Sprintf("%0.10f",dailyEmission),
-				CoinType: rewardName,
-			})
-		}else if rewardName == nemoConfig.CoinType{
-			sourceMarketState.RewardMetrics = append(sourceMarketState.RewardMetrics, RewardMetric{
-				TokenPrice: nemoConfig.CoinPrice,
-				DailyEmission: fmt.Sprintf("%0.10f",dailyEmission),
-				CoinType: rewardName,
-			})
+		priceInfo, ok := priceInfoMap[rewardName]
+		if !ok{
+			continue
 		}
+		sourceMarketState.RewardMetrics = append(sourceMarketState.RewardMetrics, RewardMetric{
+			TokenPrice: priceInfo.Price,
+			TokenLogo: priceInfo.Logo,
+			DailyEmission: fmt.Sprintf("%0.10f",dailyEmission),
+			CoinType: rewardName,
+		})
 	}
 }
 

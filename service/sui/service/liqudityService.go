@@ -576,7 +576,7 @@ func (s *SuiService)ClaimLpReward(nemoConfig *models.NemoConfig, sender *account
 	return true, nil
 }
 
-func (s *SuiService)QueryPoolApy(nemoConfig *models.NemoConfig) (*models.ApyModel, error){
+func (s *SuiService)QueryPoolApy(nemoConfig *models.NemoConfig, priceInfoMap ...map[string]api.PriceInfo) (*models.ApyModel, error){
 	client := InitSuiService()
 
 	conversionRate,err := api.DryRunConversionRate(client.SuiApi, nemoConfig, "0x1")
@@ -607,8 +607,15 @@ func (s *SuiService)QueryPoolApy(nemoConfig *models.NemoConfig) (*models.ApyMode
 		return nil, err
 	}
 
+	innerPriceInfoMap := map[string]api.PriceInfo{}
+	if len(priceInfoMap) == 0 || len(priceInfoMap[0]) == 0{
+		innerPriceInfoMap = api.GetCoinPriceInfo()
+	}else {
+		innerPriceInfoMap = priceInfoMap[0]
+	}
+
 	marketState := api.MarketState{}
-	api.GetRewarders(marketStateInfo, int(nemoConfig.Decimal), &marketState, nemoConfig)
+	api.GetRewarders(marketStateInfo, int(nemoConfig.Decimal), &marketState, innerPriceInfoMap)
 
 	coinInfo := api.CoinInfo{}
 	coinInfo.CoinPrice = coinPrice

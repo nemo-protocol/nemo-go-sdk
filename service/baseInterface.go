@@ -2,6 +2,7 @@ package service
 
 import (
 	"github.com/coming-chat/go-sui/v2/account"
+	"github.com/nemo-protocol/nemo-go-sdk/service/sui/api"
 	"github.com/nemo-protocol/nemo-go-sdk/service/sui/common/models"
 )
 
@@ -14,5 +15,5 @@ type ContractInterface interface {
 	SwapToPy(amountIn, slippage float64, amountInType, amountOutType string, sender *account.Account, nemoConfig *models.NemoConfig)(bool, error)
 	ClaimYtReward(nemoConfig *models.NemoConfig, sender *account.Account) (bool, error)
 	ClaimLpReward(nemoConfig *models.NemoConfig, sender *account.Account) (bool, error)
-	QueryPoolApy(nemoConfig *models.NemoConfig) (*models.ApyModel, error)
+	QueryPoolApy(nemoConfig *models.NemoConfig, priceInfoMap ...map[string]api.PriceInfo) (*models.ApyModel, error)
 }
