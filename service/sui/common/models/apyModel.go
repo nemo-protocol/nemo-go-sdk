@@ -4,8 +4,10 @@ type ApyModel struct {
 	PoolApy             string       `json:"poolApy"`
 	PtApy               string       `json:"ptApy"`
 	YtApy               string       `json:"ytApy"`
-	IncentiveApy        string       `json:"incentiveApy"`
+	Incentive           string       `json:"incentive"`
 	ScaledUnderlyingApy string       `json:"scaledUnderlyingApy"`
+	UnderlyingApy       string       `json:"underlyingApy"`
+	ScaledApy           string       `json:"scaledApy"`
 	ScaledPtApy         string       `json:"scaledPtApy"`
 	Tvl                 string       `json:"tvl"`
 	PtTvl               string       `json:"ptTvl"`
