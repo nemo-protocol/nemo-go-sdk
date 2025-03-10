@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"github.com/nemo-protocol/nemo-go-sdk/service/sui/common/models"
 	"math"
 	"time"
 
@@ -27,6 +28,7 @@ type MarketState struct {
 type RewardMetric struct {
 	TokenPrice    string
 	DailyEmission string
+	CoinType      string
 }
 
 func safeDivide(numerator, denominator decimal.Decimal) decimal.Decimal {
@@ -73,7 +75,8 @@ func CalculateYtAPY(underlyingInterestApyDec, ytPriceInAsset, yearsToExpiryDec d
 	return ytApy
 }
 
-func CalculatePoolApy(coinInfo CoinInfo, marketState MarketState, ytIn, syOut int64) (string, string, string) {
+func CalculatePoolApy(coinInfo CoinInfo, marketState MarketState, ytIn, syOut int64) *models.ApyModel{
+	response := &models.ApyModel{}
 	// Convert strings to decimals
 	coinPrice := decimal.NewFromFloat(coinInfo.CoinPrice)
 	underlyingPrice := decimal.NewFromFloat(coinInfo.UnderlyingPrice)
@@ -81,6 +84,7 @@ func CalculatePoolApy(coinInfo CoinInfo, marketState MarketState, ytIn, syOut in
 	swapFeeForLpHolder := decimal.NewFromFloat(coinInfo.SwapFeeForLpHolder)
 	totalPt, _ := decimal.NewFromString(marketState.TotalPt)
 	totalSy, _ := decimal.NewFromString(marketState.TotalSy)
+	lpSupply, _ := decimal.NewFromString(marketState.LpSupply)
 
 	// Calculate days to expiry
 	daysToExpiry := decimal.NewFromFloat(float64(coinInfo.Maturity/1000 - time.Now().Unix()) / float64(86400))
@@ -91,8 +95,10 @@ func CalculatePoolApy(coinInfo CoinInfo, marketState MarketState, ytIn, syOut in
 	ptPrice := underlyingPrice.Sub(ytPrice)
 	fmt.Printf("\nsyOut:%v,ytIn:%v,ptPrice:%v\n",syOut,ytIn,ptPrice)
 	ptTvl := totalPt.Mul(ptPrice).Div(decimal.NewFromInt(int64(math.Pow(10, float64(coinInfo.Decimal)))))
+	ytTvl := totalPt.Mul(ytPrice).Div(decimal.NewFromInt(int64(math.Pow(10, float64(coinInfo.Decimal)))))
 	syTvl := totalSy.Mul(coinPrice).Div(decimal.NewFromInt(int64(math.Pow(10, float64(coinInfo.Decimal)))))
 	tvl := syTvl.Add(ptTvl)
+	lpPrice := tvl.Div(lpSupply).Mul(decimal.NewFromInt(int64(math.Pow(10, float64(coinInfo.Decimal)))))
 
 	// Calculate scaled APYs
 	rSy := safeDivide(totalSy, totalSy.Add(totalPt))
@@ -118,10 +124,31 @@ func CalculatePoolApy(coinInfo CoinInfo, marketState MarketState, ytIn, syOut in
 		divResult,_ := safeDivide(tokenPrice.Mul(dailyEmission), tvl).Add(decimal.NewFromInt(1)).Float64()
 		apy := decimal.NewFromFloat(math.Pow(divResult, 365)).Sub(decimal.NewFromInt(1)).Mul(decimal.NewFromInt(100))
 		incentiveApy = incentiveApy.Add(apy)
+
+		incentives := models.Incentives{
+			Apy: apy.String(),
+			TokenType: reward.CoinType,
+		}
+		response.Incentives = append(response.Incentives, incentives)
 	}
 
 	// Calculate pool APY
 	poolApy := scaledUnderlyingApy.Add(scaledPtApy).Add(swapFeeApy).Add(incentiveApy)
 
-	return poolApy.String(), ptApy.String(), ytApy.String()
+	response.PoolApy = poolApy.String()
+	response.PtApy = ptApy.String()
+	response.YtApy = ytApy.String()
+	response.IncentiveApy = incentiveApy.String()
+	response.ScaledUnderlyingApy = scaledUnderlyingApy.String()
+	response.ScaledPtApy = scaledPtApy.String()
+	response.Tvl = tvl.String()
+	response.PtTvl = ptTvl.String()
+	response.YtTvl = ytTvl.String()
+	response.SyTvl = syTvl.String()
+	response.PtPrice = ptPrice.String()
+	response.YtPrice = ytPrice.String()
+	response.SwapFeeApy = swapFeeApy.String()
+	response.LpPrice = lpPrice.String()
+
+	return response
 }

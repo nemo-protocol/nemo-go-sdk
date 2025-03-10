@@ -877,11 +877,13 @@ func GetRewarders(marketStateInfo map[string]interface{}, decimal int, sourceMar
 			sourceMarketState.RewardMetrics = append(sourceMarketState.RewardMetrics, RewardMetric{
 				TokenPrice: nemoConfig.UnderlyingCoinPrice,
 				DailyEmission: fmt.Sprintf("%0.10f",dailyEmission),
+				CoinType: rewardName,
 			})
 		}else if rewardName == nemoConfig.CoinType{
 			sourceMarketState.RewardMetrics = append(sourceMarketState.RewardMetrics, RewardMetric{
 				TokenPrice: nemoConfig.CoinPrice,
 				DailyEmission: fmt.Sprintf("%0.10f",dailyEmission),
+				CoinType: rewardName,
 			})
 		}
 	}

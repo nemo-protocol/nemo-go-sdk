@@ -622,12 +622,8 @@ func (s *SuiService)QueryPoolApy(nemoConfig *models.NemoConfig) (*models.ApyMode
 	marketState.TotalPt = marketStateInfo["total_pt"].(string)
 	marketState.LpSupply = marketStateInfo["lp_supply"].(string)
 	marketState.TotalSy = marketStateInfo["total_sy"].(string)
-	poolApy, ptApy, ytApy := api.CalculatePoolApy(coinInfo, marketState, int64(ytIn), int64(syOut))
-	response := &models.ApyModel{
-		PoolApy: poolApy,
-		PtApy: ptApy,
-		YtApy: ytApy,
-	}
+	response := api.CalculatePoolApy(coinInfo, marketState, int64(ytIn), int64(syOut))
+	response.MarketState = marketStateInfo
 
 	return response, nil
 }
