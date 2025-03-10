@@ -30,14 +30,16 @@ type CoinPage struct {
 }
 
 type PriceInfo struct {
-	Logo  string `json:"logo"`
-	Price string `json:"price"`
+	Logo    string `json:"logo"`
+	Price   string `json:"price"`
+	Decimal string `json:"decimal"`
+	Name    string `json:"name"`
 }
 
 type PricePage struct {
 	Data        map[string]PriceInfo `json:"data"`
-	NextCursor  string     `json:"nextCursor,omitempty"`
-	HasNextPage bool       `json:"hasNextPage"`
+	NextCursor  string               `json:"nextCursor,omitempty"`
+	HasNextPage bool                 `json:"hasNextPage"`
 }
 
 func RemainCoinAndGas(client *client.Client, address string, expectGas uint64, coinType string) ([]CoinData, *sui_types.ObjectRef, error) {

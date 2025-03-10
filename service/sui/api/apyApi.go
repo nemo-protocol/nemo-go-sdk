@@ -19,6 +19,7 @@ type CoinInfo struct {
 }
 
 type MarketState struct {
+	MarketCap     string
 	TotalPt       string
 	TotalSy       string
 	LpSupply      string
@@ -30,6 +31,8 @@ type RewardMetric struct {
 	TokenLogo     string
 	DailyEmission string
 	CoinType      string
+	CoinName      string
+	Decimal       string
 }
 
 func safeDivide(numerator, denominator decimal.Decimal) decimal.Decimal {
@@ -119,6 +122,13 @@ func CalculatePoolApy(coinInfo CoinInfo, marketState MarketState, ytIn, syOut in
 
 	// Calculate incentive APY
 	incentiveApy := decimal.Zero
+	marketStateInfo := models.MarketState{
+		MarketCap: marketState.MarketCap,
+		TotalSy: marketState.TotalSy,
+		TotalPt: marketState.TotalPt,
+		LpSupply: marketState.LpSupply,
+		RewardMetrics: make([]models.RewardMetrics, 0),
+	}
 	for _, reward := range marketState.RewardMetrics {
 		tokenPrice, _ := decimal.NewFromString(reward.TokenPrice)
 		dailyEmission, _ := decimal.NewFromString(reward.DailyEmission)
@@ -132,6 +142,16 @@ func CalculatePoolApy(coinInfo CoinInfo, marketState MarketState, ytIn, syOut in
 			TokenLogo: reward.TokenLogo,
 		}
 		response.Incentives = append(response.Incentives, incentives)
+
+		rm := models.RewardMetrics{
+			TokenType: reward.CoinType,
+			TokenLogo: reward.TokenLogo,
+			DailyEmission: dailyEmission.String(),
+			TokenPrice: tokenPrice.String(),
+			TokenName: reward.CoinName,
+			Decimal: reward.Decimal,
+		}
+		marketStateInfo.RewardMetrics = append(marketStateInfo.RewardMetrics, rm)
 	}
 
 	// Calculate pool APY
@@ -151,6 +171,7 @@ func CalculatePoolApy(coinInfo CoinInfo, marketState MarketState, ytIn, syOut in
 	response.YtPrice = ytPrice.String()
 	response.SwapFeeApy = swapFeeApy.String()
 	response.LpPrice = lpPrice.String()
+	response.MarketState = marketStateInfo
 
 	return response
 }

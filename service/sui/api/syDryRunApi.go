@@ -889,6 +889,8 @@ func GetRewarders(marketStateInfo map[string]interface{}, decimal int, sourceMar
 			TokenLogo: priceInfo.Logo,
 			DailyEmission: fmt.Sprintf("%0.10f",dailyEmission),
 			CoinType: rewardName,
+			CoinName: priceInfo.Name,
+			Decimal:  priceInfo.Decimal,
 		})
 	}
 }

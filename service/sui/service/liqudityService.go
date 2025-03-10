@@ -625,12 +625,11 @@ func (s *SuiService)QueryPoolApy(nemoConfig *models.NemoConfig, priceInfoMap ...
 	coinInfo.Maturity,_ = strconv.ParseInt(maturity, 10, 64)
 	coinInfo.SwapFeeForLpHolder,_ = strconv.ParseFloat(nemoConfig.SwapFeeForLpHolder, 64)
 
-
 	marketState.TotalPt = marketStateInfo["total_pt"].(string)
 	marketState.LpSupply = marketStateInfo["lp_supply"].(string)
 	marketState.TotalSy = marketStateInfo["total_sy"].(string)
+	marketState.MarketCap = marketStateInfo["market_cap"].(string)
 	response := api.CalculatePoolApy(coinInfo, marketState, int64(ytIn), int64(syOut))
-	response.MarketState = marketStateInfo
 
 	return response, nil
 }
