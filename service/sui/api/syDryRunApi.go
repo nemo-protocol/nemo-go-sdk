@@ -884,6 +884,13 @@ func GetRewarders(marketStateInfo map[string]interface{}, decimal int, sourceMar
 		if !ok{
 			continue
 		}
+		emissionActualDecimal,_ := strconv.ParseInt(priceInfo.Decimal, 10 ,64)
+		if emissionActualDecimal == 0{
+			continue
+		}
+		if emissionActualDecimal != int64(decimal) {
+			dailyEmission = dailyEmission * math.Pow(10, float64(decimal)) / math.Pow(10, float64(emissionActualDecimal))
+		}
 		sourceMarketState.RewardMetrics = append(sourceMarketState.RewardMetrics, RewardMetric{
 			TokenPrice: priceInfo.Price,
 			TokenLogo: priceInfo.Logo,
