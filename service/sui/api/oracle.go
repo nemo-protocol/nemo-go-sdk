@@ -343,7 +343,7 @@ func GetPriceVoucherFromHasui(ptb *sui_types.ProgrammableTransactionBuilder, cli
 		return nil, err
 	}
 
-	haedalStakeingCallArg,err := GetObjectArg(client, nemoConfig.HaedalStakeing, false, nemoConfig.OraclePackage, moduleName, functionName)
+	haedalStakeingCallArg,err := GetObjectArg(client, HAEDAL_STAKING, false, nemoConfig.OraclePackage, moduleName, functionName)
 	if err != nil {
 		return nil, err
 	}
