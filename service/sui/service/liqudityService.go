@@ -25,7 +25,7 @@ func (s *SuiService)AddLiquidity(amountFloat, slippage float64, sender *account.
 	client := InitSuiService()
 
 	if amountInType == nemoConfig.UnderlyingCoinType{
-		conversionRate,err := strconv.ParseFloat(nemoConfig.ConversionRate, 10)
+		conversionRate,err := strconv.ParseFloat(nemoConfig.ConversionRate, 64)
 		if err != nil{
 			return false, err
 		}

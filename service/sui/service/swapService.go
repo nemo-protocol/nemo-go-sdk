@@ -157,7 +157,7 @@ func (s *SuiService)SwapToPy(amountIn, slippage float64, amountInType, exactAmou
 	actualSyIn := uint64(amountIn * math.Pow(10, float64(nemoConfig.Decimal)))
 	netSyIn := actualSyIn
 	if amountInType == nemoConfig.UnderlyingCoinType{
-		conversionRate,err := strconv.ParseFloat(nemoConfig.ConversionRate, 10)
+		conversionRate,err := strconv.ParseFloat(nemoConfig.ConversionRate, 64)
 		if err != nil{
 			return false, err
 		}

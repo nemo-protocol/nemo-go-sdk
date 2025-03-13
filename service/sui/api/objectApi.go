@@ -191,6 +191,48 @@ func GetOwnerObjectByType(blockClient *sui.ISuiAPI, client *client.Client, objec
 	return "", nil
 }
 
+func GetOwnerObjectListByType(blockClient *sui.ISuiAPI, client *client.Client, objectsType []string, syType, maturity string, ownerAddress string) ([]string,error){
+	objectsMap, err := GetOwnObjectsMap(blockClient, ownerAddress)
+	if err != nil{
+		return nil, err
+	}
+	fmt.Printf("\n==objectsType list:%+v==\n",objectsType)
+	objectList := make([]string, 0)
+	for _,v := range objectsMap{
+		objectType := v["data"].(map[string]interface{})["type"].(string)
+		objectId := v["data"].(map[string]interface{})["objectId"].(string)
+		fmt.Printf("\n==objectType:%v,objectId:%v==\n",objectType,objectId)
+		if !utils.Contains(objectsType, objectType){
+			continue
+		}
+
+		fields,err := GetObjectFieldByObjectId(client, objectId)
+		if err != nil{
+			continue
+		}
+
+		objectMaturity := fields["expiry"]
+		pyStateId := fields["py_state_id"]
+		if objectMaturity == "" || pyStateId == ""{
+			continue
+		}
+
+		pyStateFields,err := GetObjectFieldByObjectId(client, pyStateId.(string))
+		if err != nil{
+			continue
+		}
+		objectSyType := pyStateFields["name"].(string)
+		if !strings.HasPrefix(objectSyType, "0x"){
+			objectSyType = fmt.Sprintf("0x%v",objectSyType)
+		}
+
+		if objectMaturity.(string) == maturity && objectSyType == syType{
+			objectList = append(objectList, objectId)
+		}
+	}
+	return objectList, nil
+}
+
 func GetOwnerMarketPositionByType(blockClient *sui.ISuiAPI, client *client.Client, objectsType []string, syType, maturity string, ownerAddress string) (string,error){
 	objectsMap, err := GetOwnObjectsMap(blockClient, ownerAddress)
 	if err != nil{
@@ -237,4 +279,53 @@ func GetOwnerMarketPositionByType(blockClient *sui.ISuiAPI, client *client.Clien
 		}
 	}
 	return "", nil
+}
+
+func GetOwnerMarketPositionListByType(blockClient *sui.ISuiAPI, client *client.Client, objectsType []string, syType, maturity string, ownerAddress string) ([]string,error){
+	objectsMap, err := GetOwnObjectsMap(blockClient, ownerAddress)
+	if err != nil{
+		return nil, err
+	}
+	fmt.Printf("\n==objectsType list:%+v==\n",objectsType)
+	marketPositionList := make([]string, 0)
+	for _,v := range objectsMap{
+		objectType := v["data"].(map[string]interface{})["type"].(string)
+		objectId := v["data"].(map[string]interface{})["objectId"].(string)
+		fmt.Printf("\n==objectType:%v,objectId:%v==\n",objectType,objectId)
+		if !utils.Contains(objectsType, objectType){
+			continue
+		}
+
+		fields,err := GetObjectFieldByObjectId(client, objectId)
+		if err != nil{
+			continue
+		}
+
+		objectMaturity := fields["expiry"]
+		marketStateId := fields["market_state_id"]
+		if objectMaturity == "" || marketStateId == ""{
+			continue
+		}
+
+		marketStateFields,err := GetObjectFieldByObjectId(client, marketStateId.(string))
+		if err != nil{
+			continue
+		}
+		pyStateId := marketStateFields["py_state_id"]
+		fmt.Printf("\npyStateId:%v\n",pyStateId)
+
+		pyStateFields,err := GetObjectFieldByObjectId(client, pyStateId.(string))
+		if err != nil{
+			continue
+		}
+		objectSyType := pyStateFields["name"].(string)
+		if !strings.HasPrefix(objectSyType, "0x"){
+			objectSyType = fmt.Sprintf("0x%v",objectSyType)
+		}
+
+		if objectMaturity.(string) == maturity && objectSyType == syType{
+			marketPositionList = append(marketPositionList, objectId)
+		}
+	}
+	return marketPositionList, nil
 }

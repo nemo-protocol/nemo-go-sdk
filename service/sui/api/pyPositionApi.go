@@ -153,3 +153,22 @@ func GetPyPosition(nemoConfig *models.NemoConfig, address string, client *client
 	}
 	return pyPosition, nil
 }
+
+func GetPyPositionList(nemoConfig *models.NemoConfig, address string, client *client.Client, blockApi *sui.ISuiAPI) ([]string, error){
+	pyStateInfo, err := GetObjectFieldByObjectId(client, nemoConfig.PyState)
+	if err != nil{
+		return nil, err
+	}
+	maturity := pyStateInfo["expiry"].(string)
+
+	expectPyPositionTypeList := make([]string, 0)
+	for _, pkg := range nemoConfig.NemoContractList{
+		expectPyPositionTypeList = append(expectPyPositionTypeList, fmt.Sprintf("%v::py_position::PyPosition", pkg))
+	}
+
+	pyPositionList,err := GetOwnerObjectListByType(blockApi, client, expectPyPositionTypeList, nemoConfig.SyCoinType, maturity, address)
+	if err != nil {
+		return pyPositionList, err
+	}
+	return pyPositionList, nil
+}

@@ -69,3 +69,22 @@ func GetMarketPosition(blockApi *sui.ISuiAPI, client *client.Client, nemoConfig 
 	}
 	return previousMarketPosition, nil
 }
+
+func GetMarketPositionList(blockApi *sui.ISuiAPI, client *client.Client, nemoConfig *models.NemoConfig, address string) ([]string,error){
+	pyStateInfo, err := GetObjectFieldByObjectId(client, nemoConfig.PyState)
+	if err != nil{
+		return nil, err
+	}
+	maturity := pyStateInfo["expiry"].(string)
+
+	expectMarketPositionTypeList := make([]string, 0)
+	for _, pkg := range nemoConfig.NemoContractList{
+		expectMarketPositionTypeList = append(expectMarketPositionTypeList, fmt.Sprintf("%v::market_position::MarketPosition", pkg))
+	}
+
+	previousMarketPositionList,err := GetOwnerMarketPositionListByType(blockApi, client, expectMarketPositionTypeList, nemoConfig.SyCoinType, maturity, address)
+	if err != nil {
+		return nil, err
+	}
+	return previousMarketPositionList, nil
+}

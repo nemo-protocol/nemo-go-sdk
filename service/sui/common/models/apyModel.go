@@ -40,3 +40,9 @@ type RewardMetrics struct {
 	TokenName     string `json:"tokenName"`
 	Decimal       string `json:"decimal"`
 }
+
+type AssetModel struct {
+	YtBalance   float64   `json:"ytBalance"`
+	PtBalance   float64   `json:"ptBalance"`
+	LpBalance   float64   `json:"lpBalance"`
+}
