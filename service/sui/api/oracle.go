@@ -378,7 +378,7 @@ func GetPriceVoucherFromHasui(ptb *sui_types.ProgrammableTransactionBuilder, cli
 }
 
 func GetPriceVoucher(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig) (*sui_types.Argument,error){
-	if constant.IsScallopCoin(nemoConfig.CoinType){
+	if constant.IsScallopCoin(nemoConfig.CoinType) || nemoConfig.ProviderProtocol == constant.SCALLOP{
 		return GetPriceVoucherFromXOracle(ptb, client, nemoConfig)
 	}else if constant.IsVSui(nemoConfig.CoinType){
 		return GetPriceVoucherFromVolo(ptb, client, nemoConfig)
