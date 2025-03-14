@@ -374,7 +374,7 @@ func (s *SuiService)ClaimYtReward(nemoConfig *models.NemoConfig, sender *account
 	}
 
 	transferArgs := make([]sui_types.Argument, 0)
-	if constant.IsScallopCoin(nemoConfig.CoinType){
+	if constant.IsScallopCoin(nemoConfig.CoinType) || nemoConfig.ProviderProtocol == constant.SCALLOP{
 		underlyingCoinArgument, err := api.BurnSCoin(ptb, client.SuiApi, nemoConfig.CoinType, nemoConfig.UnderlyingCoinType, sCoinArgument)
 		if err != nil{
 			return false, err

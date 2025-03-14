@@ -337,7 +337,7 @@ func SplitCoinFromMerged(ptb *sui_types.ProgrammableTransactionBuilder, mergeCoi
 }
 
 func MintToSCoin(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig, sCoinArgument *sui_types.Argument) (underlyingCoinArgument *sui_types.Argument, err error) {
-	if constant.IsScallopCoin(nemoConfig.CoinType) {
+	if constant.IsScallopCoin(nemoConfig.CoinType) || nemoConfig.ProviderProtocol == constant.SCALLOP{
 		marketCoinArgument, err := Mint(ptb, client, nemoConfig.UnderlyingCoinType, sCoinArgument)
 		if err != nil {
 			return nil, err

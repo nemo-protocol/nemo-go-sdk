@@ -1,6 +1,9 @@
 package constant
 
-import "github.com/nemo-protocol/nemo-go-sdk/utils"
+import (
+	"github.com/nemo-protocol/nemo-go-sdk/utils"
+	"strings"
+)
 
 var (
 	GASCOINTYPE = "0x2::sui::SUI"
@@ -38,7 +41,7 @@ func IsScallopCoin(coinType string) bool {
 	sCoinList := []string{
 		SCALLOPSSUI, SCALLOPSCA, SCALLOPWUSDC, SCALLOPWUSDT, SCALLOPDEEP, SCALLOPAFSUI, SCALLOPUSDC, SCALLOPSBUSDT, SCALLOPSBETH,
 	}
-	return utils.Contains(sCoinList, coinType)
+	return utils.Contains(sCoinList, coinType) || strings.Contains(coinType, "::scallop")
 }
 
 func IsVSui(coinType string) bool {
