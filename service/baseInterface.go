@@ -17,4 +17,5 @@ type ContractInterface interface {
 	ClaimLpReward(nemoConfig *models.NemoConfig, sender *account.Account) (bool, error)
 	QueryPoolApy(nemoConfig *models.NemoConfig, priceInfoMap ...map[string]api.PriceInfo) (*models.ApyModel, error)
 	QueryAsset(nemoConfig *models.NemoConfig, address string) (*models.AssetModel, error)
+	QueryFee(nemoConfig *models.NemoConfig) (*models.FeeModel, error)
 }
