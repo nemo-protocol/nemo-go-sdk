@@ -467,9 +467,9 @@ func GetPriceVoucherFromLpToken(ptb *sui_types.ProgrammableTransactionBuilder, c
 	callArgs := make([]sui_types.CallArg, 0)
 	//default hasui
 	callArgs = append(callArgs, sui_types.CallArg{Object: priceOracleCallArg}, sui_types.CallArg{Object: oracleTicketCallArg}, sui_types.CallArg{Object: stakeingCallArg}, sui_types.CallArg{Object: vaultCallArg}, sui_types.CallArg{Object: poolCallArg}, sui_types.CallArg{Object: syStateCallArg})
-	if constant.IsAfSui(nemoConfig.CoinType){
+	if constant.IsLpTokenAfSui(nemoConfig.CoinType){
 		callArgs = append(callArgs, sui_types.CallArg{Object: priceOracleCallArg}, sui_types.CallArg{Object: oracleTicketCallArg}, sui_types.CallArg{Object: stakeVaultCallArg}, sui_types.CallArg{Object: safeCallArg}, sui_types.CallArg{Object: vaultCallArg}, sui_types.CallArg{Object: poolCallArg}, sui_types.CallArg{Object: syStateCallArg})
-	} else if constant.IsVSui(nemoConfig.CoinType){
+	} else if constant.IsLpTokenVSui(nemoConfig.CoinType){
 		callArgs = append(callArgs, sui_types.CallArg{Object: priceOracleCallArg}, sui_types.CallArg{Object: oracleTicketCallArg}, sui_types.CallArg{Object: nativePoolCallArg}, sui_types.CallArg{Object: metadataCallArg}, sui_types.CallArg{Object: vaultCallArg}, sui_types.CallArg{Object: poolCallArg}, sui_types.CallArg{Object: syStateCallArg})
 	}
 
