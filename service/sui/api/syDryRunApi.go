@@ -11,10 +11,12 @@ import (
 	"github.com/coming-chat/go-sui/v2/move_types"
 	"github.com/coming-chat/go-sui/v2/sui_types"
 	"github.com/fardream/go-bcs/bcs"
+	"github.com/nemo-protocol/nemo-go-sdk/utils"
 	"github.com/shopspring/decimal"
 	"math"
 	"github.com/nemo-protocol/nemo-go-sdk/service/sui/common/constant"
 	"github.com/nemo-protocol/nemo-go-sdk/service/sui/common/models"
+	"math/big"
 	"strconv"
 	"time"
 )
@@ -812,7 +814,7 @@ func DryRunConversionRate(client *client.Client, nemoConfig *models.NemoConfig, 
 
 	lastResult := result.Results[len(result.Results)-1]
 
-	var ptValue uint64
+	var ptValue128 *big.Int
 	if len(lastResult.ReturnValues) > 0 {
 		firstValue := lastResult.ReturnValues[0]
 		if firstValueArray, ok := firstValue.([]interface{}); ok && len(firstValueArray) > 0 {
@@ -824,15 +826,17 @@ func DryRunConversionRate(client *client.Client, nemoConfig *models.NemoConfig, 
 					}
 				}
 				if len(byteSlice) >= 8 {
-					ptValue = binary.LittleEndian.Uint64(byteSlice)
-					fmt.Printf("Parsed ptValue: %d\n", ptValue)
+					ptValue128 = utils.ReadUint128ToBigInt(byteSlice)
+					fmt.Printf("Parsed ptValue: %d\n", ptValue128)
 				}
 			}
 		}
 	}
 
+	pow := new(big.Float).SetFloat64(math.Pow(2, 64))
+	ptValueFloat,_ := new(big.Float).Quo(new(big.Float).SetInt(ptValue128), pow).Float64()
 
-	return float64(ptValue) / math.Pow(2, 64) + 1, nil
+	return ptValueFloat, nil
 }
 
 func GetYtInAndSyOut(client *client.Client, nemoConfig *models.NemoConfig, address string, ytIn, retryTime uint64) (uint64, uint64, error){
