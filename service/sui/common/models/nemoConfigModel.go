@@ -37,6 +37,7 @@ type NemoConfig struct {
 	OracleTicket         string   `json:"oracleTicket"`
 	OracleVoucherPackage string   `json:"oracleVoucherPackageId"`
 	SwapFeeForLpHolder   string   `json:"swapFeeForLpHolder"`
+	YieldTokenType       string   `json:"yieldTokenType"`
 }
 
 type NemoConfigInfo struct {
@@ -67,6 +68,7 @@ type NemoConfigInfo struct {
 	OracleTicket         string   `json:"oracleTicket"`
 	OracleVoucherPackage string   `json:"oracleVoucherPackageId"`
 	SwapFeeForLpHolder   string   `json:"swapFeeForLpHolder"`
+	YieldTokenType       string   `json:"yieldTokenType"`
 }
 
 type NemoInfoResponse struct {
@@ -164,5 +166,6 @@ func FormatStruct(resInfo NemoConfigInfo) NemoConfig {
 	innerInfo.CoinPrice = resInfo.CoinPrice
 	innerInfo.UnderlyingApy = resInfo.UnderlyingApy
 	innerInfo.SwapFeeForLpHolder = resInfo.SwapFeeForLpHolder
+	innerInfo.YieldTokenType = resInfo.YieldTokenType
 	return innerInfo
 }

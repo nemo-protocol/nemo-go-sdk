@@ -29,13 +29,22 @@ var (
 
 	VOLO_PACKAGE = "0x549e8b69270defbfafd4f94e17ec44cdbdd99820b33bda2278dea3b9a32d3f55"
 	NATIVE_POOL  = "0x7fa2faa111b8c65bea48a23049bfd81ca8f971a262d981dcd9a17c3825cb5baf"
-	METEDATA     = "0x680cd26af32b2bde8d3361e804c53ec1d1cfe24c7f039eb7f549e8dfde389a60"
+	METADATA     = "0x680cd26af32b2bde8d3361e804c53ec1d1cfe24c7f039eb7f549e8dfde389a60"
 
 	HAEDAL_PACKAGE = "0x3f45767c1aa95b25422f675800f02d8a813ec793a00b60667d071a77ba7178a2"
 	HAEDAL_STAKING = "0x47b224762220393057ebf4f70501b6e657c3e56684737568439a04f80849b2ca"
 
 	ALPHAFI_PACKAGE = "0x059f94b85c07eb74d2847f8255d8cc0a67c9a8dcc039eabf9f8b9e23a0de2700"
 	ALPHAFI_STAKING = "0x1adb343ab351458e151bc392fbf1558b3332467f23bda45ae67cd355a57fd5f5"
+
+	LP_HASUI_VAULT = "0xde97452e63505df696440f86f0b805263d8659b77b8c316739106009d514c270"
+	LP_HASUI_POOL = "0x871d8a227114f375170f149f7e9d45be822dd003eba225e83c05ac80828596bc"
+
+	LP_AFSUI_VAULT = "0xff4cc0af0ad9d50d4a3264dfaafd534437d8b66c8ebe9f92b4c39d898d6870a3"
+	LP_AFSUI_POOL = "0x1eabed72c53feb3805120a081dc15963c204dc8d091542592abaf7a35689b2fb"
+
+	LP_VSUI_VAULT = "0x5732b81e659bd2db47a5b55755743dde15be99490a39717abc80d62ec812bcb6"
+	LP_VSUI_POOL = "0x6c545e78638c8c1db7a48b282bb8ca79da107993fcb185f75cedc1f5adb2f535"
 
 )
 
@@ -481,7 +490,7 @@ func MintVoloCoin(ptb *sui_types.ProgrammableTransactionBuilder, client *client.
 		return nil, err
 	}
 
-	metadataArgument, err := GetObjectArgument(ptb, client, METEDATA, false, VOLO_PACKAGE, moduleName, functionName)
+	metadataArgument, err := GetObjectArgument(ptb, client, METADATA, false, VOLO_PACKAGE, moduleName, functionName)
 	if err != nil {
 		return nil, err
 	}

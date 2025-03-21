@@ -7,7 +7,7 @@ import (
 
 var (
 	GASCOINTYPE = "0x2::sui::SUI"
-	SCALLOP = "Scallop"
+	SCALLOP     = "Scallop"
 
 	SCALLOPSSUI   = "0xaafc4f740de0dd0dde642a31148fb94517087052f19afb0f7bed1dc41a50c77b::scallop_sui::SCALLOP_SUI"
 	SCALLOPSCA    = "0x5ca17430c1d046fae9edeaa8fd76c7b4193a00d764a0ecfa9418d733ad27bc1e::scallop_sca::SCALLOP_SCA"
@@ -23,6 +23,10 @@ var (
 	AFSUI         = "0xf325ce1300e8dac124071d3152c5c5ee6174914f8bc2161e88329cf579246efc::afsui::AFSUI"
 	HASUI         = "0xbde4ba4c2e274a60ce15c1cfff9e5c42e41654ac8b6d906a57efa4bd3c29f47d::hasui::HASUI"
 	STSUI         = "0xd1b72982e40348d069bb1ff701e634c117bb5f741f44dff91e472d3b01461e55::stsui::STSUI"
+
+	LPTOKENHASUI = "0x828b452d2aa239d48e4120c24f4a59f451b8cd8ac76706129f4ac3bd78ac8809::lp_token::LP_TOKEN"
+	LPTOKENVSUI  = "0xb490d6fa9ead588a9d72da07a02914da42f6b5b1339b8118a90011a42b67a44f::lp_token::LP_TOKEN"
+	LPTOKENAFSUI = "0xc8a5fcbe32b9fc88fe1d758d33dd32586143998f68656f43f3a6ced95ea4dc3::lp_token::LP_TOKEN"
 
 	SUI   = "0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI"
 	SCA   = "0x7016aae72cfc67f2fadf55769c0a7dd54291a583b63051a5ed71081cce836ac6::sca::SCA"
@@ -60,34 +64,46 @@ func IsHaSui(coinType string) bool {
 	return HASUI == coinType
 }
 
-func IsSui(coinType string) bool{
+func IsSui(coinType string) bool {
 	return coinType == GASCOINTYPE || coinType == SUI
 }
 
-func IsStSui(coinType string) bool{
+func IsStSui(coinType string) bool {
 	return coinType == STSUI
 }
 
-func IsDeep(coinType string) bool{
+func IsLpTokenHaSui(coinType string) bool{
+	return coinType == LPTOKENHASUI
+}
+
+func IsLpTokenAfSui(coinType string) bool{
+	return coinType == LPTOKENAFSUI
+}
+
+func IsLpTokenVSui(coinType string) bool{
+	return coinType == LPTOKENVSUI
+}
+
+func IsDeep(coinType string) bool {
 	return coinType == DEEP
 }
 
-func IsSca(coinType string) bool{
+func IsSca(coinType string) bool {
 	return coinType == SCA
 }
 
-func IsUsdc(coinType string) bool{
+func IsUsdc(coinType string) bool {
 	return coinType == USDC
 }
 
-func IsUsdt(coinType string) bool{
+func IsUsdt(coinType string) bool {
 	return coinType == USDT
 }
 
-func IsWUsdt(coinType string) bool{
+func IsWUsdt(coinType string) bool {
 	return coinType == WUSDT
 }
 
-func IsWUsdc(coinType string) bool{
+func IsWUsdc(coinType string) bool {
 	return coinType == WUSDC
 }

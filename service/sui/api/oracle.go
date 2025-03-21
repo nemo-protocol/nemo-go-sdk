@@ -121,12 +121,12 @@ func GetPriceVoucherFromVolo(ptb *sui_types.ProgrammableTransactionBuilder, clie
 		return nil, err
 	}
 
-	nativePoolCallArg,err := GetObjectArg(client, nemoConfig.NativePool, false, nemoConfig.OraclePackage, moduleName, functionName)
+	nativePoolCallArg,err := GetObjectArg(client, NATIVE_POOL, false, nemoConfig.OraclePackage, moduleName, functionName)
 	if err != nil {
 		return nil, err
 	}
 
-	metadataCallArg,err := GetObjectArg(client, nemoConfig.Metadata, false, nemoConfig.OraclePackage, moduleName, functionName)
+	metadataCallArg,err := GetObjectArg(client, METADATA, false, nemoConfig.OraclePackage, moduleName, functionName)
 	if err != nil {
 		return nil, err
 	}
@@ -377,6 +377,124 @@ func GetPriceVoucherFromHasui(ptb *sui_types.ProgrammableTransactionBuilder, cli
 	return &command, nil
 }
 
+func GetPriceVoucherFromLpToken(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig, lpVault, lpPool, moduleName string) (*sui_types.Argument,error) {
+	nemoPackageId, err := sui_types.NewObjectIdFromHex(nemoConfig.OraclePackage)
+	if err != nil {
+		return nil, err
+	}
+
+	functionName := "get_price_voucher_from_cetus_vault"
+	module := move_types.Identifier(moduleName)
+	function := move_types.Identifier(functionName)
+	syStructTag, err := GetStructTag(nemoConfig.SyCoinType)
+	if err != nil {
+		return nil, err
+	}
+	yieldTokenStructTag, err := GetStructTag(nemoConfig.YieldTokenType)
+	if err != nil {
+		return nil, err
+	}
+	coinTypeStructTag, err := GetStructTag(nemoConfig.CoinType)
+	if err != nil {
+		return nil, err
+	}
+	syTypeTag := move_types.TypeTag{
+		Struct: syStructTag,
+	}
+	YieldTokenTypeTag := move_types.TypeTag{
+		Struct: yieldTokenStructTag,
+	}
+	coinTypeTypeTag := move_types.TypeTag{
+		Struct: coinTypeStructTag,
+	}
+	typeArguments := make([]move_types.TypeTag, 0)
+	typeArguments = append(typeArguments, syTypeTag, YieldTokenTypeTag, coinTypeTypeTag)
+
+	priceOracleCallArg,err := GetObjectArg(client, nemoConfig.PriceOracle, false, nemoConfig.OraclePackage, moduleName, functionName)
+	if err != nil {
+		return nil, err
+	}
+
+	oracleTicketCallArg,err := GetObjectArg(client, nemoConfig.OracleTicket, false, nemoConfig.OraclePackage, moduleName, functionName)
+	if err != nil {
+		return nil, err
+	}
+
+	stakeingCallArg,err := GetObjectArg(client, HAEDAL_STAKING, false, nemoConfig.OraclePackage, moduleName, functionName)
+	if err != nil {
+		return nil, err
+	}
+
+	vaultCallArg,err := GetObjectArg(client, lpVault, false, nemoConfig.OraclePackage, moduleName, functionName)
+	if err != nil {
+		return nil, err
+	}
+
+	poolCallArg,err := GetObjectArg(client, lpPool, false, nemoConfig.OraclePackage, moduleName, functionName)
+	if err != nil {
+		return nil, err
+	}
+
+	syStateCallArg,err := GetObjectArg(client, nemoConfig.SyState, false, nemoConfig.OraclePackage, moduleName, functionName)
+	if err != nil {
+		return nil, err
+	}
+
+	//aftermath need
+	stakeVaultCallArg,err := GetObjectArg(client, STAKED_SUI_VAULT, false, nemoConfig.OraclePackage, moduleName, functionName)
+	if err != nil {
+		return nil, err
+	}
+
+	//aftermath need
+	safeCallArg,err := GetObjectArg(client, SAFE, false, nemoConfig.OraclePackage, moduleName, functionName)
+	if err != nil {
+		return nil, err
+	}
+
+	//vsui need
+	nativePoolCallArg,err := GetObjectArg(client, NATIVE_POOL, false, nemoConfig.OraclePackage, moduleName, functionName)
+	if err != nil {
+		return nil, err
+	}
+
+	//vsui need
+	metadataCallArg,err := GetObjectArg(client, METADATA, false, nemoConfig.OraclePackage, moduleName, functionName)
+	if err != nil {
+		return nil, err
+	}
+
+	callArgs := make([]sui_types.CallArg, 0)
+	//default hasui
+	callArgs = append(callArgs, sui_types.CallArg{Object: priceOracleCallArg}, sui_types.CallArg{Object: oracleTicketCallArg}, sui_types.CallArg{Object: stakeingCallArg}, sui_types.CallArg{Object: vaultCallArg}, sui_types.CallArg{Object: poolCallArg}, sui_types.CallArg{Object: syStateCallArg})
+	if constant.IsAfSui(nemoConfig.CoinType){
+		callArgs = append(callArgs, sui_types.CallArg{Object: priceOracleCallArg}, sui_types.CallArg{Object: oracleTicketCallArg}, sui_types.CallArg{Object: stakeVaultCallArg}, sui_types.CallArg{Object: safeCallArg}, sui_types.CallArg{Object: vaultCallArg}, sui_types.CallArg{Object: poolCallArg}, sui_types.CallArg{Object: syStateCallArg})
+	} else if constant.IsVSui(nemoConfig.CoinType){
+		callArgs = append(callArgs, sui_types.CallArg{Object: priceOracleCallArg}, sui_types.CallArg{Object: oracleTicketCallArg}, sui_types.CallArg{Object: nativePoolCallArg}, sui_types.CallArg{Object: metadataCallArg}, sui_types.CallArg{Object: vaultCallArg}, sui_types.CallArg{Object: poolCallArg}, sui_types.CallArg{Object: syStateCallArg})
+	}
+
+	var arguments []sui_types.Argument
+	for _, v := range callArgs {
+		argument, err := ptb.Input(v)
+		if err != nil {
+			return nil, err
+		}
+		arguments = append(arguments, argument)
+	}
+	command := ptb.Command(
+		sui_types.Command{
+			MoveCall: &sui_types.ProgrammableMoveCall{
+				Package:       *nemoPackageId,
+				Module:        module,
+				Function:      function,
+				TypeArguments: typeArguments,
+				Arguments:     arguments,
+			},
+		},
+	)
+	return &command, nil
+}
+
 func GetPriceVoucher(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig) (*sui_types.Argument,error){
 	if constant.IsScallopCoin(nemoConfig.CoinType) || nemoConfig.ProviderProtocol == constant.SCALLOP{
 		return GetPriceVoucherFromXOracle(ptb, client, nemoConfig)
@@ -390,6 +508,12 @@ func GetPriceVoucher(ptb *sui_types.ProgrammableTransactionBuilder, client *clie
 		return GetPriceVoucherFromHasui(ptb, client, nemoConfig)
 	}else if constant.IsStSui(nemoConfig.CoinType){
 		return GetPriceVoucherFromSpring(ptb, client, nemoConfig, constant.ALPHAFILSTINFO, "alphafi")
+	}else if constant.IsLpTokenHaSui(nemoConfig.CoinType){
+		return GetPriceVoucherFromLpToken(ptb, client, nemoConfig, LP_HASUI_VAULT, LP_HASUI_POOL,"haedal")
+	}else if constant.IsLpTokenAfSui(nemoConfig.CoinType){
+		return GetPriceVoucherFromLpToken(ptb, client, nemoConfig, LP_AFSUI_VAULT, LP_AFSUI_POOL,"aftermath")
+	}else if constant.IsLpTokenVSui(nemoConfig.CoinType){
+		return GetPriceVoucherFromLpToken(ptb, client, nemoConfig, LP_VSUI_VAULT, LP_VSUI_POOL,"volo")
 	}
 	return nil, errors.New("coinType oracle not support！")
 }
