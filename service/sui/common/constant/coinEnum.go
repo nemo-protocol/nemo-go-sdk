@@ -23,6 +23,7 @@ var (
 	AFSUI         = "0xf325ce1300e8dac124071d3152c5c5ee6174914f8bc2161e88329cf579246efc::afsui::AFSUI"
 	HASUI         = "0xbde4ba4c2e274a60ce15c1cfff9e5c42e41654ac8b6d906a57efa4bd3c29f47d::hasui::HASUI"
 	STSUI         = "0xd1b72982e40348d069bb1ff701e634c117bb5f741f44dff91e472d3b01461e55::stsui::STSUI"
+	STSBUCK       = "0xd01d27939064d79e4ae1179cd11cfeeff23943f32b1a842ea1a1e15a0045d77d::st_sbuck::ST_SBUCK"
 
 	LPTOKENHASUI = "0x828b452d2aa239d48e4120c24f4a59f451b8cd8ac76706129f4ac3bd78ac8809::lp_token::LP_TOKEN"
 	LPTOKENVSUI  = "0xb490d6fa9ead588a9d72da07a02914da42f6b5b1339b8118a90011a42b67a44f::lp_token::LP_TOKEN"
@@ -35,6 +36,7 @@ var (
 	USDT  = "0x375f70cf2ae4c00bf37117d0c85a2c71545e6ee05c4a5c7d282cd66a4504b068::usdt::USDT"
 	WUSDT = "0xc060006111016b8a020ad5b33834984a437aaa7d3c74c18e09a95d48aceab08c::coin::COIN"
 	WUSDC = "0x5d4b302506645c37ff133b98c4b50a5ae14841659738d6d733d59d0d217a93bf::coin::COIN"
+	BUCK  = "0xce7ff77a83ea0cb6fd39bd8748e2ec89a3f41e8efdc3f4eb123e0ca37b184db2::buck::BUCK"
 )
 
 func IsGasCoinType(coinType string) bool {
@@ -68,6 +70,10 @@ func IsSui(coinType string) bool {
 	return coinType == GASCOINTYPE || coinType == SUI
 }
 
+func IsBuck(coinType string) bool {
+	return coinType == BUCK
+}
+
 func IsStSui(coinType string) bool {
 	return coinType == STSUI
 }
@@ -82,6 +88,10 @@ func IsLpTokenAfSui(coinType string) bool{
 
 func IsLpTokenVSui(coinType string) bool{
 	return coinType == LPTOKENVSUI
+}
+
+func IsStsBuck(coinType string) bool{
+	return coinType == STSBUCK
 }
 
 func IsDeep(coinType string) bool {

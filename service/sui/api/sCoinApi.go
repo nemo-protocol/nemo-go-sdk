@@ -38,14 +38,17 @@ var (
 	ALPHAFI_STAKING = "0x1adb343ab351458e151bc392fbf1558b3332467f23bda45ae67cd355a57fd5f5"
 
 	LP_HASUI_VAULT = "0xde97452e63505df696440f86f0b805263d8659b77b8c316739106009d514c270"
-	LP_HASUI_POOL = "0x871d8a227114f375170f149f7e9d45be822dd003eba225e83c05ac80828596bc"
+	LP_HASUI_POOL  = "0x871d8a227114f375170f149f7e9d45be822dd003eba225e83c05ac80828596bc"
 
 	LP_AFSUI_VAULT = "0xff4cc0af0ad9d50d4a3264dfaafd534437d8b66c8ebe9f92b4c39d898d6870a3"
-	LP_AFSUI_POOL = "0xa528b26eae41bcfca488a9feaa3dca614b2a1d9b9b5c78c256918ced051d4c50"
+	LP_AFSUI_POOL  = "0xa528b26eae41bcfca488a9feaa3dca614b2a1d9b9b5c78c256918ced051d4c50"
 
 	LP_VSUI_VAULT = "0x5732b81e659bd2db47a5b55755743dde15be99490a39717abc80d62ec812bcb6"
-	LP_VSUI_POOL = "0x6c545e78638c8c1db7a48b282bb8ca79da107993fcb185f75cedc1f5adb2f535"
+	LP_VSUI_POOL  = "0x6c545e78638c8c1db7a48b282bb8ca79da107993fcb185f75cedc1f5adb2f535"
 
+	STSBUCK_VAULT           = "0xe83e455a9e99884c086c8c79c13367e7a865de1f953e75bcf3e529cdf03c6224"
+	STSBUCK_PACKAGE         = "0x2a721777dc1fcf7cda19492ad7c2272ee284214652bde3e9740e2f49c3bff457"
+	STSBUCK_DEPOSIT_PACKAGE = "0x75fe358d87679b30befc498a8dae1d28ca9eed159ab6f2129a654a8255e5610e"
 )
 
 // 定义一个 map 来存储 coinType 和 treasury 的映射关系
@@ -94,8 +97,8 @@ func MintSCoin(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Cli
 	typeArguments := make([]move_types.TypeTag, 0)
 	typeArguments = append(typeArguments, type1Tag, type2Tag)
 
-	scallopTreasury,err := GetTreasuryByCoinType(coinType)
-	if err != nil{
+	scallopTreasury, err := GetTreasuryByCoinType(coinType)
+	if err != nil {
 		return nil, err
 	}
 
@@ -212,8 +215,8 @@ func BurnSCoin(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Cli
 	typeArguments := make([]move_types.TypeTag, 0)
 	typeArguments = append(typeArguments, type1Tag, type2Tag)
 
-	scallopTreasury,err := GetTreasuryByCoinType(coinType)
-	if err != nil{
+	scallopTreasury, err := GetTreasuryByCoinType(coinType)
+	if err != nil {
 		return nil, err
 	}
 
@@ -346,7 +349,7 @@ func SplitCoinFromMerged(ptb *sui_types.ProgrammableTransactionBuilder, mergeCoi
 }
 
 func MintToSCoin(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig, sCoinArgument *sui_types.Argument) (underlyingCoinArgument *sui_types.Argument, err error) {
-	if constant.IsScallopCoin(nemoConfig.CoinType) || nemoConfig.ProviderProtocol == constant.SCALLOP{
+	if constant.IsScallopCoin(nemoConfig.CoinType) || nemoConfig.ProviderProtocol == constant.SCALLOP {
 		marketCoinArgument, err := Mint(ptb, client, nemoConfig.UnderlyingCoinType, sCoinArgument)
 		if err != nil {
 			return nil, err
@@ -366,6 +369,8 @@ func MintToSCoin(ptb *sui_types.ProgrammableTransactionBuilder, client *client.C
 		return MintHaedalCoin(ptb, client, nemoConfig, sCoinArgument)
 	} else if constant.IsStSui(nemoConfig.CoinType) {
 		return MintStCoin(ptb, client, nemoConfig, sCoinArgument)
+	} else if constant.IsStsBuck(nemoConfig.CoinType) {
+		return MintByBuck(ptb, client, nemoConfig, sCoinArgument)
 	}
 	return nil, errors.New("coin not support！")
 }
@@ -540,7 +545,7 @@ func MintHaedalCoin(ptb *sui_types.ProgrammableTransactionBuilder, client *clien
 		return nil, err
 	}
 
-	address,_ := sui_types.NewAddressFromHex("0x0000000000000000000000000000000000000000000000000000000000000000")
+	address, _ := sui_types.NewAddressFromHex("0x0000000000000000000000000000000000000000000000000000000000000000")
 	addressArgument, err := ptb.Pure(*address)
 
 	var arguments []sui_types.Argument
@@ -608,9 +613,188 @@ func MintStCoin(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Cl
 	return &command, nil
 }
 
+func StsBuckWithdraw(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig, coinBalanceArgument *sui_types.Argument) (tickerArgument *sui_types.Argument, err error) {
+	stsbuckWithdrawPackage, err := sui_types.NewObjectIdFromHex(STSBUCK_PACKAGE)
+	if err != nil {
+		return nil, err
+	}
+
+	moduleName := "vault"
+	functionName := "withdraw"
+	module := move_types.Identifier(moduleName)
+	function := move_types.Identifier(functionName)
+
+	underlyingCoinTypeStructTag, err := GetStructTag(nemoConfig.UnderlyingCoinType)
+	if err != nil {
+		return nil, err
+	}
+	type1Tag := move_types.TypeTag{
+		Struct: underlyingCoinTypeStructTag,
+	}
+	coinTypeStructTag, err := GetStructTag(nemoConfig.CoinType)
+	if err != nil {
+		return nil, err
+	}
+	type2Tag := move_types.TypeTag{
+		Struct: coinTypeStructTag,
+	}
+	typeArguments := make([]move_types.TypeTag, 0)
+	typeArguments = append(typeArguments, type1Tag, type2Tag)
+
+	stsBuckVaultArgument, err := GetObjectArgument(ptb, client, STSBUCK_VAULT, false, STSBUCK_PACKAGE, moduleName, functionName)
+	if err != nil {
+		return nil, err
+	}
+
+	clockArgument, err := GetObjectArgument(ptb, client, constant.CLOCK, false, STSBUCK_PACKAGE, moduleName, functionName)
+	if err != nil {
+		return nil, err
+	}
+
+	var arguments []sui_types.Argument
+
+	arguments = append(arguments, stsBuckVaultArgument, *coinBalanceArgument, clockArgument)
+	command := ptb.Command(
+		sui_types.Command{
+			MoveCall: &sui_types.ProgrammableMoveCall{
+				Package:       *stsbuckWithdrawPackage,
+				Module:        module,
+				Function:      function,
+				TypeArguments: typeArguments,
+				Arguments:     arguments,
+			},
+		},
+	)
+	return &command, nil
+}
+
+func StsBuckWithdrawTicket(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig, withdrawTicketArgument *sui_types.Argument) (balanceArgument *sui_types.Argument, err error) {
+	stsbuckWithdrawPackage, err := sui_types.NewObjectIdFromHex(STSBUCK_PACKAGE)
+	if err != nil {
+		return nil, err
+	}
+
+	moduleName := "vault"
+	functionName := "redeem_withdraw_ticket"
+	module := move_types.Identifier(moduleName)
+	function := move_types.Identifier(functionName)
+
+	underlyingCoinTypeStructTag, err := GetStructTag(nemoConfig.UnderlyingCoinType)
+	if err != nil {
+		return nil, err
+	}
+	type1Tag := move_types.TypeTag{
+		Struct: underlyingCoinTypeStructTag,
+	}
+	coinTypeStructTag, err := GetStructTag(nemoConfig.CoinType)
+	if err != nil {
+		return nil, err
+	}
+	type2Tag := move_types.TypeTag{
+		Struct: coinTypeStructTag,
+	}
+	typeArguments := make([]move_types.TypeTag, 0)
+	typeArguments = append(typeArguments, type1Tag, type2Tag)
+
+	stsBuckVaultArgument, err := GetObjectArgument(ptb, client, STSBUCK_VAULT, false, STSBUCK_PACKAGE, moduleName, functionName)
+	if err != nil {
+		return nil, err
+	}
+
+	var arguments []sui_types.Argument
+
+	arguments = append(arguments, stsBuckVaultArgument, *withdrawTicketArgument)
+	command := ptb.Command(
+		sui_types.Command{
+			MoveCall: &sui_types.ProgrammableMoveCall{
+				Package:       *stsbuckWithdrawPackage,
+				Module:        module,
+				Function:      function,
+				TypeArguments: typeArguments,
+				Arguments:     arguments,
+			},
+		},
+	)
+	return &command, nil
+}
+
+func StsBuckDeposit(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig, coinBalanceArgument *sui_types.Argument) (argument *sui_types.Argument, err error) {
+	stsbuckWithdrawPackage, err := sui_types.NewObjectIdFromHex(STSBUCK_DEPOSIT_PACKAGE)
+	if err != nil {
+		return nil, err
+	}
+
+	moduleName := "sbuck_saving_vault"
+	functionName := "deposit"
+	module := move_types.Identifier(moduleName)
+	function := move_types.Identifier(functionName)
+
+	typeArguments := make([]move_types.TypeTag, 0)
+
+	stsBuckVaultArgument, err := GetObjectArgument(ptb, client, STSBUCK_VAULT, false, STSBUCK_PACKAGE, moduleName, functionName)
+	if err != nil {
+		return nil, err
+	}
+
+	clockArgument, err := GetObjectArgument(ptb, client, constant.CLOCK, false, STSBUCK_PACKAGE, moduleName, functionName)
+	if err != nil {
+		return nil, err
+	}
+
+	var arguments []sui_types.Argument
+
+	arguments = append(arguments, stsBuckVaultArgument, *coinBalanceArgument, clockArgument)
+	command := ptb.Command(
+		sui_types.Command{
+			MoveCall: &sui_types.ProgrammableMoveCall{
+				Package:       *stsbuckWithdrawPackage,
+				Module:        module,
+				Function:      function,
+				TypeArguments: typeArguments,
+				Arguments:     arguments,
+			},
+		},
+	)
+	return &command, nil
+}
+
 func GetTreasuryByCoinType(coinType string) (string, error) {
 	if treasury, exists := sCoinMap[coinType]; exists {
 		return treasury, nil
 	}
 	return "", fmt.Errorf("coinType not found: %s, not support redeem to underlying coin", coinType)
+}
+
+func BurnToBuck(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig, coinArgument *sui_types.Argument) (*sui_types.Argument, error) {
+	coinBalanceArgument, err := CoinIntoBalance(ptb, coinArgument, nemoConfig.CoinType)
+	if err != nil{
+		return nil, err
+	}
+
+	withdrawTicketArgument, err := StsBuckWithdraw(ptb, client, nemoConfig, coinBalanceArgument)
+	if err != nil{
+		return nil, err
+	}
+
+	balanceArgument, err := StsBuckWithdrawTicket(ptb, client, nemoConfig, withdrawTicketArgument)
+	if err != nil{
+		return nil, err
+	}
+
+
+	return CoinFromBalance(ptb, balanceArgument, nemoConfig.UnderlyingCoinType)
+}
+
+func MintByBuck(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig, coinArgument *sui_types.Argument) (*sui_types.Argument, error) {
+	coinBalanceArgument, err := CoinIntoBalance(ptb, coinArgument, nemoConfig.UnderlyingCoinType)
+	if err != nil{
+		return nil, err
+	}
+
+	balanceArgument, err := StsBuckDeposit(ptb, client, nemoConfig, coinBalanceArgument)
+	if err != nil{
+		return nil, err
+	}
+
+	return CoinFromBalance(ptb, balanceArgument, nemoConfig.CoinType)
 }

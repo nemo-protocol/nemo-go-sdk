@@ -498,6 +498,78 @@ func GetPriceVoucherFromLpToken(ptb *sui_types.ProgrammableTransactionBuilder, c
 	return &command, nil
 }
 
+func GetPriceVoucherFromBuck(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig) (*sui_types.Argument,error) {
+	nemoPackageId, err := sui_types.NewObjectIdFromHex(nemoConfig.OraclePackage)
+	if err != nil {
+		return nil, err
+	}
+
+	moduleName := "buck"
+	functionName := "get_price_voucher_from_ssbuck"
+	module := move_types.Identifier(moduleName)
+	function := move_types.Identifier(functionName)
+	syStructTag, err := GetStructTag(nemoConfig.SyCoinType)
+	if err != nil {
+		return nil, err
+	}
+	coinTypeStructTag, err := GetStructTag(nemoConfig.CoinType)
+	if err != nil {
+		return nil, err
+	}
+	syTypeTag := move_types.TypeTag{
+		Struct: syStructTag,
+	}
+	coinTypeTypeTag := move_types.TypeTag{
+		Struct: coinTypeStructTag,
+	}
+	typeArguments := make([]move_types.TypeTag, 0)
+	typeArguments = append(typeArguments, syTypeTag, coinTypeTypeTag)
+
+	priceOracleCallArg,err := GetObjectArg(client, nemoConfig.PriceOracle, false, nemoConfig.OraclePackage, moduleName, functionName)
+	if err != nil {
+		return nil, err
+	}
+
+	oracleTicketCallArg,err := GetObjectArg(client, nemoConfig.OracleTicket, false, nemoConfig.OraclePackage, moduleName, functionName)
+	if err != nil {
+		return nil, err
+	}
+
+	vaultCallArg,err := GetObjectArg(client, STSBUCK_VAULT, false, nemoConfig.OraclePackage, moduleName, functionName)
+	if err != nil {
+		return nil, err
+	}
+
+	clockCallArg,err := GetObjectArg(client, constant.CLOCK, false, nemoConfig.OraclePackage, moduleName, functionName)
+	if err != nil {
+		return nil, err
+	}
+
+	callArgs := make([]sui_types.CallArg, 0)
+	callArgs = append(callArgs, sui_types.CallArg{Object: priceOracleCallArg}, sui_types.CallArg{Object: oracleTicketCallArg}, sui_types.CallArg{Object: vaultCallArg}, sui_types.CallArg{Object: clockCallArg})
+
+	var arguments []sui_types.Argument
+	for _, v := range callArgs {
+		argument, err := ptb.Input(v)
+		if err != nil {
+			return nil, err
+		}
+		arguments = append(arguments, argument)
+	}
+	command := ptb.Command(
+		sui_types.Command{
+			MoveCall: &sui_types.ProgrammableMoveCall{
+				Package:       *nemoPackageId,
+				Module:        module,
+				Function:      function,
+				TypeArguments: typeArguments,
+				Arguments:     arguments,
+			},
+		},
+	)
+	return &command, nil
+}
+
 func GetPriceVoucher(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig) (*sui_types.Argument,error){
 	if constant.IsScallopCoin(nemoConfig.CoinType) || nemoConfig.ProviderProtocol == constant.SCALLOP{
 		return GetPriceVoucherFromXOracle(ptb, client, nemoConfig)
@@ -517,6 +589,8 @@ func GetPriceVoucher(ptb *sui_types.ProgrammableTransactionBuilder, client *clie
 		return GetPriceVoucherFromLpToken(ptb, client, nemoConfig, LP_AFSUI_VAULT, LP_AFSUI_POOL,"aftermath")
 	}else if constant.IsLpTokenVSui(nemoConfig.CoinType){
 		return GetPriceVoucherFromLpToken(ptb, client, nemoConfig, LP_VSUI_VAULT, LP_VSUI_POOL,"volo")
+	}else if constant.IsStsBuck(nemoConfig.CoinType){
+		return GetPriceVoucherFromBuck(ptb, client, nemoConfig)
 	}
 	return nil, errors.New("coinType oracle not support！")
 }

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/coming-chat/go-sui/v2/client"
+	"github.com/coming-chat/go-sui/v2/move_types"
 	"github.com/coming-chat/go-sui/v2/sui_types"
 	"github.com/nemo-protocol/nemo-go-sdk/service/sui/common/constant"
 	"github.com/nemo-protocol/nemo-go-sdk/service/sui/common/models"
@@ -299,6 +300,8 @@ func SplitOrMergeCoin(ptb *sui_types.ProgrammableTransactionBuilder, client *cli
 func SwapToUnderlyingCoin(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig, coinArgument *sui_types.Argument) (*sui_types.Argument, error) {
 	if constant.IsSui(nemoConfig.UnderlyingCoinType) {
 		return BurnSCoin(ptb, client, nemoConfig.CoinType, nemoConfig.UnderlyingCoinType, coinArgument)
+	} else if constant.IsBuck(nemoConfig.UnderlyingCoinType) {
+		return BurnToBuck(ptb, client, nemoConfig, coinArgument)
 	}
 	return nil, errors.New("invalid underlying coin！")
 }
@@ -313,4 +316,82 @@ func GetCoinPriceInfo() map[string]PriceInfo {
 	_ = json.Unmarshal(priceInfoByte, pricePage)
 
 	return pricePage.Data
+}
+
+func CoinIntoBalance(ptb *sui_types.ProgrammableTransactionBuilder, coinArgument *sui_types.Argument, coinType string) (*sui_types.Argument, error) {
+	sui02Package, err := sui_types.NewObjectIdFromHex("0x0000000000000000000000000000000000000000000000000000000000000002")
+	if err != nil {
+		return nil, err
+	}
+
+	moduleName := "coin"
+	functionName := "into_balance"
+	module := move_types.Identifier(moduleName)
+	function := move_types.Identifier(functionName)
+
+	coinTypeStructTag, err := GetStructTag(coinType)
+	if err != nil {
+		return nil, err
+	}
+	type1Tag := move_types.TypeTag{
+		Struct: coinTypeStructTag,
+	}
+	typeArguments := make([]move_types.TypeTag, 0)
+	typeArguments = append(typeArguments, type1Tag)
+
+	var arguments []sui_types.Argument
+
+	arguments = append(arguments, *coinArgument)
+
+	command := ptb.Command(
+		sui_types.Command{
+			MoveCall: &sui_types.ProgrammableMoveCall{
+				Package:       *sui02Package,
+				Module:        module,
+				Function:      function,
+				TypeArguments: typeArguments,
+				Arguments:     arguments,
+			},
+		},
+	)
+	return &command, nil
+}
+
+func CoinFromBalance(ptb *sui_types.ProgrammableTransactionBuilder, balanceArgument *sui_types.Argument, coinType string) (*sui_types.Argument, error) {
+	sui02Package, err := sui_types.NewObjectIdFromHex("0x0000000000000000000000000000000000000000000000000000000000000002")
+	if err != nil {
+		return nil, err
+	}
+
+	moduleName := "coin"
+	functionName := "from_balance"
+	module := move_types.Identifier(moduleName)
+	function := move_types.Identifier(functionName)
+
+	coinTypeStructTag, err := GetStructTag(coinType)
+	if err != nil {
+		return nil, err
+	}
+	type1Tag := move_types.TypeTag{
+		Struct: coinTypeStructTag,
+	}
+	typeArguments := make([]move_types.TypeTag, 0)
+	typeArguments = append(typeArguments, type1Tag)
+
+	var arguments []sui_types.Argument
+
+	arguments = append(arguments, *balanceArgument)
+
+	command := ptb.Command(
+		sui_types.Command{
+			MoveCall: &sui_types.ProgrammableMoveCall{
+				Package:       *sui02Package,
+				Module:        module,
+				Function:      function,
+				TypeArguments: typeArguments,
+				Arguments:     arguments,
+			},
+		},
+	)
+	return &command, nil
 }
