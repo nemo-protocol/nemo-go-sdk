@@ -79,7 +79,7 @@ func CalculateYtAPY(underlyingInterestApyDec, ytPriceInAsset, yearsToExpiryDec d
 	return ytApy
 }
 
-func CalculatePoolApy(coinInfo CoinInfo, marketState MarketState, ytIn, syOut int64) *models.ApyModel{
+func CalculatePoolApy(coinInfo CoinInfo, marketState MarketState, pyOut, syIn int64) *models.ApyModel{
 	response := &models.ApyModel{}
 	// Convert strings to decimals
 	coinPrice := decimal.NewFromFloat(coinInfo.CoinPrice)
@@ -95,9 +95,9 @@ func CalculatePoolApy(coinInfo CoinInfo, marketState MarketState, ytIn, syOut in
 	yearToExpiry := decimal.NewFromFloat(float64(coinInfo.Maturity/1000 - time.Now().Unix()) / float64(31536000))
 
 	// Calculate TVL
-	ytPrice := safeDivide(coinPrice.Mul(decimal.NewFromInt(syOut)), decimal.NewFromInt(ytIn))
+	ytPrice := safeDivide(coinPrice.Mul(decimal.NewFromInt(syIn)), decimal.NewFromInt(pyOut))
 	ptPrice := underlyingPrice.Sub(ytPrice)
-	fmt.Printf("\nsyOut:%v,ytIn:%v,ptPrice:%v\n",syOut,ytIn,ptPrice)
+	fmt.Printf("\nsyOut:%v,ytIn:%v,ptPrice:%v\n",syIn,pyOut,ptPrice)
 	ptTvl := totalPt.Mul(ptPrice).Div(decimal.NewFromInt(int64(math.Pow(10, float64(coinInfo.Decimal)))))
 	syTvl := totalSy.Mul(coinPrice).Div(decimal.NewFromInt(int64(math.Pow(10, float64(coinInfo.Decimal)))))
 	tvl := syTvl.Add(ptTvl)

@@ -591,11 +591,11 @@ func (s *SuiService)QueryPoolApy(nemoConfig *models.NemoConfig, priceInfoMap ...
 	underlyingPrice := coinPrice / conversionRate
 	nemoConfig.UnderlyingCoinPrice = fmt.Sprintf("%0.10f",underlyingPrice)
 
-	ytIn, syOut, err := api.GetYtInAndSyOut(client.SuiApi, nemoConfig, "0x1", api.GetYtInitInAmount(nemoConfig.CoinType), 0)
+	syIn, pyOut, err := api.GetSyInAndPyOut(client.SuiApi, nemoConfig, "0x1", api.GetYtInitInAmount(nemoConfig.CoinType))
 	if err != nil{
 		return nil, errors.New(fmt.Sprintf("%v",nemoError.ParseErrorMessage(err.Error())))
 	}
-	fmt.Printf("ytin:%v, syout:%v",ytIn,syOut)
+	fmt.Printf("ytin:%v, syout:%v",pyOut, syIn)
 	pyStateInfo, err := api.GetObjectFieldByObjectId(client.SuiApi, nemoConfig.PyState)
 	if err != nil{
 		return nil, err
@@ -629,7 +629,7 @@ func (s *SuiService)QueryPoolApy(nemoConfig *models.NemoConfig, priceInfoMap ...
 	marketState.LpSupply = marketStateInfo["lp_supply"].(string)
 	marketState.TotalSy = marketStateInfo["total_sy"].(string)
 	marketState.MarketCap = marketStateInfo["market_cap"].(string)
-	response := api.CalculatePoolApy(coinInfo, marketState, int64(ytIn), int64(syOut))
+	response := api.CalculatePoolApy(coinInfo, marketState, int64(pyOut), int64(syIn))
 
 	return response, nil
 }

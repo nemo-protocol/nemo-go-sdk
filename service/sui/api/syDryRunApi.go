@@ -839,16 +839,27 @@ func DryRunConversionRate(client *client.Client, nemoConfig *models.NemoConfig, 
 	return ptValueFloat, nil
 }
 
-func GetYtInAndSyOut(client *client.Client, nemoConfig *models.NemoConfig, address string, ytIn, retryTime uint64) (uint64, uint64, error){
-	syOut, err := DryRunGetPyInForExactSyOutWithPriceVoucher(client, nemoConfig, constant.YTTYPE, ytIn, address)
-	if err != nil{
-		if retryTime > 3{
-			return 0 , 0, err
-		}
-		return GetYtInAndSyOut(client, nemoConfig, address, ytIn / 100, retryTime + 1)
+func GetSyInAndPyOut(client *client.Client, nemoConfig *models.NemoConfig, address string, syInList []uint64) (uint64, uint64, error){
+	var pyOut, syIn uint64
+	var err error
+	sender := &account.Account{
+		Address: address,
 	}
-	return ytIn, syOut, nil
+	for _, syIn = range syInList {
+		pyOut, err = DryRunGetPyOutForExactSyInWithPriceVoucher(client, nemoConfig, constant.YTTYPE, syIn, sender)
+		if err != nil{
+			continue
+		}
+		if pyOut > 0 {
+			break
+		}
+	}
+	if pyOut > 0{
+		return syIn, pyOut, nil
+	}
+	return syIn, 0, err
 }
+
 func CalculateDailyEmission(emissionPerSecond, tokenType string, decimalPlaces int) float64 {
 	emissionPerSecondDec, err := decimal.NewFromString(emissionPerSecond)
 	if err != nil {
@@ -904,23 +915,23 @@ func GetRewarders(marketStateInfo map[string]interface{}, decimal int, sourceMar
 	}
 }
 
-func GetYtInitInAmount(coinType string) uint64{
+func GetYtInitInAmount(coinType string) []uint64{
 	switch coinType{
 	case constant.SCALLOPSSUI:
-		return 1000000
+		return []uint64{1000000, 10000, 1000, 100, 10}
 	case constant.SCALLOPDEEP:
-		return 1000000
+		return []uint64{1000000, 10000, 1000, 100, 10}
 	case constant.SCALLOPUSDC:
-		return 1000000
+		return []uint64{1000000, 10000, 1000, 100, 10}
 	case constant.SCALLOPSCA:
-		return 1000000
+		return []uint64{1000000, 10000, 1000, 100, 10}
 	case constant.SCALLOPSBUSDT:
-		return 1000000
+		return []uint64{1000000, 10000, 1000, 100, 10}
 	case constant.SCALLOPSBETH:
-		return 100
+		return []uint64{1000000, 10000, 1000, 100, 10}
 	case constant.STSUI:
-		return 1000000
+		return []uint64{1000000, 10000, 1000, 100, 10}
 	default:
-		return 1000000
+		return []uint64{1000000, 10000, 1000, 100, 10}
 	}
 }
