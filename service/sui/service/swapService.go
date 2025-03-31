@@ -9,12 +9,11 @@ import (
 	"github.com/coming-chat/go-sui/v2/sui_types"
 	"github.com/coming-chat/go-sui/v2/types"
 	"github.com/fardream/go-bcs/bcs"
-	"math"
 	"github.com/nemo-protocol/nemo-go-sdk/service/sui/api"
 	"github.com/nemo-protocol/nemo-go-sdk/service/sui/common/constant"
 	"github.com/nemo-protocol/nemo-go-sdk/service/sui/common/models"
 	"github.com/nemo-protocol/nemo-go-sdk/service/sui/common/nemoError"
-	"strconv"
+	"math"
 )
 
 func (s *SuiService)SwapByPy(amountIn, slippage float64, amountInType, exactAmountOutType string, sender *account.Account, nemoConfig *models.NemoConfig) (bool, error){
@@ -157,7 +156,7 @@ func (s *SuiService)SwapToPy(amountIn, slippage float64, amountInType, exactAmou
 	actualSyIn := uint64(amountIn * math.Pow(10, float64(nemoConfig.Decimal)))
 	netSyIn := actualSyIn
 	if amountInType == nemoConfig.UnderlyingCoinType{
-		conversionRate,err := strconv.ParseFloat(nemoConfig.ConversionRate, 64)
+		conversionRate,err := api.DryRunConversionRate(s.SuiApi, nemoConfig, "0x1")
 		if err != nil{
 			return false, err
 		}
