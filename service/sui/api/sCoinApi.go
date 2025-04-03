@@ -49,6 +49,9 @@ var (
 	STSBUCK_VAULT           = "0xe83e455a9e99884c086c8c79c13367e7a865de1f953e75bcf3e529cdf03c6224"
 	STSBUCK_PACKAGE         = "0x2a721777dc1fcf7cda19492ad7c2272ee284214652bde3e9740e2f49c3bff457"
 	STSBUCK_DEPOSIT_PACKAGE = "0x75fe358d87679b30befc498a8dae1d28ca9eed159ab6f2129a654a8255e5610e"
+
+	MSTABLE_REGISTRY = "0x5ff2396592a20f7bf6ff291963948d6fc2abec279e11f50ee74d193c4cf0bba8"
+	MSTABLE_VAULT = "0x3062285974a5e517c88cf3395923aac788dce74f3640029a01e25d76c4e76f5d"
 )
 
 // 定义一个 map 来存储 coinType 和 treasury 的映射关系
@@ -767,32 +770,31 @@ func GetTreasuryByCoinType(coinType string) (string, error) {
 
 func BurnToBuck(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig, coinArgument *sui_types.Argument) (*sui_types.Argument, error) {
 	coinBalanceArgument, err := CoinIntoBalance(ptb, coinArgument, nemoConfig.CoinType)
-	if err != nil{
+	if err != nil {
 		return nil, err
 	}
 
 	withdrawTicketArgument, err := StsBuckWithdraw(ptb, client, nemoConfig, coinBalanceArgument)
-	if err != nil{
+	if err != nil {
 		return nil, err
 	}
 
 	balanceArgument, err := StsBuckWithdrawTicket(ptb, client, nemoConfig, withdrawTicketArgument)
-	if err != nil{
+	if err != nil {
 		return nil, err
 	}
-
 
 	return CoinFromBalance(ptb, balanceArgument, nemoConfig.UnderlyingCoinType)
 }
 
 func MintByBuck(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig, coinArgument *sui_types.Argument) (*sui_types.Argument, error) {
 	coinBalanceArgument, err := CoinIntoBalance(ptb, coinArgument, nemoConfig.UnderlyingCoinType)
-	if err != nil{
+	if err != nil {
 		return nil, err
 	}
 
 	balanceArgument, err := StsBuckDeposit(ptb, client, nemoConfig, coinBalanceArgument)
-	if err != nil{
+	if err != nil {
 		return nil, err
 	}
 
