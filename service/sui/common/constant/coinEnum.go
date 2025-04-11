@@ -25,6 +25,7 @@ var (
 	STSUI         = "0xd1b72982e40348d069bb1ff701e634c117bb5f741f44dff91e472d3b01461e55::stsui::STSUI"
 	STSBUCK       = "0xd01d27939064d79e4ae1179cd11cfeeff23943f32b1a842ea1a1e15a0045d77d::st_sbuck::ST_SBUCK"
 	SUPERSUI      = "0x790f258062909e3a0ffc78b3c53ac2f62d7084c3bab95644bdeb05add7250001::super_sui::SUPER_SUI"
+	HAWAL         = "0x8b4d553839b219c3fd47608a0cc3d5fcc572cb25d41b7df3833208586a8d2470::hawal::HAWAL"
 
 	LPTOKENHASUI = "0x828b452d2aa239d48e4120c24f4a59f451b8cd8ac76706129f4ac3bd78ac8809::lp_token::LP_TOKEN"
 	LPTOKENVSUI  = "0xb490d6fa9ead588a9d72da07a02914da42f6b5b1339b8118a90011a42b67a44f::lp_token::LP_TOKEN"
@@ -97,6 +98,10 @@ func IsStsBuck(coinType string) bool{
 
 func IsSuperSui(coinType string) bool{
 	return coinType == SUPERSUI
+}
+
+func IsHaWal(coinType string) bool{
+	return coinType == HAWAL
 }
 
 func IsDeep(coinType string) bool {

@@ -52,6 +52,8 @@ var (
 
 	MSTABLE_REGISTRY = "0x5ff2396592a20f7bf6ff291963948d6fc2abec279e11f50ee74d193c4cf0bba8"
 	MSTABLE_VAULT = "0x3062285974a5e517c88cf3395923aac788dce74f3640029a01e25d76c4e76f5d"
+
+	HAWAL_STAKING = "0x9e5f6537be1a5b658ec7eed23160df0b28c799563f6c41e9becc9ad633cb592b"
 )
 
 // 定义一个 map 来存储 coinType 和 treasury 的映射关系
