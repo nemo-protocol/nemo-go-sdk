@@ -9,6 +9,7 @@ import (
 	"github.com/coming-chat/go-sui/v2/sui_types"
 	"github.com/nemo-protocol/nemo-go-sdk/service/sui/common/constant"
 	"github.com/nemo-protocol/nemo-go-sdk/service/sui/common/models"
+	"strconv"
 )
 
 func Deposit(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig, coinArgument *sui_types.Argument) (*sui_types.Argument,error) {
@@ -742,4 +743,81 @@ func AddLiquiditySingleSy(ptb *sui_types.ProgrammableTransactionBuilder, client 
 		},
 	)
 	return &command, nil
+}
+
+func MintLp(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig, syCoinArgument, ptAmountArgument, priceOracleArgument, pyPositionArgument *sui_types.Argument) (*sui_types.Argument, error) {
+	nemoPackageId, err := sui_types.NewObjectIdFromHex(nemoConfig.NemoContract)
+	if err != nil {
+		return nil, err
+	}
+
+	moduleName := "market"
+	functionName := "mint_lp"
+	module := move_types.Identifier(moduleName)
+	function := move_types.Identifier(functionName)
+	syStructTag, err := GetStructTag(nemoConfig.SyCoinType)
+	if err != nil {
+		return nil, err
+	}
+	syTypeTag := move_types.TypeTag{
+		Struct: syStructTag,
+	}
+	typeArguments := make([]move_types.TypeTag, 0)
+	typeArguments = append(typeArguments, syTypeTag)
+
+	versionArgument,err := GetObjectArgument(ptb, client, nemoConfig.Version, false, nemoConfig.NemoContract, moduleName, functionName)
+	if err != nil {
+		return nil, err
+	}
+
+	pyStateArgument,err := GetObjectArgument(ptb, client, nemoConfig.PyState, false, nemoConfig.NemoContract, moduleName, functionName)
+	if err != nil {
+		return nil, err
+	}
+
+	marketStateArgument,err := GetObjectArgument(ptb, client, nemoConfig.MarketState, false, nemoConfig.NemoContract, moduleName, functionName)
+	if err != nil {
+		return nil, err
+	}
+
+	minLpAmountArgument,err := ptb.Pure(0)
+	if err != nil {
+		return nil, err
+	}
+
+	clockArgument,err := GetObjectArgument(ptb, client, constant.CLOCK, false, nemoConfig.NemoContract, moduleName, functionName)
+	if err != nil {
+		return nil, err
+	}
+
+	var arguments []sui_types.Argument
+	arguments = append(arguments, versionArgument, *syCoinArgument, *ptAmountArgument, minLpAmountArgument, *priceOracleArgument, *pyPositionArgument, pyStateArgument, marketStateArgument, clockArgument)
+	command := ptb.Command(
+		sui_types.Command{
+			MoveCall: &sui_types.ProgrammableMoveCall{
+				Package:       *nemoPackageId,
+				Module:        module,
+				Function:      function,
+				TypeArguments: typeArguments,
+				Arguments:     arguments,
+			},
+		},
+	)
+	return &command, nil
+}
+
+func JudgePtSyRate(client *client.Client, nemoConfig *models.NemoConfig, minLpOut float64) (ptVsSy float64, err error){
+	marketStateInfo, err := GetObjectFieldByObjectId(client, nemoConfig.MarketState)
+	if err != nil{
+		return 1, err
+	}
+	lpSupply,_ := strconv.ParseFloat(marketStateInfo["lp_supply"].(string), 64)
+	if lpSupply == 0{
+		return 1,nil
+	}
+
+	totalSy,_ := strconv.ParseFloat(marketStateInfo["total_sy"].(string), 64)
+	totalPt,_ := strconv.ParseFloat(marketStateInfo["total_pt"].(string), 64)
+
+	return totalPt/totalSy, nil
 }

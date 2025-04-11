@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -9,12 +10,14 @@ import (
 	"github.com/coming-chat/go-sui/v2/sui_types"
 	"github.com/coming-chat/go-sui/v2/types"
 	"github.com/fardream/go-bcs/bcs"
-	"math"
 	"github.com/nemo-protocol/nemo-go-sdk/service/sui/api"
 	"github.com/nemo-protocol/nemo-go-sdk/service/sui/common/constant"
 	"github.com/nemo-protocol/nemo-go-sdk/service/sui/common/models"
 	"github.com/nemo-protocol/nemo-go-sdk/service/sui/common/nemoError"
+	"github.com/shopspring/decimal"
+	"math"
 	"strconv"
+	"strings"
 )
 
 func (s *SuiService)AddLiquidity(amountFloat, slippage float64, sender *account.Account, amountInType string, nemoConfig *models.NemoConfig)(bool, error){
@@ -34,9 +37,20 @@ func (s *SuiService)AddLiquidity(amountFloat, slippage float64, sender *account.
 
 	fmt.Printf("\n===amountSyIn:%v===\n",amountSyIn)
 	minLpOut,err := api.DryRunGetLpOutForSingleSyIn(s.SuiApi, nemoConfig, amountSyIn, sender)
-	if err != nil{
-		return false, errors.New(fmt.Sprintf("%v",nemoError.ParseErrorMessage(err.Error())))
+	var errorMsg string
+	if err != nil {
+		errorMsg = fmt.Sprintf("%v",nemoError.ParseErrorMessage(err.Error()))
+		if !strings.Contains(errorMsg, "Market proportion too high"){
+			return false, errors.New(errorMsg)
+		}
 	}
+
+	var ptSyRate float64
+	if errorMsg != ""{
+		ptSyRate, err = api.JudgePtSyRate(client.SuiApi, nemoConfig, float64(amountSyIn))
+	}
+	fmt.Printf("\n==ptSyRate:%v, err:%v==\n", ptSyRate, err)
+
 	fmt.Printf("\n===minLpOut:%v===\n",minLpOut)
 	minLpOut = minLpOut - uint64(float64(minLpOut) * slippage)
 
@@ -74,6 +88,16 @@ func (s *SuiService)AddLiquidity(amountFloat, slippage float64, sender *account.
 		splitResult = *argument
 	}
 
+	var ptSplitResult *sui_types.Argument
+	if ptSyRate > 0{
+		ptAmount := float64(amountIn) * ptSyRate
+		result, err := api.SplitCoinFromMerged(ptb, splitResult, uint64(ptAmount))
+		if err != nil {
+			return false, fmt.Errorf("failed to split merged coin: %w", err)
+		}
+		ptSplitResult = &result
+	}
+
 	pyPosition,err := api.GetPyPosition(nemoConfig, sender.Address, client.SuiApi, client.BlockApi)
 	if err != nil {
 		return false, err
@@ -101,22 +125,64 @@ func (s *SuiService)AddLiquidity(amountFloat, slippage float64, sender *account.
 		return false, err
 	}
 
+	var ptDepositArgument *sui_types.Argument
+	if ptSplitResult != nil{
+		ptDepositArgument, err = api.Deposit(ptb, client.SuiApi, nemoConfig, ptSplitResult)
+		if err != nil{
+			return false, err
+		}
+	}
+
 	oracleArgument, err := api.GetPriceVoucher(ptb, client.SuiApi, nemoConfig)
 	if err != nil{
 		return false, err
 	}
 
-	marketPosition, err := api.AddLiquiditySingleSy(ptb, client.SuiApi, nemoConfig, minLpOut, ptValue, oracleArgument, pyPositionArgument, depositArgument)
-	if err != nil{
-		return false, err
+	var marketPosition *sui_types.Argument
+	if ptSplitResult == nil {
+		marketPosition, err = api.AddLiquiditySingleSy(ptb, client.SuiApi, nemoConfig, minLpOut, ptValue, oracleArgument, pyPositionArgument, depositArgument)
+		if err != nil{
+			return false, err
+		}
+	}else {
+		mintPtValue,err := api.MintPy(ptb, client.SuiApi, nemoConfig, ptDepositArgument, oracleArgument, pyPositionArgument)
+		if err != nil{
+			return false, err
+		}
+		mintLpResult, err := api.MintLp(ptb, client.SuiApi, nemoConfig, depositArgument, mintPtValue, oracleArgument, pyPositionArgument)
+		if err != nil{
+			return false, err
+		}
+		remainSyCoinArgument := &sui_types.Argument{
+			NestedResult: &struct {
+				Result1 uint16
+				Result2 uint16
+			}{Result1: mintLpResult.NestedResult.Result1, Result2: 0},
+		}
+		if amountInType != nemoConfig.CoinType{
+			underlyingToken, err := api.SwapToUnderlyingCoin(ptb, client.SuiApi, nemoConfig, remainSyCoinArgument)
+			if err != nil{
+				return false, err
+			}
+			transferArgs = append(transferArgs, *underlyingToken)
+		}else {
+			transferArgs = append(transferArgs, *remainSyCoinArgument)
+		}
+
+		marketPosition = &sui_types.Argument{
+			NestedResult: &struct {
+				Result1 uint16
+				Result2 uint16
+			}{Result1: mintLpResult.NestedResult.Result2, Result2: 0},
+		}
 	}
+
 
 	previousMarketPosition,err := api.GetMarketPosition(client.BlockApi, client.SuiApi, nemoConfig, sender.Address)
 	if err != nil {
 		return false, err
 	}
 	fmt.Printf("previousMarketPosition:%v\n",previousMarketPosition)
-
 
 	if previousMarketPosition != "" {
 		previousMarketPositionArgument,err := api.GetObjectArgument(ptb, client.SuiApi, previousMarketPosition, false, nemoConfig.NemoContract, "market_position", "join")
@@ -205,7 +271,7 @@ func (s *SuiService)AddLiquidity(amountFloat, slippage float64, sender *account.
 
 	b,_ := json.Marshal(resp.Effects.Data)
 	fmt.Printf("\n==response:%+v==\n",resp)
-	errorMsg := nemoError.GetError(string(b))
+	errorMsg = nemoError.GetError(string(b))
 	if errorMsg != ""{
 		return false, errors.New(errorMsg)
 	}
@@ -344,6 +410,93 @@ func (s *SuiService)RedeemLiquidity(amountIn, slippage float64, sender *account.
 	return true, nil
 }
 
+func (s *SuiService)DryRunYtReward(nemoConfig *models.NemoConfig, sender *account.Account) (float64, error){
+	ptb := sui_types.NewProgrammableTransactionBuilder()
+	client := InitSuiService()
+
+	pyPosition, err := api.GetPyPosition(nemoConfig, sender.Address, client.SuiApi, client.BlockApi)
+	if err != nil{
+		return 0, err
+	}
+	fmt.Printf("pyposition:%v",pyPosition)
+
+	if pyPosition == ""{
+		return 0, errors.New("pyPosition not found")
+	}
+
+	oracleArgument, err := api.GetPriceVoucher(ptb, client.SuiApi, nemoConfig)
+	if err != nil{
+		return 0, err
+	}
+
+	_, err = api.RedeemDueInterest(ptb, client.SuiApi, nemoConfig, pyPosition, oracleArgument)
+	if err != nil{
+		return 0, err
+	}
+
+	pt := ptb.Finish()
+	txKind := sui_types.TransactionKind{
+		ProgrammableTransaction: &pt,
+	}
+
+	txBytes, err := bcs.Marshal(txKind)
+	if err != nil {
+		return 0, fmt.Errorf("failed to serialize transaction: %w", err)
+	}
+
+	senderAddr, err := sui_types.NewAddressFromHex(sender.Address)
+	if err != nil {
+		return 0, fmt.Errorf("failed to parse sender address: %w", err)
+	}
+
+	result, err := client.SuiApi.DevInspectTransactionBlock(context.Background(), *senderAddr, txBytes, nil, nil)
+	if err != nil {
+		return 0, fmt.Errorf("failed to inspect transaction: %w", err)
+	}
+	if result.Error != nil{
+		return 0, errors.New(fmt.Sprintf("%v", *result.Error))
+	}
+	if len(result.Results) == 0 {
+		return 0, fmt.Errorf("no results returned")
+	}
+
+	// 1. 安全获取最后一个结果
+	if len(result.Results) == 0 {
+		return 0, fmt.Errorf("empty results")
+	}
+	lastResult := result.Results[len(result.Results)-1]
+
+	// 2. 检查返回值结构
+	if len(lastResult.ReturnValues) == 0 {
+		return 0, fmt.Errorf("no return values")
+	}
+	firstValue := lastResult.ReturnValues[0]
+
+	// 3. 类型断言检查
+	valueSlice, ok := firstValue.([]interface{})
+	if !ok || len(valueSlice) < 2 {
+		return 0, fmt.Errorf("invalid return value structure")
+	}
+	fmt.Printf("valueSlice:%v==\n",valueSlice[0])
+
+	byteSlice := make([]byte, len(valueSlice[0].([]interface{})))
+	for i, v := range valueSlice[0].([]interface{}) {
+		if num, ok := v.(float64); ok {
+			byteSlice[i] = byte(num)
+		}
+	}
+
+	// 解析值
+	value := binary.LittleEndian.Uint64(byteSlice)
+
+	// 转换为decimal
+	decimalValue := decimal.NewFromInt(int64(value))
+	r := decimalValue.Div(decimal.New(1, 8)) // 8位小数
+	fv,_ := r.Float64()
+
+	return fv, nil
+}
+
 func (s *SuiService)ClaimYtReward(nemoConfig *models.NemoConfig, sender *account.Account) (bool, error){
 	ptb := sui_types.NewProgrammableTransactionBuilder()
 	client := InitSuiService()
@@ -468,6 +621,113 @@ func (s *SuiService)ClaimYtReward(nemoConfig *models.NemoConfig, sender *account
 	}
 
 	return true, nil
+}
+
+func (s *SuiService)DryRunLpReward(nemoConfig *models.NemoConfig, sender *account.Account) (int64, error){
+	return 0, nil
+	//ptb := sui_types.NewProgrammableTransactionBuilder()
+	//client := InitSuiService()
+	//
+	//marketPosition, err := api.GetMarketPosition(client.BlockApi, client.SuiApi, nemoConfig, sender.Address)
+	//if err != nil{
+	//	return false, err
+	//}
+	//
+	//if marketPosition == ""{
+	//	return false, errors.New("marketPosition not found")
+	//}
+	//
+	//rewardArgument, err := api.ClaimReward(ptb, client.SuiApi, nemoConfig, marketPosition)
+	//if err != nil{
+	//	return false, err
+	//}
+	//
+	//// change recipient address
+	//recipientAddr, err := sui_types.NewAddressFromHex(sender.Address)
+	//if err != nil {
+	//	return false, err
+	//}
+	//
+	//recArg, err := ptb.Pure(*recipientAddr)
+	//if err != nil {
+	//	return false, err
+	//}
+	//
+	//transferArgs := make([]sui_types.Argument, 0)
+	//transferArgs = append(transferArgs, *rewardArgument)
+	//
+	//ptb.Command(
+	//	sui_types.Command{
+	//		TransferObjects: &struct {
+	//			Arguments []sui_types.Argument
+	//			Argument  sui_types.Argument
+	//		}{
+	//			Arguments: transferArgs,
+	//			Argument:  recArg,
+	//		},
+	//	},
+	//)
+	//
+	//pt := ptb.Finish()
+	//
+	//_, gasCoin, err := api.RemainCoinAndGas(client.SuiApi, sender.Address, uint64(30000000), constant.GASCOINTYPE)
+	//if err != nil{
+	//	return false, err
+	//}
+	//
+	//gasPayment := []*sui_types.ObjectRef{gasCoin}
+	//
+	//senderAddr, err := sui_types.NewObjectIdFromHex(sender.Address)
+	//if err != nil {
+	//	return false, fmt.Errorf("failed to convert sender address: %w", err)
+	//}
+	//
+	//tx := sui_types.NewProgrammable(
+	//	*senderAddr,
+	//	gasPayment,
+	//	pt,
+	//	30000000, // gasBudget
+	//	1000,     // gasPrice
+	//)
+	//
+	//txBytes, err := bcs.Marshal(tx)
+	//if err != nil {
+	//	return false, fmt.Errorf("failed to serialize transaction: %w", err)
+	//}
+	//
+	//// signature
+	//signature, err := sender.SignSecureWithoutEncode(txBytes, sui_types.DefaultIntent())
+	//if err != nil {
+	//	return false, fmt.Errorf("failed to sign transaction: %w", err)
+	//}
+	//
+	//options := types.SuiTransactionBlockResponseOptions{
+	//	ShowInput:          true,
+	//	ShowEffects:        true,
+	//	ShowEvents:         true,
+	//	ShowObjectChanges:  true,
+	//	ShowBalanceChanges: true,
+	//}
+	//
+	//resp, err := client.SuiApi.ExecuteTransactionBlock(
+	//	context.Background(),
+	//	txBytes,
+	//	[]any{signature},
+	//	&options,
+	//	types.TxnRequestTypeWaitForLocalExecution,
+	//)
+	//if err != nil {
+	//	return false, fmt.Errorf("failed to execute transaction: %w", err)
+	//}
+	//
+	//b,_ := json.Marshal(resp.Effects.Data)
+	//fmt.Printf("\n==response:%+v==\n",resp)
+	//errorMsg := nemoError.GetError(string(b))
+	//if errorMsg != ""{
+	//	return false, errors.New(errorMsg)
+	//}
+	//
+	//return true, nil
 }
 
 func (s *SuiService)ClaimLpReward(nemoConfig *models.NemoConfig, sender *account.Account) (bool, error){
