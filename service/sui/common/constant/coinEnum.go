@@ -26,6 +26,7 @@ var (
 	STSBUCK       = "0xd01d27939064d79e4ae1179cd11cfeeff23943f32b1a842ea1a1e15a0045d77d::st_sbuck::ST_SBUCK"
 	SUPERSUI      = "0x790f258062909e3a0ffc78b3c53ac2f62d7084c3bab95644bdeb05add7250001::super_sui::SUPER_SUI"
 	HAWAL         = "0x8b4d553839b219c3fd47608a0cc3d5fcc572cb25d41b7df3833208586a8d2470::hawal::HAWAL"
+	WWAL          = "0xb1b0650a8862e30e3f604fd6c5838bc25464b8d3d827fbd58af7cb9685b832bf::wwal::WWAL"
 
 	LPTOKENHASUI = "0x828b452d2aa239d48e4120c24f4a59f451b8cd8ac76706129f4ac3bd78ac8809::lp_token::LP_TOKEN"
 	LPTOKENVSUI  = "0xb490d6fa9ead588a9d72da07a02914da42f6b5b1339b8118a90011a42b67a44f::lp_token::LP_TOKEN"
@@ -39,6 +40,7 @@ var (
 	WUSDT = "0xc060006111016b8a020ad5b33834984a437aaa7d3c74c18e09a95d48aceab08c::coin::COIN"
 	WUSDC = "0x5d4b302506645c37ff133b98c4b50a5ae14841659738d6d733d59d0d217a93bf::coin::COIN"
 	BUCK  = "0xce7ff77a83ea0cb6fd39bd8748e2ec89a3f41e8efdc3f4eb123e0ca37b184db2::buck::BUCK"
+
 )
 
 func IsGasCoinType(coinType string) bool {
@@ -102,6 +104,10 @@ func IsSuperSui(coinType string) bool{
 
 func IsHaWal(coinType string) bool{
 	return coinType == HAWAL
+}
+
+func IsWWal(coinType string) bool{
+	return coinType == WWAL
 }
 
 func IsDeep(coinType string) bool {

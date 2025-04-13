@@ -745,10 +745,10 @@ func AddLiquiditySingleSy(ptb *sui_types.ProgrammableTransactionBuilder, client 
 	return &command, nil
 }
 
-func MintLp(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig, syCoinArgument, ptAmountArgument, priceOracleArgument, pyPositionArgument *sui_types.Argument) (*sui_types.Argument, error) {
+func MintLp(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig, syCoinArgument, pyPositionArgument *sui_types.Argument, ptAmount int64) (*sui_types.Argument, *sui_types.Argument, error) {
 	nemoPackageId, err := sui_types.NewObjectIdFromHex(nemoConfig.NemoContract)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	moduleName := "market"
@@ -757,7 +757,7 @@ func MintLp(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client
 	function := move_types.Identifier(functionName)
 	syStructTag, err := GetStructTag(nemoConfig.SyCoinType)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	syTypeTag := move_types.TypeTag{
 		Struct: syStructTag,
@@ -767,31 +767,45 @@ func MintLp(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client
 
 	versionArgument,err := GetObjectArgument(ptb, client, nemoConfig.Version, false, nemoConfig.NemoContract, moduleName, functionName)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	pyStateArgument,err := GetObjectArgument(ptb, client, nemoConfig.PyState, false, nemoConfig.NemoContract, moduleName, functionName)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	marketStateArgument,err := GetObjectArgument(ptb, client, nemoConfig.MarketState, false, nemoConfig.NemoContract, moduleName, functionName)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	minLpAmountArgument,err := ptb.Pure(0)
+	oracleArgument, err := GetPriceVoucher(ptb, client, nemoConfig)
+	if err != nil{
+		return nil, nil, err
+	}
+
+	minLpAmountCallArg := CreatePureU64CallArg(0)
+	minLpAmountArgument, err := ptb.Input(minLpAmountCallArg)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
+	}
+
+	ptAmountCallArg := CreatePureU64CallArg(uint64(ptAmount))
+	ptAmountArgument, err := ptb.Input(ptAmountCallArg)
+	if err != nil {
+		return nil, nil, err
 	}
 
 	clockArgument,err := GetObjectArgument(ptb, client, constant.CLOCK, false, nemoConfig.NemoContract, moduleName, functionName)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	var arguments []sui_types.Argument
-	arguments = append(arguments, versionArgument, *syCoinArgument, *ptAmountArgument, minLpAmountArgument, *priceOracleArgument, *pyPositionArgument, pyStateArgument, marketStateArgument, clockArgument)
+	arguments = append(arguments, versionArgument, *syCoinArgument, ptAmountArgument, minLpAmountArgument, *oracleArgument, *pyPositionArgument, pyStateArgument, marketStateArgument, clockArgument)
+
+	// 执行 MoveCall
 	command := ptb.Command(
 		sui_types.Command{
 			MoveCall: &sui_types.ProgrammableMoveCall{
@@ -803,21 +817,41 @@ func MintLp(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client
 			},
 		},
 	)
-	return &command, nil
+
+	remainingSyCoin := sui_types.Argument{
+		NestedResult: &struct {
+			Result1 uint16
+			Result2 uint16
+		}{
+			Result1: *command.Result,
+			Result2: 0,
+		},
+	}
+
+	marketPosition := sui_types.Argument{
+		NestedResult: &struct {
+			Result1 uint16
+			Result2 uint16
+		}{
+			Result1: *command.Result,
+			Result2: 1,  // 第一个分割结果
+		},
+	}
+
+	return &remainingSyCoin, &marketPosition, nil
 }
 
-func JudgePtSyRate(client *client.Client, nemoConfig *models.NemoConfig, minLpOut float64) (ptVsSy float64, err error){
+func JudgePtSyRate(client *client.Client, nemoConfig *models.NemoConfig, minLpOut float64) (ptRate, syRate float64, err error){
 	marketStateInfo, err := GetObjectFieldByObjectId(client, nemoConfig.MarketState)
 	if err != nil{
-		return 1, err
+		return 1, 1, err
 	}
 	lpSupply,_ := strconv.ParseFloat(marketStateInfo["lp_supply"].(string), 64)
 	if lpSupply == 0{
-		return 1,nil
+		return 1, 1,nil
 	}
 
 	totalSy,_ := strconv.ParseFloat(marketStateInfo["total_sy"].(string), 64)
 	totalPt,_ := strconv.ParseFloat(marketStateInfo["total_pt"].(string), 64)
-
-	return totalPt/totalSy, nil
+	return totalPt/(totalSy+totalPt), totalSy/(totalSy+totalPt),nil
 }

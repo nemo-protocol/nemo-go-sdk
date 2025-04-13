@@ -45,12 +45,11 @@ func (s *SuiService)AddLiquidity(amountFloat, slippage float64, sender *account.
 		}
 	}
 
-	var ptSyRate float64
+	var ptRate float64
 	if errorMsg != ""{
-		ptSyRate, err = api.JudgePtSyRate(client.SuiApi, nemoConfig, float64(amountSyIn))
+		ptRate, _, err = api.JudgePtSyRate(client.SuiApi, nemoConfig, float64(amountSyIn))
 	}
-	fmt.Printf("\n==ptSyRate:%v, err:%v==\n", ptSyRate, err)
-
+	fmt.Printf("\n==ptRate:%v, err:%v==\n", ptRate, err)
 	fmt.Printf("\n===minLpOut:%v===\n",minLpOut)
 	minLpOut = minLpOut - uint64(float64(minLpOut) * slippage)
 
@@ -89,8 +88,10 @@ func (s *SuiService)AddLiquidity(amountFloat, slippage float64, sender *account.
 	}
 
 	var ptSplitResult *sui_types.Argument
-	if ptSyRate > 0{
-		ptAmount := float64(amountIn) * ptSyRate
+	var ptAmount float64
+	if ptRate > 0{
+		ptAmount = float64(amountIn) * ptRate
+		fmt.Printf("\n==ptAmount:%v==\b",ptAmount)
 		result, err := api.SplitCoinFromMerged(ptb, splitResult, uint64(ptAmount))
 		if err != nil {
 			return false, fmt.Errorf("failed to split merged coin: %w", err)
@@ -145,38 +146,25 @@ func (s *SuiService)AddLiquidity(amountFloat, slippage float64, sender *account.
 			return false, err
 		}
 	}else {
-		mintPtValue,err := api.MintPy(ptb, client.SuiApi, nemoConfig, ptDepositArgument, oracleArgument, pyPositionArgument)
+		_,err = api.MintPy(ptb, client.SuiApi, nemoConfig, ptDepositArgument, oracleArgument, pyPositionArgument)
 		if err != nil{
 			return false, err
 		}
-		mintLpResult, err := api.MintLp(ptb, client.SuiApi, nemoConfig, depositArgument, mintPtValue, oracleArgument, pyPositionArgument)
+		var remainCoinResult *sui_types.Argument
+		remainCoinResult, marketPosition, err = api.MintLp(ptb, client.SuiApi, nemoConfig, depositArgument, pyPositionArgument, int64(ptAmount))
 		if err != nil{
 			return false, err
-		}
-		remainSyCoinArgument := &sui_types.Argument{
-			NestedResult: &struct {
-				Result1 uint16
-				Result2 uint16
-			}{Result1: mintLpResult.NestedResult.Result1, Result2: 0},
 		}
 		if amountInType != nemoConfig.CoinType{
-			underlyingToken, err := api.SwapToUnderlyingCoin(ptb, client.SuiApi, nemoConfig, remainSyCoinArgument)
+			underlyingToken, err := api.SwapToUnderlyingCoin(ptb, client.SuiApi, nemoConfig, remainCoinResult)
 			if err != nil{
 				return false, err
 			}
 			transferArgs = append(transferArgs, *underlyingToken)
 		}else {
-			transferArgs = append(transferArgs, *remainSyCoinArgument)
-		}
-
-		marketPosition = &sui_types.Argument{
-			NestedResult: &struct {
-				Result1 uint16
-				Result2 uint16
-			}{Result1: mintLpResult.NestedResult.Result2, Result2: 0},
+			transferArgs = append(transferArgs, *remainCoinResult)
 		}
 	}
-
 
 	previousMarketPosition,err := api.GetMarketPosition(client.BlockApi, client.SuiApi, nemoConfig, sender.Address)
 	if err != nil {
