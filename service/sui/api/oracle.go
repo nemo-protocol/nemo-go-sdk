@@ -2,6 +2,7 @@ package api
 
 import (
 	"errors"
+	"fmt"
 	"github.com/coming-chat/go-sui/v2/client"
 	"github.com/coming-chat/go-sui/v2/move_types"
 	"github.com/coming-chat/go-sui/v2/sui_types"
@@ -161,6 +162,7 @@ func GetPriceVoucherFromVolo(ptb *sui_types.ProgrammableTransactionBuilder, clie
 }
 
 func GetPriceVoucherFromSpring(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig, lstInfo string, moduleName string) (*sui_types.Argument,error) {
+	fmt.Printf("nemoConfig:%+v==\n",nemoConfig)
 	nemoPackageId, err := sui_types.NewObjectIdFromHex(nemoConfig.OraclePackage)
 	if err != nil {
 		return nil, err
@@ -756,7 +758,7 @@ func GetPriceVoucherFromWWal(ptb *sui_types.ProgrammableTransactionBuilder, clie
 		return nil, err
 	}
 
-	wWalBlizzardStakingCallArg,err := GetObjectArg(client, WWAL_BLIZZARD_STAKING, false, nemoConfig.OraclePackage, moduleName, functionName)
+	wWalBlizzardStakingCallArg,err := GetObjectArg(client, nemoConfig.WinterStaking, false, nemoConfig.OraclePackage, moduleName, functionName)
 	if err != nil {
 		return nil, err
 	}
@@ -801,7 +803,7 @@ func GetPriceVoucher(ptb *sui_types.ProgrammableTransactionBuilder, client *clie
 		return GetPriceVoucherFromXOracle(ptb, client, nemoConfig)
 	}else if constant.IsVSui(nemoConfig.CoinType){
 		return GetPriceVoucherFromVolo(ptb, client, nemoConfig)
-	}else if constant.IsSpringSui(nemoConfig.CoinType){
+	}else if constant.IsSpringCoin(nemoConfig.ProviderProtocol){
 		return GetPriceVoucherFromSpring(ptb, client, nemoConfig, constant.SPRINGLSTINFO, "spring")
 	}else if constant.IsAfSui(nemoConfig.CoinType) {
 		return GetPriceVoucherFromAftermath(ptb, client, nemoConfig)
@@ -821,7 +823,7 @@ func GetPriceVoucher(ptb *sui_types.ProgrammableTransactionBuilder, client *clie
 		return GetPriceVoucherFromMsTable(ptb, client, nemoConfig)
 	}else if constant.IsHaWal(nemoConfig.CoinType){
 		return GetPriceVoucherFromHaWal(ptb, client, nemoConfig)
-	}else if constant.IsWWal(nemoConfig.CoinType){
+	}else if constant.IsWinterCoin(nemoConfig.ProviderProtocol){
 		return GetPriceVoucherFromWWal(ptb, client, nemoConfig)
 	}
 	return nil, errors.New("coinType oracle not support！")

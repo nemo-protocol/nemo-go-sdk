@@ -41,6 +41,9 @@ var (
 	WUSDC = "0x5d4b302506645c37ff133b98c4b50a5ae14841659738d6d733d59d0d217a93bf::coin::COIN"
 	BUCK  = "0xce7ff77a83ea0cb6fd39bd8748e2ec89a3f41e8efdc3f4eb123e0ca37b184db2::buck::BUCK"
 
+	SPRING_PROVIDER = "SpringSui"
+	WINTER_PROVIDER = "Winter"
+
 )
 
 func IsGasCoinType(coinType string) bool {
@@ -108,6 +111,14 @@ func IsHaWal(coinType string) bool{
 
 func IsWWal(coinType string) bool{
 	return coinType == WWAL
+}
+
+func IsSpringCoin(provider string) bool{
+	return provider == SPRING_PROVIDER
+}
+
+func IsWinterCoin(provider string) bool{
+	return provider == WINTER_PROVIDER
 }
 
 func IsDeep(coinType string) bool {

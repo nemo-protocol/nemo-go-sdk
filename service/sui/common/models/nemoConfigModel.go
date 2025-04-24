@@ -38,6 +38,7 @@ type NemoConfig struct {
 	OracleVoucherPackage string   `json:"oracleVoucherPackageId"`
 	SwapFeeForLpHolder   string   `json:"swapFeeForLpHolder"`
 	YieldTokenType       string   `json:"yieldTokenType"`
+	WinterStaking        string   `json:"winterStaking"`
 }
 
 type NemoConfigInfo struct {
@@ -69,6 +70,8 @@ type NemoConfigInfo struct {
 	OracleVoucherPackage string   `json:"oracleVoucherPackageId"`
 	SwapFeeForLpHolder   string   `json:"swapFeeForLpHolder"`
 	YieldTokenType       string   `json:"yieldTokenType"`
+	LstInfo              string   `json:"lstInfo"`
+	WinterStaking        string   `json:"winterStaking"`
 }
 
 type NemoInfoResponse struct {
@@ -109,7 +112,7 @@ func InitConfig() []NemoConfig {
 		OracleVoucherPackage: "0x8783841625738f73a6b0085f5dad270b4b0bd2e5cdb278dc95201e45bd1a332b",
 	}
 	*/
-	url := "https://app.nemoprotocol.com/api/v1/market/coinInfo"
+	url := "https://dev-api.nemoprotocol.com/api/v1/market/coinInfo?tokenType=1"
 	pageByte, err := utils.SendGetRpc(url)
 	if err != nil {
 		return nil
@@ -118,7 +121,7 @@ func InitConfig() []NemoConfig {
 	response := NemoPageResponse{}
 	_ = json.Unmarshal(pageByte, &response)
 
-	infoUrl := "https://app.nemoprotocol.com/api/v1/market/config/detail?id=%v"
+	infoUrl := "https://dev-api.nemoprotocol.com/api/v1/market/config/detail?id=%v"
 	infoList := make([]NemoConfig, 0)
 	for _, v := range response.NemoPage {
 		infoByte, err := utils.SendGetRpc(fmt.Sprintf(infoUrl, v.Id))
@@ -167,5 +170,7 @@ func FormatStruct(resInfo NemoConfigInfo) NemoConfig {
 	innerInfo.UnderlyingApy = resInfo.UnderlyingApy
 	innerInfo.SwapFeeForLpHolder = resInfo.SwapFeeForLpHolder
 	innerInfo.YieldTokenType = resInfo.YieldTokenType
+	innerInfo.LstInfo = resInfo.LstInfo
+	innerInfo.WinterStaking = resInfo.WinterStaking
 	return innerInfo
 }
