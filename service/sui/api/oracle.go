@@ -198,7 +198,7 @@ func GetPriceVoucherFromSpring(ptb *sui_types.ProgrammableTransactionBuilder, cl
 		return nil, err
 	}
 
-	lstInfoCallArg,err := GetObjectArg(client, lstInfo, false, nemoConfig.OraclePackage, moduleName, functionName)
+	lstInfoCallArg,err := GetObjectArg(client, nemoConfig.LstInfo, false, nemoConfig.OraclePackage, moduleName, functionName)
 	if err != nil {
 		return nil, err
 	}
