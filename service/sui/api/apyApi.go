@@ -70,9 +70,9 @@ func CalculateYtAPY(underlyingInterestApyDec, ytPriceInAsset, yearsToExpiryDec d
 	ytReturnsAfterFee := ytReturns.Mul(decimal.NewFromFloat(0.965))
 
 	divResult1,_ := safeDivide(ytReturnsAfterFee, ytPriceInAsset).Float64()
-	divResult2,_ := decimal.NewFromInt(1).Div(yearsToExpiryDec).Float64()
+	//divResult2,_ := decimal.NewFromInt(1).Div(yearsToExpiryDec).Float64()
 
-	ytApy := decimal.NewFromFloat(math.Pow(divResult1, divResult2)).
+	ytApy := decimal.NewFromFloat(divResult1).
 		Sub(decimal.NewFromInt(1)).
 		Mul(decimal.NewFromInt(100))
 
