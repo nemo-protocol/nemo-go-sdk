@@ -11,6 +11,7 @@ import (
 var (
 	instance    *SuiService
 	onlyEndpointInstance *SuiService
+	onlyOnce sync.Once
 	once sync.Once
 	SuiMainNetEndpoint = "https://fullnode.mainnet.sui.io"
 	servMap     *sync.Map
@@ -69,7 +70,7 @@ func InitSuiService(endpointList ...string) *SuiService{
 }
 
 func InitSuiServiceByOnlyEndpoint(endpoint string) *SuiService{
-	once.Do(func() {
+	onlyOnce.Do(func() {
 		c, err := client.Dial(endpoint)
 		if err != nil {
 			errorMsg := fmt.Sprintf("connect sui main net error:%v", err)
