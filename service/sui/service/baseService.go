@@ -15,6 +15,7 @@ var (
 	once sync.Once
 	SuiMainNetEndpoint = "https://fullnode.mainnet.sui.io"
 	servMap     *sync.Map
+	onlyServMap *sync.Map
 )
 
 type SuiService struct {
@@ -69,19 +70,49 @@ func InitSuiService(endpointList ...string) *SuiService{
 	return nil
 }
 
-func InitSuiServiceByOnlyEndpoint(endpoint string) *SuiService{
-	onlyOnce.Do(func() {
-		c, err := client.Dial(endpoint)
+func InitSuiServiceByOnlyEndpoint(endpoint ...string) *SuiService{
+	if onlyServMap == nil{
+		onlyServMap = &sync.Map{}
+	}
+	once.Do(func() {
+		c, err := client.Dial(SuiMainNetEndpoint)
 		if err != nil {
 			errorMsg := fmt.Sprintf("connect sui main net error:%v", err)
 			panic(errorMsg)
 		}
-		blockSuiApi := sui.NewSuiClient(endpoint)
-		onlyEndpointInstance = &SuiService{
+		blockSuiApi := sui.NewSuiClient(SuiMainNetEndpoint)
+		instance = &SuiService{
 			SuiApi: c,
 			BlockApi: &blockSuiApi,
 		}
 	})
+	_, ok := onlyServMap.Load(SuiMainNetEndpoint)
+	if !ok{
+		onlyServMap.Store(SuiMainNetEndpoint, instance)
+	}
 
-	return onlyEndpointInstance
+	for _,v := range endpoint{
+		c, err := client.Dial(v)
+		fmt.Printf("c:%+v",c)
+		if err != nil {
+			errorMsg := fmt.Sprintf("connect sui main net error:%v", err)
+			panic(errorMsg)
+		}
+		blockSuiApi := sui.NewSuiClient(v)
+		fmt.Printf("blockSuiApi:%+v",blockSuiApi)
+		onlyEndpointInstance = &SuiService{
+			SuiApi: c,
+			BlockApi: &blockSuiApi,
+		}
+		onlyServMap.Store(v, onlyEndpointInstance)
+	}
+
+	instanceValue, ok := utils.GetRandomValueFromSyncMap(onlyServMap)
+	fmt.Printf("instanceValue:%v, ok:%v",instanceValue, ok)
+	if ok {
+		if suiService, typeOk := instanceValue.(*SuiService); typeOk {
+			return suiService
+		}
+	}
+	return nil
 }

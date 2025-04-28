@@ -825,9 +825,8 @@ func (s *SuiService)ClaimLpReward(nemoConfig *models.NemoConfig, sender *account
 }
 
 func (s *SuiService)QueryPoolApy(nemoConfig *models.NemoConfig, priceInfoMap ...map[string]api.PriceInfo) (*models.ApyModel, error){
-	client := InitSuiService()
 
-	conversionRate,err := api.DryRunConversionRate(client.SuiApi, nemoConfig, "0x1")
+	conversionRate,err := api.DryRunConversionRate(s.SuiApi, nemoConfig, "0x1")
 	if err != nil{
 		return nil, errors.New(fmt.Sprintf("%v",nemoError.ParseErrorMessage(err.Error())))
 	}
@@ -839,18 +838,18 @@ func (s *SuiService)QueryPoolApy(nemoConfig *models.NemoConfig, priceInfoMap ...
 	underlyingPrice := coinPrice / conversionRate
 	nemoConfig.UnderlyingCoinPrice = fmt.Sprintf("%0.10f",underlyingPrice)
 
-	syIn, pyOut, err := api.GetSyInAndPyOut(client.SuiApi, nemoConfig, "0x1", api.GetYtInitInAmount(nemoConfig.CoinType))
+	syIn, pyOut, err := api.GetSyInAndPyOut(s.SuiApi, nemoConfig, "0x1", api.GetYtInitInAmount(nemoConfig.CoinType))
 	if err != nil{
 		return nil, errors.New(fmt.Sprintf("%v",nemoError.ParseErrorMessage(err.Error())))
 	}
 	fmt.Printf("ytin:%v, syout:%v",pyOut, syIn)
-	pyStateInfo, err := api.GetObjectFieldByObjectId(client.SuiApi, nemoConfig.PyState)
+	pyStateInfo, err := api.GetObjectFieldByObjectId(s.SuiApi, nemoConfig.PyState)
 	if err != nil{
 		return nil, err
 	}
 	maturity := pyStateInfo["expiry"].(string)
 
-	marketStateInfo, err := api.GetObjectFieldByObjectId(client.SuiApi, nemoConfig.MarketState)
+	marketStateInfo, err := api.GetObjectFieldByObjectId(s.SuiApi, nemoConfig.MarketState)
 	if err != nil{
 		return nil, err
 	}
