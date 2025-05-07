@@ -824,9 +824,9 @@ func (s *SuiService)ClaimLpReward(nemoConfig *models.NemoConfig, sender *account
 	return true, nil
 }
 
-func (s *SuiService)QueryPoolApy(nemoConfig *models.NemoConfig, priceInfoMap ...map[string]api.PriceInfo) (*models.ApyModel, error){
+func (s *SuiService)QueryPoolApy(nemoConfig *models.NemoConfig, cacheContractPackageInfo string, priceInfoMap ...map[string]api.PriceInfo) (*models.ApyModel, error){
 
-	conversionRate,err := api.DryRunConversionRate(s.SuiApi, nemoConfig, "0x1")
+	conversionRate,err := api.DryRunConversionRate(s.SuiApi, nemoConfig, "0x1", cacheContractPackageInfo)
 	if err != nil{
 		return nil, errors.New(fmt.Sprintf("%v",nemoError.ParseErrorMessage(err.Error())))
 	}

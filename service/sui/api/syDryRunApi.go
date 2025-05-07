@@ -742,7 +742,7 @@ func DryRunSingleLiquidityAddPtOut(client *client.Client, nemoConfig *models.Nem
 	return ptValue, nil
 }
 
-func DryRunConversionRate(client *client.Client, nemoConfig *models.NemoConfig, address string) (float64, error){
+func DryRunConversionRate(client *client.Client, nemoConfig *models.NemoConfig, address string, cacheContractPackageInfo ...string) (float64, error){
 	ptb := sui_types.NewProgrammableTransactionBuilder()
 
 	nemoPackageId, err := sui_types.NewObjectIdFromHex(nemoConfig.OracleVoucherPackage)
@@ -764,7 +764,7 @@ func DryRunConversionRate(client *client.Client, nemoConfig *models.NemoConfig, 
 		{Struct: syStructTag},
 	}
 
-	oracleArgument, err := GetPriceVoucher(ptb, client, nemoConfig)
+	oracleArgument, err := GetPriceVoucher(ptb, client, nemoConfig, cacheContractPackageInfo...)
 	if err != nil{
 		return 0, err
 	}

@@ -78,7 +78,7 @@ func GetObjectArgument(ptb *sui_types.ProgrammableTransactionBuilder, client *cl
 }
 
 // shareObjectsMap: key->objectId; value isCoin boolean value
-func MultiGetObjectArg(client *client.Client, shareObjectsMap map[string]bool, contractPackage, module, function string) (map[string]*sui_types.ObjectArg, error) {
+func MultiGetObjectArg(client *client.Client, shareObjectsMap map[string]bool, contractPackage, module, function string, cacheContractPackageInfo ...string) (map[string]*sui_types.ObjectArg, error) {
 	if len(shareObjectsMap) == 0{
 		return nil, errors.New("share Object map is null")
 	}
@@ -108,7 +108,7 @@ func MultiGetObjectArg(client *client.Client, shareObjectsMap map[string]bool, c
 				}{
 					Id:                   *hexObject,
 					InitialSharedVersion: *sourceObjectData.Data.Owner.Shared.InitialSharedVersion,
-					Mutable:              GetObjectMutable(client, *sourceObjectData.Data.Type, contractPackage, module, function),
+					Mutable:              GetObjectMutable(client, *sourceObjectData.Data.Type, contractPackage, module, function, cacheContractPackageInfo...),
 				},
 			}
 		}else {

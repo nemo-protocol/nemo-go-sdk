@@ -30,14 +30,26 @@ func GetObjectMetadata(client *client.Client, objectId string) (*types.SuiObject
 	return object, nil
 }
 
-func GetObjectMutable(client *client.Client, objectType, contractPackage, module, function string) bool{
+func GetObjectMutable(client *client.Client, objectType, contractPackage, module, function string, cacheContractPackageInfo ...string) bool{
 	contractPackageAddr,err := sui_types.NewObjectIdFromHex(contractPackage)
 	if err != nil{
 		return false
 	}
-	objects,_ := client.GetObject(context.Background(), *contractPackageAddr, &types.SuiObjectDataOptions{
-		ShowType: true, ShowContent: true, ShowBcs: true, ShowOwner: true, ShowPreviousTransaction: true, ShowStorageRebate: true, ShowDisplay: true,
-	})
+
+	objects := &types.SuiObjectResponse{}
+	reloadPackageInfo := true
+	if len(cacheContractPackageInfo) > 0{
+		err = json.Unmarshal([]byte(cacheContractPackageInfo[0]), &objects)
+		if err == nil {
+			reloadPackageInfo = false
+		}
+	}
+	if reloadPackageInfo{
+		objects,_ = client.GetObject(context.Background(), *contractPackageAddr, &types.SuiObjectDataOptions{
+			ShowType: true, ShowContent: true, ShowBcs: true, ShowOwner: true, ShowPreviousTransaction: true, ShowStorageRebate: true, ShowDisplay: true,
+		})
+	}
+
 	if objects == nil || objects.Data == nil || objects.Data.Content == nil {
 		return false
 	}

@@ -10,7 +10,7 @@ import (
 	"github.com/nemo-protocol/nemo-go-sdk/service/sui/common/models"
 )
 
-func GetPriceVoucherFromXOracle(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig) (*sui_types.Argument,error) {
+func GetPriceVoucherFromXOracle(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig, cacheContractPackageInfo ...string) (*sui_types.Argument,error) {
 	nemoPackageId, err := sui_types.NewObjectIdFromHex(nemoConfig.OraclePackage)
 	if err != nil {
 		return nil, err
@@ -86,7 +86,7 @@ func GetPriceVoucherFromXOracle(ptb *sui_types.ProgrammableTransactionBuilder, c
 	return &command, nil
 }
 
-func GetPriceVoucherFromVolo(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig) (*sui_types.Argument,error) {
+func GetPriceVoucherFromVolo(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig, cacheContractPackageInfo ...string) (*sui_types.Argument,error) {
 	nemoPackageId, err := sui_types.NewObjectIdFromHex(nemoConfig.OraclePackage)
 	if err != nil {
 		return nil, err
@@ -151,7 +151,7 @@ func GetPriceVoucherFromVolo(ptb *sui_types.ProgrammableTransactionBuilder, clie
 	return &command, nil
 }
 
-func GetPriceVoucherFromSpring(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig, lstInfo string, moduleName string) (*sui_types.Argument,error) {
+func GetPriceVoucherFromSpring(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig, lstInfo string, moduleName string, cacheContractPackageInfo ...string) (*sui_types.Argument,error) {
 	fmt.Printf("nemoConfig:%+v==\n",nemoConfig)
 	nemoPackageId, err := sui_types.NewObjectIdFromHex(nemoConfig.OraclePackage)
 	if err != nil {
@@ -221,7 +221,7 @@ func GetPriceVoucherFromSpring(ptb *sui_types.ProgrammableTransactionBuilder, cl
 	return &command, nil
 }
 
-func GetPriceVoucherFromAftermath(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig) (*sui_types.Argument,error) {
+func GetPriceVoucherFromAftermath(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig, cacheContractPackageInfo ...string) (*sui_types.Argument,error) {
 	nemoPackageId, err := sui_types.NewObjectIdFromHex(nemoConfig.OraclePackage)
 	if err != nil {
 		return nil, err
@@ -293,7 +293,7 @@ func GetPriceVoucherFromAftermath(ptb *sui_types.ProgrammableTransactionBuilder,
 	return &command, nil
 }
 
-func GetPriceVoucherFromHasui(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig) (*sui_types.Argument,error) {
+func GetPriceVoucherFromHasui(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig, cacheContractPackageInfo ...string) (*sui_types.Argument,error) {
 	nemoPackageId, err := sui_types.NewObjectIdFromHex(nemoConfig.OraclePackage)
 	if err != nil {
 		return nil, err
@@ -363,7 +363,7 @@ func GetPriceVoucherFromHasui(ptb *sui_types.ProgrammableTransactionBuilder, cli
 	return &command, nil
 }
 
-func GetPriceVoucherFromLpToken(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig, lpVault, lpPool, moduleName string) (*sui_types.Argument,error) {
+func GetPriceVoucherFromLpToken(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig, lpVault, lpPool, moduleName string, cacheContractPackageInfo ...string) (*sui_types.Argument,error) {
 	nemoPackageId, err := sui_types.NewObjectIdFromHex(nemoConfig.OraclePackage)
 	if err != nil {
 		return nil, err
@@ -473,7 +473,7 @@ func GetPriceVoucherFromLpToken(ptb *sui_types.ProgrammableTransactionBuilder, c
 	return &command, nil
 }
 
-func GetPriceVoucherFromBuck(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig) (*sui_types.Argument,error) {
+func GetPriceVoucherFromBuck(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig, cacheContractPackageInfo ...string) (*sui_types.Argument,error) {
 	nemoPackageId, err := sui_types.NewObjectIdFromHex(nemoConfig.OraclePackage)
 	if err != nil {
 		return nil, err
@@ -543,7 +543,7 @@ func GetPriceVoucherFromBuck(ptb *sui_types.ProgrammableTransactionBuilder, clie
 	return &command, nil
 }
 
-func GetPriceVoucherFromMsTable(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig) (*sui_types.Argument,error) {
+func GetPriceVoucherFromMsTable(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig, cacheContractPackageInfo ...string) (*sui_types.Argument,error) {
 	nemoPackageId, err := sui_types.NewObjectIdFromHex(nemoConfig.OraclePackage)
 	if err != nil {
 		return nil, err
@@ -615,7 +615,7 @@ func GetPriceVoucherFromMsTable(ptb *sui_types.ProgrammableTransactionBuilder, c
 	return &command, nil
 }
 
-func GetPriceVoucherFromHaWal(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig) (*sui_types.Argument,error) {
+func GetPriceVoucherFromHaWal(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig, cacheContractPackageInfo ...string) (*sui_types.Argument,error) {
 	nemoPackageId, err := sui_types.NewObjectIdFromHex(nemoConfig.OraclePackage)
 	if err != nil {
 		return nil, err
@@ -685,7 +685,7 @@ func GetPriceVoucherFromHaWal(ptb *sui_types.ProgrammableTransactionBuilder, cli
 	return &command, nil
 }
 
-func GetPriceVoucherFromWWal(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig) (*sui_types.Argument,error) {
+func GetPriceVoucherFromWWal(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig, cacheContractPackageInfo ...string) (*sui_types.Argument,error) {
 	nemoPackageId, err := sui_types.NewObjectIdFromHex(nemoConfig.OraclePackage)
 	if err != nil {
 		return nil, err
@@ -757,33 +757,33 @@ func GetPriceVoucherFromWWal(ptb *sui_types.ProgrammableTransactionBuilder, clie
 	return &command, nil
 }
 
-func GetPriceVoucher(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig) (*sui_types.Argument,error){
+func GetPriceVoucher(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig, cacheContractPackageInfo ...string) (*sui_types.Argument,error){
 	if constant.IsScallopCoin(nemoConfig.CoinType) || nemoConfig.ProviderProtocol == constant.SCALLOP{
-		return GetPriceVoucherFromXOracle(ptb, client, nemoConfig)
+		return GetPriceVoucherFromXOracle(ptb, client, nemoConfig, cacheContractPackageInfo...)
 	}else if constant.IsVSui(nemoConfig.CoinType){
-		return GetPriceVoucherFromVolo(ptb, client, nemoConfig)
+		return GetPriceVoucherFromVolo(ptb, client, nemoConfig, cacheContractPackageInfo...)
 	}else if constant.IsSpringCoin(nemoConfig.ProviderProtocol){
-		return GetPriceVoucherFromSpring(ptb, client, nemoConfig, constant.SPRINGLSTINFO, "spring")
+		return GetPriceVoucherFromSpring(ptb, client, nemoConfig, constant.SPRINGLSTINFO, "spring", cacheContractPackageInfo...)
 	}else if constant.IsAfSui(nemoConfig.CoinType) {
-		return GetPriceVoucherFromAftermath(ptb, client, nemoConfig)
+		return GetPriceVoucherFromAftermath(ptb, client, nemoConfig, cacheContractPackageInfo...)
 	}else if constant.IsHaSui(nemoConfig.CoinType) {
-		return GetPriceVoucherFromHasui(ptb, client, nemoConfig)
+		return GetPriceVoucherFromHasui(ptb, client, nemoConfig, cacheContractPackageInfo...)
 	}else if constant.IsStSui(nemoConfig.CoinType){
-		return GetPriceVoucherFromSpring(ptb, client, nemoConfig, constant.ALPHAFILSTINFO, "alphafi")
+		return GetPriceVoucherFromSpring(ptb, client, nemoConfig, constant.ALPHAFILSTINFO, "alphafi", cacheContractPackageInfo...)
 	}else if constant.IsLpTokenHaSui(nemoConfig.CoinType){
-		return GetPriceVoucherFromLpToken(ptb, client, nemoConfig, LP_HASUI_VAULT, LP_HASUI_POOL,"haedal")
+		return GetPriceVoucherFromLpToken(ptb, client, nemoConfig, LP_HASUI_VAULT, LP_HASUI_POOL,"haedal", cacheContractPackageInfo...)
 	}else if constant.IsLpTokenAfSui(nemoConfig.CoinType){
-		return GetPriceVoucherFromLpToken(ptb, client, nemoConfig, LP_AFSUI_VAULT, LP_AFSUI_POOL,"aftermath")
+		return GetPriceVoucherFromLpToken(ptb, client, nemoConfig, LP_AFSUI_VAULT, LP_AFSUI_POOL,"aftermath", cacheContractPackageInfo...)
 	}else if constant.IsLpTokenVSui(nemoConfig.CoinType){
-		return GetPriceVoucherFromLpToken(ptb, client, nemoConfig, LP_VSUI_VAULT, LP_VSUI_POOL,"volo")
+		return GetPriceVoucherFromLpToken(ptb, client, nemoConfig, LP_VSUI_VAULT, LP_VSUI_POOL,"volo", cacheContractPackageInfo...)
 	}else if constant.IsStsBuck(nemoConfig.CoinType){
-		return GetPriceVoucherFromBuck(ptb, client, nemoConfig)
+		return GetPriceVoucherFromBuck(ptb, client, nemoConfig, cacheContractPackageInfo...)
 	}else if constant.IsSuperSui(nemoConfig.CoinType){
-		return GetPriceVoucherFromMsTable(ptb, client, nemoConfig)
+		return GetPriceVoucherFromMsTable(ptb, client, nemoConfig, cacheContractPackageInfo...)
 	}else if constant.IsHaWal(nemoConfig.CoinType){
-		return GetPriceVoucherFromHaWal(ptb, client, nemoConfig)
+		return GetPriceVoucherFromHaWal(ptb, client, nemoConfig, cacheContractPackageInfo...)
 	}else if constant.IsWinterCoin(nemoConfig.ProviderProtocol){
-		return GetPriceVoucherFromWWal(ptb, client, nemoConfig)
+		return GetPriceVoucherFromWWal(ptb, client, nemoConfig, cacheContractPackageInfo...)
 	}
 	return nil, errors.New("coinType oracle not support！")
 }
