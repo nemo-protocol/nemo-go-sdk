@@ -77,6 +77,55 @@ func GetObjectArgument(ptb *sui_types.ProgrammableTransactionBuilder, client *cl
 	return ptb.Input(sui_types.CallArg{Object: arg})
 }
 
+// shareObjectsMap: key->objectId; value isCoin boolean value
+func MultiGetObjectArg(client *client.Client, shareObjectsMap map[string]bool, contractPackage, module, function string) (map[string]*sui_types.ObjectArg, error) {
+	if len(shareObjectsMap) == 0{
+		return nil, errors.New("share Object map is null")
+	}
+	shareObjectIdList := make([]string, 0)
+	for shareObject,_ := range shareObjectsMap{
+		shareObjectIdList = append(shareObjectIdList, shareObject)
+	}
+
+	fmt.Printf("\n==shareObjectIdList:%+v==\n",shareObjectIdList)
+	objectMap, err := MultiGetObjectFieldByObjectId(client, shareObjectIdList)
+	if err != nil{
+		return nil, err
+	}
+
+	objectArgMap := make(map[string]*sui_types.ObjectArg, 0)
+	for objectId, sourceObjectData := range objectMap {
+		hexObject, _ := sui_types.NewObjectIdFromHex(objectId)
+		isCoin := shareObjectsMap[objectId]
+
+		var objectArg *sui_types.ObjectArg
+		if !isCoin && sourceObjectData.Data.Owner.AddressOwner == nil{
+			objectArg = &sui_types.ObjectArg{
+				SharedObject: &struct {
+					Id                   sui_types.ObjectID
+					InitialSharedVersion sui_types.SequenceNumber
+					Mutable              bool
+				}{
+					Id:                   *hexObject,
+					InitialSharedVersion: *sourceObjectData.Data.Owner.Shared.InitialSharedVersion,
+					Mutable:              GetObjectMutable(client, *sourceObjectData.Data.Type, contractPackage, module, function),
+				},
+			}
+		}else {
+			objectArg = &sui_types.ObjectArg{
+				ImmOrOwnedObject: &sui_types.ObjectRef{
+					ObjectId: sourceObjectData.Data.ObjectId,
+					Version: sourceObjectData.Data.Version.Uint64(),
+					Digest: sourceObjectData.Data.Digest,
+				},
+			}
+		}
+		objectArgMap[objectId] = objectArg
+	}
+
+	return objectArgMap, nil
+}
+
 func GetObjectArg(client *client.Client, shareObject string, isCoin bool, contractPackage, module, function string) (*sui_types.ObjectArg, error) {
 	if shareObject == ""{
 		return nil, errors.New("share Object is null")

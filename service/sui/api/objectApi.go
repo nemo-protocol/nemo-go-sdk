@@ -150,6 +150,33 @@ func GetObjectFieldByObjectId(client *client.Client, objectId string) (map[strin
 	return fields, nil
 }
 
+func MultiGetObjectFieldByObjectId(client *client.Client, objectIds []string) (map[string]*types.SuiObjectResponse, error){
+	multiGetObjectMap := make(map[string]*types.SuiObjectResponse, 0)
+
+	objectHexIds := make([]sui_types.ObjectID, 0)
+	for _, objectId := range objectIds{
+		objectIdHex, err := sui_types.NewObjectIdFromHex(objectId)
+		if err != nil{
+			return nil, err
+		}
+		objectHexIds = append(objectHexIds, *objectIdHex)
+	}
+
+	options := types.SuiObjectDataOptions{
+		ShowType: true, ShowContent: true, ShowBcs: true, ShowOwner: true, ShowPreviousTransaction: true, ShowStorageRebate: true, ShowDisplay: true,
+	}
+	multiInfoList, err := client.MultiGetObjects(context.Background(), objectHexIds, &options)
+	if err != nil{
+		return nil, err
+	}
+
+	for _,info := range multiInfoList{
+		multiGetObjectMap[info.Data.ObjectId.String()] = &info
+	}
+
+	return multiGetObjectMap, nil
+}
+
 func GetOwnerObjectByType(blockClient *sui.ISuiAPI, client *client.Client, objectsType []string, syType, maturity string, ownerAddress string) (string,error){
 	objectsMap, err := GetOwnObjectsMap(blockClient, ownerAddress)
 	if err != nil{
