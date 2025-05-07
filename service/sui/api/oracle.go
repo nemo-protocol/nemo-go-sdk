@@ -47,7 +47,7 @@ func GetPriceVoucherFromXOracle(ptb *sui_types.ProgrammableTransactionBuilder, c
 		constant.CLOCK: false,
 	}
 
-	objectArgMap, err := MultiGetObjectArg(client, shareObjectMap, nemoConfig.OraclePackage, moduleName, functionName)
+	objectArgMap, err := MultiGetObjectArg(client, shareObjectMap, nemoConfig.OraclePackage, moduleName, functionName, cacheContractPackageInfo...)
 	if err != nil{
 		return nil, err
 	}
@@ -114,7 +114,7 @@ func GetPriceVoucherFromVolo(ptb *sui_types.ProgrammableTransactionBuilder, clie
 		nemoConfig.SyState: false,
 	}
 
-	objectArgMap, err := MultiGetObjectArg(client, shareObjectMap, nemoConfig.OraclePackage, moduleName, functionName)
+	objectArgMap, err := MultiGetObjectArg(client, shareObjectMap, nemoConfig.OraclePackage, moduleName, functionName, cacheContractPackageInfo...)
 	if err != nil{
 		return nil, err
 	}
@@ -185,7 +185,7 @@ func GetPriceVoucherFromSpring(ptb *sui_types.ProgrammableTransactionBuilder, cl
 		nemoConfig.SyState: false,
 	}
 
-	objectArgMap, err := MultiGetObjectArg(client, shareObjectMap, nemoConfig.OraclePackage, moduleName, functionName)
+	objectArgMap, err := MultiGetObjectArg(client, shareObjectMap, nemoConfig.OraclePackage, moduleName, functionName, cacheContractPackageInfo...)
 	if err != nil{
 		return nil, err
 	}
@@ -256,7 +256,7 @@ func GetPriceVoucherFromAftermath(ptb *sui_types.ProgrammableTransactionBuilder,
 		nemoConfig.SyState: false,
 	}
 
-	objectArgMap, err := MultiGetObjectArg(client, shareObjectMap, nemoConfig.OraclePackage, moduleName, functionName)
+	objectArgMap, err := MultiGetObjectArg(client, shareObjectMap, nemoConfig.OraclePackage, moduleName, functionName, cacheContractPackageInfo...)
 	if err != nil{
 		return nil, err
 	}
@@ -327,7 +327,7 @@ func GetPriceVoucherFromHasui(ptb *sui_types.ProgrammableTransactionBuilder, cli
 		nemoConfig.SyState: false,
 	}
 
-	objectArgMap, err := MultiGetObjectArg(client, shareObjectMap, nemoConfig.OraclePackage, moduleName, functionName)
+	objectArgMap, err := MultiGetObjectArg(client, shareObjectMap, nemoConfig.OraclePackage, moduleName, functionName, cacheContractPackageInfo...)
 	if err != nil{
 		return nil, err
 	}
@@ -409,7 +409,7 @@ func GetPriceVoucherFromLpToken(ptb *sui_types.ProgrammableTransactionBuilder, c
 		METADATA: false,
 	}
 
-	objectArgMap, err := MultiGetObjectArg(client, shareObjectMap, nemoConfig.OraclePackage, moduleName, functionName)
+	objectArgMap, err := MultiGetObjectArg(client, shareObjectMap, nemoConfig.OraclePackage, moduleName, functionName, cacheContractPackageInfo...)
 	if err != nil{
 		return nil, err
 	}
@@ -507,7 +507,7 @@ func GetPriceVoucherFromBuck(ptb *sui_types.ProgrammableTransactionBuilder, clie
 		constant.CLOCK: false,
 	}
 
-	objectArgMap, err := MultiGetObjectArg(client, shareObjectMap, nemoConfig.OraclePackage, moduleName, functionName)
+	objectArgMap, err := MultiGetObjectArg(client, shareObjectMap, nemoConfig.OraclePackage, moduleName, functionName, cacheContractPackageInfo...)
 	if err != nil{
 		return nil, err
 	}
@@ -578,7 +578,7 @@ func GetPriceVoucherFromMsTable(ptb *sui_types.ProgrammableTransactionBuilder, c
 		nemoConfig.SyState: false,
 	}
 
-	objectArgMap, err := MultiGetObjectArg(client, shareObjectMap, nemoConfig.OraclePackage, moduleName, functionName)
+	objectArgMap, err := MultiGetObjectArg(client, shareObjectMap, nemoConfig.OraclePackage, moduleName, functionName, cacheContractPackageInfo...)
 	if err != nil{
 		return nil, err
 	}
@@ -649,7 +649,7 @@ func GetPriceVoucherFromHaWal(ptb *sui_types.ProgrammableTransactionBuilder, cli
 		nemoConfig.SyState: false,
 	}
 
-	objectArgMap, err := MultiGetObjectArg(client, shareObjectMap, nemoConfig.OraclePackage, moduleName, functionName)
+	objectArgMap, err := MultiGetObjectArg(client, shareObjectMap, nemoConfig.OraclePackage, moduleName, functionName, cacheContractPackageInfo...)
 	if err != nil{
 		return nil, err
 	}
@@ -720,7 +720,7 @@ func GetPriceVoucherFromWWal(ptb *sui_types.ProgrammableTransactionBuilder, clie
 		nemoConfig.SyState: false,
 	}
 
-	objectArgMap, err := MultiGetObjectArg(client, shareObjectMap, nemoConfig.OraclePackage, moduleName, functionName)
+	objectArgMap, err := MultiGetObjectArg(client, shareObjectMap, nemoConfig.OraclePackage, moduleName, functionName, cacheContractPackageInfo...)
 	if err != nil{
 		return nil, err
 	}
