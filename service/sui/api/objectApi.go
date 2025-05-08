@@ -41,15 +41,8 @@ func GetObjectMutable(client *client.Client, objectType, contractPackage, module
 	packageObject := models.Object{}
 	filterContent := ""
 	if len(cacheContractPackageInfo) > 0 && cacheContractPackageInfo[0] != ""{
-		infoMap := make(map[string]interface{}, 0)
-		err = json.Unmarshal([]byte(cacheContractPackageInfo[0]), &infoMap)
-		moveData,ok := infoMap["data"].(map[string]interface{})["content"].(map[string]interface{})["Data"]
-		if ok && moveData != nil{
-			filterContent,ok = moveData.(map[string]interface{})["package"].(map[string]interface{})["disassembled"].(map[string]interface{})[module].(string)
-			if ok && filterContent != ""{
-				reloadPackageInfo = false
-			}
-		}
+		filterContent = cacheContractPackageInfo[0]
+		reloadPackageInfo = false
 	}
 	fmt.Printf("\n==contractPackage:%v,reloadPackageInfo:%v==\n",contractPackage,reloadPackageInfo)
 	if reloadPackageInfo{
