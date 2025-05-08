@@ -45,6 +45,8 @@ func GetObjectMutable(client *client.Client, objectType, contractPackage, module
 		disassembledInfoMap := make(map[string]interface{}, 0)
 		err = json.Unmarshal([]byte(cacheContractPackageInfo[0]), &disassembledInfoMap)
 		if err == nil{
+			fmt.Printf("\n==module:%v==\n",module)
+			fmt.Printf("\n==disassembledInfoMap[\"disassembled\"]:%v==\n",disassembledInfoMap["disassembled"])
 			filterContent = disassembledInfoMap["disassembled"].(map[string]interface{})[module].(string)
 			if filterContent != ""{
 				reloadPackageInfo = false
