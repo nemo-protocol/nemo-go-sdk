@@ -40,8 +40,8 @@ func GetObjectMutable(client *client.Client, objectType, contractPackage, module
 	reloadPackageInfo := true
 	if len(cacheContractPackageInfo) > 0{
 		err = json.Unmarshal([]byte(cacheContractPackageInfo[0]), &objects)
+		fmt.Printf("\n==err:%v==\n",err)
 		if err == nil {
-			fmt.Printf("\n==err:%v==\n",err)
 			reloadPackageInfo = false
 		}
 	}
