@@ -38,11 +38,16 @@ func GetObjectMutable(client *client.Client, objectType, contractPackage, module
 
 	objects := &types.SuiObjectResponse{}
 	reloadPackageInfo := true
-	if len(cacheContractPackageInfo) > 0{
-		err = json.Unmarshal([]byte(cacheContractPackageInfo[0]), &objects)
-		fmt.Printf("\n==err:%v==\n",err)
+	packageObject := models.Object{}
+	if len(cacheContractPackageInfo) > 0 && cacheContractPackageInfo[0] != ""{
+		infoMap := make(map[string]interface{}, 0)
+		err = json.Unmarshal([]byte(cacheContractPackageInfo[0]), &infoMap)
+		infoByte,err := json.Marshal(infoMap["data"].(map[string]interface{})["content"].(map[string]interface{})["Data"])
 		if err == nil {
-			reloadPackageInfo = false
+			err = json.Unmarshal(infoByte, &packageObject)
+			if err == nil{
+				reloadPackageInfo = false
+			}
 		}
 	}
 	fmt.Printf("\n==contractPackage:%v,reloadPackageInfo:%v==\n",contractPackage,reloadPackageInfo)
@@ -50,17 +55,15 @@ func GetObjectMutable(client *client.Client, objectType, contractPackage, module
 		objects,_ = client.GetObject(context.Background(), *contractPackageAddr, &types.SuiObjectDataOptions{
 			ShowType: true, ShowContent: true, ShowBcs: true, ShowOwner: true, ShowPreviousTransaction: true, ShowStorageRebate: true, ShowDisplay: true,
 		})
+		if objects == nil || objects.Data == nil || objects.Data.Content == nil {
+			return false
+		}
+		marshal, err := json.Marshal(objects.Data.Content.Data)
+		if err != nil{
+			return false
+		}
+		_ = json.Unmarshal(marshal, &packageObject)
 	}
-
-	if objects == nil || objects.Data == nil || objects.Data.Content == nil {
-		return false
-	}
-	marshal, err := json.Marshal(objects.Data.Content.Data)
-	if err != nil{
-		return false
-	}
-	packageObject := models.Object{}
-	_ = json.Unmarshal(marshal, &packageObject)
 
 	filterFunc := utils.FindFunctionInBytecode(packageObject.Package.Disassembled[module].(string), function)
 	args := strings.Split(filterFunc, ",")
