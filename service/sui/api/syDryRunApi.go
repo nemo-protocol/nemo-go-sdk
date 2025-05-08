@@ -289,7 +289,7 @@ func DryRunGetPyOutForExactSyInWithPriceVoucher(client *client.Client, nemoConfi
 		constant.CLOCK: false,
 	}
 
-	objectArgMap, err := MultiGetObjectArg(client, shareObjectMap, nemoConfig.NemoContract, moduleName, functionName, nemoConfig.CacheContractPackageInfo[nemoConfig.OraclePackage])
+	objectArgMap, err := MultiGetObjectArg(client, shareObjectMap, nemoConfig.NemoContract, moduleName, functionName, nemoConfig.CacheContractPackageInfo[nemoConfig.NemoContract])
 	if err != nil{
 		return 0, err
 	}
