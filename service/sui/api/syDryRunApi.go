@@ -282,31 +282,37 @@ func DryRunGetPyOutForExactSyInWithPriceVoucher(client *client.Client, nemoConfi
 		return 0, err
 	}
 
-	ps, err := GetObjectArgument(ptb, client, nemoConfig.PyState, false, nemoConfig.NemoContract, moduleName, functionName)
-	if err != nil {
-		return 0, err
+	shareObjectMap := map[string]bool{
+		nemoConfig.PyState: false,
+		nemoConfig.MarketState: false,
+		nemoConfig.MarketFactoryConfig: false,
+		constant.CLOCK: false,
 	}
-	ms, err := GetObjectArgument(ptb, client, nemoConfig.MarketState, false, nemoConfig.NemoContract, moduleName, functionName)
-	if err != nil {
-		return 0, err
-	}
-	mgc, err := GetObjectArgument(ptb, client, nemoConfig.MarketFactoryConfig, false, nemoConfig.NemoContract, moduleName, functionName)
-	if err != nil {
-		return 0, err
-	}
-	c, err := GetObjectArgument(ptb, client, constant.CLOCK, false, nemoConfig.NemoContract, moduleName, functionName)
-	if err != nil {
+
+	objectArgMap, err := MultiGetObjectArg(client, shareObjectMap, nemoConfig.NemoContract, moduleName, functionName, nemoConfig.CacheContractPackageInfo[nemoConfig.OraclePackage])
+	if err != nil{
 		return 0, err
 	}
 
+	fmt.Printf("\n==objectArgMap:%+v==\n",objectArgMap)
+	callArgs := make([]sui_types.CallArg, 0)
+	callArgs = append(callArgs,
+		sui_types.CallArg{Object: objectArgMap[nemoConfig.PyState]},
+		sui_types.CallArg{Object: objectArgMap[nemoConfig.MarketFactoryConfig]},
+		sui_types.CallArg{Object: objectArgMap[nemoConfig.MarketState]},
+		sui_types.CallArg{Object: objectArgMap[constant.CLOCK]},
+	)
 	arguments := []sui_types.Argument{
 		netSyInArgument,
 		minPyOutArgument,
 		*oracleArgument,
-		ps,
-		mgc,
-		ms,
-		c,
+	}
+	for _, v := range callArgs {
+		argument, err := ptb.Input(v)
+		if err != nil {
+			return 0, err
+		}
+		arguments = append(arguments, argument)
 	}
 
 	ptb.Command(
@@ -742,7 +748,7 @@ func DryRunSingleLiquidityAddPtOut(client *client.Client, nemoConfig *models.Nem
 	return ptValue, nil
 }
 
-func DryRunConversionRate(client *client.Client, nemoConfig *models.NemoConfig, address string, cacheContractPackageInfo ...string) (float64, error){
+func DryRunConversionRate(client *client.Client, nemoConfig *models.NemoConfig, address string) (float64, error){
 	ptb := sui_types.NewProgrammableTransactionBuilder()
 
 	nemoPackageId, err := sui_types.NewObjectIdFromHex(nemoConfig.OracleVoucherPackage)
@@ -764,7 +770,7 @@ func DryRunConversionRate(client *client.Client, nemoConfig *models.NemoConfig, 
 		{Struct: syStructTag},
 	}
 
-	oracleArgument, err := GetPriceVoucher(ptb, client, nemoConfig, cacheContractPackageInfo...)
+	oracleArgument, err := GetPriceVoucher(ptb, client, nemoConfig)
 	if err != nil{
 		return 0, err
 	}

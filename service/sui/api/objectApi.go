@@ -162,6 +162,22 @@ func GetObjectFieldByObjectId(client *client.Client, objectId string) (map[strin
 	return fields, nil
 }
 
+func SuiResponseToMap(info *types.SuiObjectResponse) (map[string]interface{}, error){
+	byteData,err := json.Marshal(info.Data.Content.Data)
+	if err != nil{
+		return nil, err
+	}
+	commonModels := models.CommonOnChainDataResp{}
+	_ = json.Unmarshal(byteData, &commonModels)
+	byteData, err = json.Marshal(commonModels.MoveObject.Fields)
+	if err != nil{
+		return nil, err
+	}
+	fields := make(map[string]interface{}, 0)
+	err = json.Unmarshal(byteData, &fields)
+	return fields, err
+}
+
 func MultiGetObjectFieldByObjectId(client *client.Client, objectIds []string) (map[string]*types.SuiObjectResponse, error){
 	multiGetObjectMap := make(map[string]*types.SuiObjectResponse, 0)
 

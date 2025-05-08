@@ -824,9 +824,9 @@ func (s *SuiService)ClaimLpReward(nemoConfig *models.NemoConfig, sender *account
 	return true, nil
 }
 
-func (s *SuiService)QueryPoolApy(nemoConfig *models.NemoConfig, cacheContractPackageInfo string, priceInfoMap ...map[string]api.PriceInfo) (*models.ApyModel, error){
+func (s *SuiService)QueryPoolApy(nemoConfig *models.NemoConfig, priceInfoMap ...map[string]api.PriceInfo) (*models.ApyModel, error){
 
-	conversionRate,err := api.DryRunConversionRate(s.SuiApi, nemoConfig, "0x1", cacheContractPackageInfo)
+	conversionRate,err := api.DryRunConversionRate(s.SuiApi, nemoConfig, "0x1")
 	if err != nil{
 		return nil, errors.New(fmt.Sprintf("%v",nemoError.ParseErrorMessage(err.Error())))
 	}
@@ -843,13 +843,23 @@ func (s *SuiService)QueryPoolApy(nemoConfig *models.NemoConfig, cacheContractPac
 		return nil, errors.New(fmt.Sprintf("%v",nemoError.ParseErrorMessage(err.Error())))
 	}
 	fmt.Printf("ytin:%v, syout:%v",pyOut, syIn)
-	pyStateInfo, err := api.GetObjectFieldByObjectId(s.SuiApi, nemoConfig.PyState)
+
+	objectList := []string{
+		nemoConfig.PyState,
+		nemoConfig.MarketState,
+	}
+	objectMap, err := api.MultiGetObjectFieldByObjectId(s.SuiApi, objectList)
+	if err != nil{
+		return nil, err
+	}
+
+	pyStateInfo, err := api.SuiResponseToMap(objectMap[nemoConfig.PyState])
 	if err != nil{
 		return nil, err
 	}
 	maturity := pyStateInfo["expiry"].(string)
 
-	marketStateInfo, err := api.GetObjectFieldByObjectId(s.SuiApi, nemoConfig.MarketState)
+	marketStateInfo, err := api.SuiResponseToMap(objectMap[nemoConfig.MarketState])
 	if err != nil{
 		return nil, err
 	}
