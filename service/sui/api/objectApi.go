@@ -41,9 +41,11 @@ func GetObjectMutable(client *client.Client, objectType, contractPackage, module
 	if len(cacheContractPackageInfo) > 0{
 		err = json.Unmarshal([]byte(cacheContractPackageInfo[0]), &objects)
 		if err == nil {
+			fmt.Printf("\n==err:%v==\n",err)
 			reloadPackageInfo = false
 		}
 	}
+	fmt.Printf("\n==contractPackage:%v,reloadPackageInfo:%v==\n",contractPackage,reloadPackageInfo)
 	if reloadPackageInfo{
 		objects,_ = client.GetObject(context.Background(), *contractPackageAddr, &types.SuiObjectDataOptions{
 			ShowType: true, ShowContent: true, ShowBcs: true, ShowOwner: true, ShowPreviousTransaction: true, ShowStorageRebate: true, ShowDisplay: true,
