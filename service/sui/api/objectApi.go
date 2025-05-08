@@ -39,13 +39,14 @@ func GetObjectMutable(client *client.Client, objectType, contractPackage, module
 	objects := &types.SuiObjectResponse{}
 	reloadPackageInfo := true
 	packageObject := models.Object{}
+	filterContent := ""
 	if len(cacheContractPackageInfo) > 0 && cacheContractPackageInfo[0] != ""{
 		infoMap := make(map[string]interface{}, 0)
 		err = json.Unmarshal([]byte(cacheContractPackageInfo[0]), &infoMap)
-		infoByte,err := json.Marshal(infoMap["data"].(map[string]interface{})["content"].(map[string]interface{})["Data"])
-		if err == nil {
-			err = json.Unmarshal(infoByte, &packageObject)
-			if err == nil{
+		moveData,ok := infoMap["data"].(map[string]interface{})["content"].(map[string]interface{})["Data"]
+		if ok && moveData != nil{
+			filterContent,ok = moveData.(map[string]interface{})["package"].(map[string]interface{})["disassembled"].(map[string]interface{})[module].(string)
+			if ok && filterContent != ""{
 				reloadPackageInfo = false
 			}
 		}
@@ -63,9 +64,10 @@ func GetObjectMutable(client *client.Client, objectType, contractPackage, module
 			return false
 		}
 		_ = json.Unmarshal(marshal, &packageObject)
+		filterContent = packageObject.Package.Disassembled[module].(string)
 	}
 
-	filterFunc := utils.FindFunctionInBytecode(packageObject.Package.Disassembled[module].(string), function)
+	filterFunc := utils.FindFunctionInBytecode(filterContent, function)
 	args := strings.Split(filterFunc, ",")
 	typeList := strings.SplitN(objectType, "::", 3)
 	fmt.Printf("\n==typeList:%v, args:%v==\n",typeList,args)
