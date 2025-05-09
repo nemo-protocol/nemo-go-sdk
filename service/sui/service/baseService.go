@@ -2,9 +2,12 @@ package service
 
 import (
 	"fmt"
+	"github.com/block-vision/sui-go-sdk/constant"
 	"github.com/block-vision/sui-go-sdk/sui"
 	"github.com/coming-chat/go-sui/v2/client"
 	"github.com/nemo-protocol/nemo-go-sdk/utils"
+	"math/rand"
+	"reflect"
 	"sync"
 )
 
@@ -13,7 +16,7 @@ var (
 	onlyEndpointInstance *SuiService
 	onlyOnce sync.Once
 	once sync.Once
-	SuiMainNetEndpoint = "https://fullnode.mainnet.sui.io"
+	SuiMainNetEndpoint = constant.SuiMainnetEndpoint
 	servMap     *sync.Map
 	onlyServMap *sync.Map
 )
@@ -23,7 +26,7 @@ type SuiService struct {
 	BlockApi *sui.ISuiAPI
 }
 
-func InitSuiService(endpointList ...string) *SuiService{
+func InitSuiService(params ...map[string]interface{}) *SuiService{
 	if servMap == nil{
 		servMap = &sync.Map{}
 	}
@@ -41,32 +44,78 @@ func InitSuiService(endpointList ...string) *SuiService{
 		servMap.Store(SuiMainNetEndpoint, instance)
 	})
 
-	for _,endpoint := range endpointList{
-		_, ok := servMap.Load(endpoint)
-		if !ok{
-			c, err := client.Dial(endpoint)
-			if err != nil {
-				errorMsg := fmt.Sprintf("connect sui main net error:%v", err)
-				fmt.Printf("\n==errorMsg:%v==\n",errorMsg)
-				continue
+	priority := 1
+	if len(params) > 0 {
+		endpointList,ok := params[0]["endpointList"]
+		if ok && reflect.TypeOf(endpointList).Kind() == reflect.Slice{
+			for _, endpoint := range endpointList.([]string) {
+				_, ok = servMap.Load(endpoint)
+				if !ok {
+					inst := createInstance(endpoint)
+					if inst == nil{
+						continue
+					}
+					servMap.Store(endpoint, inst)
+				}
 			}
-			blockSuiApi := sui.NewSuiClient(endpoint)
-			instance = &SuiService{
-				SuiApi: c,
-				BlockApi: &blockSuiApi,
-			}
-			servMap.Store(endpoint, instance)
+		}
+
+		priorityElement,ok := params[0]["priority"]
+		if ok && reflect.TypeOf(priority).Kind() == reflect.Int{
+			priority = priorityElement.(int)
 		}
 	}
 
-	instanceValue, ok := utils.GetRandomValueFromSyncMap(servMap)
-	fmt.Printf("\n==instanceValue:%v, ok:%v==\n",instanceValue, ok)
-	if ok {
-		if suiService, typeOk := instanceValue.(*SuiService); typeOk {
-			return suiService
+	mainNetInstance, _ := servMap.Load(SuiMainNetEndpoint)
+
+	switch priority {
+	case 3:
+		var candidates []*SuiService
+		servMap.Range(func(key, value interface{}) bool {
+			if key != SuiMainNetEndpoint {
+				if inst, ok := value.(*SuiService); ok {
+					candidates = append(candidates, inst)
+				}
+			}
+			return true
+		})
+		if len(candidates) > 0 {
+			return candidates[rand.Intn(len(candidates))]
 		}
+		return mainNetInstance.(*SuiService)
+
+	case 2:
+		if rand.Intn(2) == 0 {
+			return mainNetInstance.(*SuiService)
+		}
+		instanceValue, ok := utils.GetRandomValueFromSyncMap(servMap)
+		if ok {
+			if suiService, typeOk := instanceValue.(*SuiService); typeOk {
+				return suiService
+			}
+		}
+		return mainNetInstance.(*SuiService)
+
+	case 1:
+		fallthrough
+	default:
+		return mainNetInstance.(*SuiService)
 	}
-	return nil
+}
+
+func createInstance(endpoint string) *SuiService{
+	c, err := client.Dial(endpoint)
+	if err != nil {
+		errorMsg := fmt.Sprintf("connect sui main net error:%v", err)
+		fmt.Printf("\n==errorMsg:%v==\n", errorMsg)
+		return nil
+	}
+	blockSuiApi := sui.NewSuiClient(endpoint)
+	instance = &SuiService{
+		SuiApi:   c,
+		BlockApi: &blockSuiApi,
+	}
+	return instance
 }
 
 func InitSuiServiceByOnlyEndpoint(endpoint ...string) *SuiService{
