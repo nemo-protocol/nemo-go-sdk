@@ -281,5 +281,5 @@ func (s *SuiService)RedeemPy(amountIn float64, sender *account.Account, nemoConf
 		return false, errors.New(errorMsg)
 	}
 
-	return false, nil
+	return true, nil
 }

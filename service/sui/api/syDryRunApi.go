@@ -116,20 +116,32 @@ func DryRunGetApproxPyOutForNetSyInInternal(client *client.Client, nemoConfig *m
 		return 0, 0, err
 	}
 
-	ps, err := GetObjectArgument(ptb, client, nemoConfig.PyState, false, nemoConfig.NemoContract, moduleName, functionName)
-	if err != nil {
+	shareObjectMap := map[string]bool{
+		nemoConfig.PyState: false,
+		nemoConfig.MarketState: false,
+		nemoConfig.MarketFactoryConfig: false,
+		constant.CLOCK: false,
+	}
+
+	objectArgMap, err := MultiGetObjectArg(client, shareObjectMap, nemoConfig.NemoContract, moduleName, functionName, nemoConfig.CacheContractPackageInfo[nemoConfig.NemoContract])
+	if err != nil{
 		return 0, 0, err
 	}
-	ms, err := GetObjectArgument(ptb, client, nemoConfig.MarketState, false, nemoConfig.NemoContract, moduleName, functionName)
-	if err != nil {
+
+	pyStateArgument,err := ptb.Input(sui_types.CallArg{Object: objectArgMap[nemoConfig.PyState]})
+	if err != nil{
 		return 0, 0, err
 	}
-	mgc, err := GetObjectArgument(ptb, client, nemoConfig.MarketFactoryConfig, false, nemoConfig.NemoContract, moduleName, functionName)
-	if err != nil {
+	marketFactoryConfigArgument,err := ptb.Input(sui_types.CallArg{Object: objectArgMap[nemoConfig.MarketFactoryConfig]})
+	if err != nil{
 		return 0, 0, err
 	}
-	c, err := GetObjectArgument(ptb, client, constant.CLOCK, false, nemoConfig.NemoContract, moduleName, functionName)
-	if err != nil {
+	marketStateArgument,err := ptb.Input(sui_types.CallArg{Object: objectArgMap[nemoConfig.MarketState]})
+	if err != nil{
+		return 0, 0, err
+	}
+	clockArgument,err := ptb.Input(sui_types.CallArg{Object: objectArgMap[constant.CLOCK]})
+	if err != nil{
 		return 0, 0, err
 	}
 
@@ -137,20 +149,20 @@ func DryRunGetApproxPyOutForNetSyInInternal(client *client.Client, nemoConfig *m
 		netSyInArgument,
 		minPyOutArgument,
 		*oracleArgument,
-		ps,
-		ms,
-		mgc,
-		c,
+		pyStateArgument,
+		marketStateArgument,
+		marketFactoryConfigArgument,
+		clockArgument,
 	}
 	if exactPyType == constant.PTTYPE{
 		arguments = []sui_types.Argument{
 			netSyInArgument,
 			minPyOutArgument,
 			*oracleArgument,
-			ps,
-			mgc,
-			ms,
-			c,
+			pyStateArgument,
+			marketFactoryConfigArgument,
+			marketStateArgument,
+			clockArgument,
 		}
 	}
 
@@ -415,30 +427,36 @@ func DryRunGetPyInForExactSyOutWithPriceVoucher(client *client.Client, nemoConfi
 		return 0, err
 	}
 
-	ps, err := GetObjectArgument(ptb, client, nemoConfig.PyState, false, nemoConfig.NemoContract, moduleName, functionName)
-	if err != nil {
-		return 0, err
+	shareObjectMap := map[string]bool{
+		nemoConfig.PyState: false,
+		nemoConfig.MarketFactoryConfig: false,
+		nemoConfig.MarketState: false,
+		constant.CLOCK: false,
 	}
-	mgc, err := GetObjectArgument(ptb, client, nemoConfig.MarketFactoryConfig, false, nemoConfig.NemoContract, moduleName, functionName)
-	if err != nil {
-		return 0, err
-	}
-	ms, err := GetObjectArgument(ptb, client, nemoConfig.MarketState, false, nemoConfig.NemoContract, moduleName, functionName)
-	if err != nil {
-		return 0, err
-	}
-	c, err := GetObjectArgument(ptb, client, constant.CLOCK, false, nemoConfig.NemoContract, moduleName, functionName)
-	if err != nil {
+
+	objectArgMap, err := MultiGetObjectArg(client, shareObjectMap, nemoConfig.NemoContract, moduleName, functionName, nemoConfig.CacheContractPackageInfo[nemoConfig.NemoContract])
+	if err != nil{
 		return 0, err
 	}
 
+	fmt.Printf("\n==objectArgMap:%+v==\n",objectArgMap)
+	callArgs := make([]sui_types.CallArg, 0)
+	callArgs = append(callArgs,
+		sui_types.CallArg{Object: objectArgMap[nemoConfig.PyState]},
+		sui_types.CallArg{Object: objectArgMap[nemoConfig.MarketFactoryConfig]},
+		sui_types.CallArg{Object: objectArgMap[nemoConfig.MarketState]},
+		sui_types.CallArg{Object: objectArgMap[constant.CLOCK]},
+	)
 	arguments := []sui_types.Argument{
 		exactPtInArgument,
 		*oracleArgument,
-		ps,
-		mgc,
-		ms,
-		c,
+	}
+	for _, v := range callArgs {
+		argument, err := ptb.Input(v)
+		if err != nil {
+			return 0, err
+		}
+		arguments = append(arguments, argument)
 	}
 
 	ptb.Command(
@@ -536,30 +554,36 @@ func DryRunGetLpOutForSingleSyIn(client *client.Client, nemoConfig *models.NemoC
 		return 0, err
 	}
 
-	ps, err := GetObjectArgument(ptb, client, nemoConfig.PyState, false, nemoConfig.NemoContract, moduleName, functionName)
-	if err != nil {
-		return 0, err
+	shareObjectMap := map[string]bool{
+		nemoConfig.PyState: false,
+		nemoConfig.MarketState: false,
+		nemoConfig.MarketFactoryConfig: false,
+		constant.CLOCK: false,
 	}
-	mfc, err := GetObjectArgument(ptb, client, nemoConfig.MarketFactoryConfig, false, nemoConfig.NemoContract, moduleName, functionName)
-	if err != nil {
-		return 0, err
-	}
-	ms, err := GetObjectArgument(ptb, client, nemoConfig.MarketState, false, nemoConfig.NemoContract, moduleName, functionName)
-	if err != nil {
-		return 0, err
-	}
-	c, err := GetObjectArgument(ptb, client, constant.CLOCK, false, nemoConfig.NemoContract, moduleName, functionName)
-	if err != nil {
+
+	objectArgMap, err := MultiGetObjectArg(client, shareObjectMap, nemoConfig.NemoContract, moduleName, functionName, nemoConfig.CacheContractPackageInfo[nemoConfig.NemoContract])
+	if err != nil{
 		return 0, err
 	}
 
+	fmt.Printf("\n==objectArgMap:%+v==\n",objectArgMap)
+	callArgs := make([]sui_types.CallArg, 0)
+	callArgs = append(callArgs,
+		sui_types.CallArg{Object: objectArgMap[nemoConfig.PyState]},
+		sui_types.CallArg{Object: objectArgMap[nemoConfig.MarketFactoryConfig]},
+		sui_types.CallArg{Object: objectArgMap[nemoConfig.MarketState]},
+		sui_types.CallArg{Object: objectArgMap[constant.CLOCK]},
+	)
 	arguments := []sui_types.Argument{
 		syInArgument,
 		*oracleArgument,
-		ps,
-		mfc,
-		ms,
-		c,
+	}
+	for _, v := range callArgs {
+		argument, err := ptb.Input(v)
+		if err != nil {
+			return 0, err
+		}
+		arguments = append(arguments, argument)
 	}
 
 	ptb.Command(
@@ -657,33 +681,36 @@ func DryRunSingleLiquidityAddPtOut(client *client.Client, nemoConfig *models.Nem
 		return 0, err
 	}
 
-	mfc, err := GetObjectArgument(ptb, client, nemoConfig.MarketFactoryConfig, false, nemoConfig.NemoContract, moduleName, functionName)
-	if err != nil {
+	shareObjectMap := map[string]bool{
+		nemoConfig.MarketFactoryConfig: false,
+		nemoConfig.PyState: false,
+		nemoConfig.MarketState: false,
+		constant.CLOCK: false,
+	}
+
+	objectArgMap, err := MultiGetObjectArg(client, shareObjectMap, nemoConfig.NemoContract, moduleName, functionName, nemoConfig.CacheContractPackageInfo[nemoConfig.NemoContract])
+	if err != nil{
 		return 0, err
 	}
 
-	ps, err := GetObjectArgument(ptb, client, nemoConfig.PyState, false, nemoConfig.NemoContract, moduleName, functionName)
-	if err != nil {
-		return 0, err
-	}
-
-	ms, err := GetObjectArgument(ptb, client, nemoConfig.MarketState, false, nemoConfig.NemoContract, moduleName, functionName)
-	if err != nil {
-		return 0, err
-	}
-
-	c, err := GetObjectArgument(ptb, client, constant.CLOCK, false, nemoConfig.NemoContract, moduleName, functionName)
-	if err != nil {
-		return 0, err
-	}
-
+	fmt.Printf("\n==objectArgMap:%+v==\n",objectArgMap)
+	callArgs := make([]sui_types.CallArg, 0)
+	callArgs = append(callArgs,
+		sui_types.CallArg{Object: objectArgMap[nemoConfig.MarketFactoryConfig]},
+		sui_types.CallArg{Object: objectArgMap[nemoConfig.PyState]},
+		sui_types.CallArg{Object: objectArgMap[nemoConfig.MarketState]},
+		sui_types.CallArg{Object: objectArgMap[constant.CLOCK]},
+	)
 	arguments := []sui_types.Argument{
 		syInArgument,
 		*oracleArgument,
-		mfc,
-		ps,
-		ms,
-		c,
+	}
+	for _, v := range callArgs {
+		argument, err := ptb.Input(v)
+		if err != nil {
+			return 0, err
+		}
+		arguments = append(arguments, argument)
 	}
 
 	ptb.Command(

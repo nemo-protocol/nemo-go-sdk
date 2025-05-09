@@ -40,10 +40,14 @@ func (s *SuiService)QueryAsset(nemoConfig *models.NemoConfig, address string) (*
 	if err != nil {
 		return assetModel, err
 	}
-	for _,marketPositionId := range marketPositionList{
-		marketPosition, err := api.GetObjectFieldByObjectId(client.SuiApi, marketPositionId)
+	marketPositionFieldList,err :=  api.MultiGetObjectFieldByObjectId(client.SuiApi, marketPositionList)
+	if err != nil {
+		return assetModel, err
+	}
+	for _,marketPositionField := range marketPositionFieldList{
+		marketPosition,err := api.SuiResponseToMap(marketPositionField)
 		if err != nil{
-			return nil, err
+			continue
 		}
 		lpBalanceStr := marketPosition["lp_amount"].(string)
 		lpBalance,_ := strconv.ParseFloat(lpBalanceStr, 64)

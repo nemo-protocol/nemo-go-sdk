@@ -148,7 +148,7 @@ func (s *SuiService)SwapByPy(amountIn, slippage float64, amountInType, exactAmou
 		return false, errors.New(errorMsg)
 	}
 
-	return false, nil
+	return true, nil
 }
 
 func (s *SuiService)SwapToPy(amountIn, slippage float64, amountInType, exactAmountOutType string, sender *account.Account, nemoConfig *models.NemoConfig) (bool, error){
@@ -322,5 +322,5 @@ func (s *SuiService)SwapToPy(amountIn, slippage float64, amountInType, exactAmou
 		return false, errors.New(errorMsg)
 	}
 
-	return false, nil
+	return true, nil
 }

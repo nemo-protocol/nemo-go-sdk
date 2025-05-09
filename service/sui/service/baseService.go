@@ -59,9 +59,8 @@ func InitSuiService(endpointList ...string) *SuiService{
 		}
 	}
 
-
 	instanceValue, ok := utils.GetRandomValueFromSyncMap(servMap)
-	fmt.Printf("instanceValue:%v, ok:%v",instanceValue, ok)
+	fmt.Printf("\n==instanceValue:%v, ok:%v==\n",instanceValue, ok)
 	if ok {
 		if suiService, typeOk := instanceValue.(*SuiService); typeOk {
 			return suiService
