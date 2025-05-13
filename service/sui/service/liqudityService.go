@@ -2,7 +2,7 @@ package service
 
 import (
 	"context"
-	"encoding/binary"
+
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -14,7 +14,6 @@ import (
 	"github.com/nemo-protocol/nemo-go-sdk/service/sui/common/constant"
 	"github.com/nemo-protocol/nemo-go-sdk/service/sui/common/models"
 	"github.com/nemo-protocol/nemo-go-sdk/service/sui/common/nemoError"
-	"github.com/shopspring/decimal"
 	"math"
 	"strconv"
 	"strings"
@@ -417,10 +416,12 @@ func (s *SuiService)DryRunYtReward(nemoConfig *models.NemoConfig, sender *accoun
 		return 0, err
 	}
 
-	_, err = api.RedeemDueInterest(ptb, client.SuiApi, nemoConfig, pyPosition, oracleArgument)
+	syArgument, err := api.RedeemDueInterest(ptb, client.SuiApi, nemoConfig, pyPosition, oracleArgument)
 	if err != nil{
 		return 0, err
 	}
+
+	_, err = api.SyRedeem(ptb, client.SuiApi, nemoConfig, syArgument)
 
 	pt := ptb.Finish()
 	txKind := sui_types.TransactionKind{
@@ -448,41 +449,39 @@ func (s *SuiService)DryRunYtReward(nemoConfig *models.NemoConfig, sender *accoun
 		return 0, fmt.Errorf("no results returned")
 	}
 
-	// 1. 安全获取最后一个结果
 	if len(result.Results) == 0 {
 		return 0, fmt.Errorf("empty results")
 	}
 	lastResult := result.Results[len(result.Results)-1]
 
-	// 2. 检查返回值结构
 	if len(lastResult.ReturnValues) == 0 {
 		return 0, fmt.Errorf("no return values")
 	}
+
+	fmt.Printf("lastResult:%+v",lastResult)
+
 	firstValue := lastResult.ReturnValues[0]
-
-	// 3. 类型断言检查
-	valueSlice, ok := firstValue.([]interface{})
-	if !ok || len(valueSlice) < 2 {
-		return 0, fmt.Errorf("invalid return value structure")
-	}
-	fmt.Printf("valueSlice:%v==\n",valueSlice[0])
-
-	byteSlice := make([]byte, len(valueSlice[0].([]interface{})))
-	for i, v := range valueSlice[0].([]interface{}) {
-		if num, ok := v.(float64); ok {
-			byteSlice[i] = byte(num)
+	fmt.Printf("\n==firstValue:%v==\n",firstValue)
+	var coin models.Coin
+	if firstValueArray, ok := firstValue.([]interface{}); ok && len(firstValueArray) > 0 {
+		if innerArray, ok := firstValueArray[0].([]interface{}); ok && len(innerArray) > 0 {
+			byteSlice := make([]byte, len(innerArray))
+			for i, v := range innerArray {
+				if num, ok := v.(float64); ok {
+					byteSlice[i] = byte(num)
+				}
+			}
+			_,err = bcs.Unmarshal(byteSlice, &coin)
+			if err != nil {
+				return 0, err
+			}
+			fmt.Printf("Coin Value: %d\n", coin.Value)
 		}
 	}
 
-	// 解析值
-	value := binary.LittleEndian.Uint64(byteSlice)
+	decimalPow := math.Pow(10, float64(nemoConfig.Decimal))
 
-	// 转换为decimal
-	decimalValue := decimal.NewFromInt(int64(value))
-	r := decimalValue.Div(decimal.New(1, 8)) // 8位小数
-	fv,_ := r.Float64()
-
-	return fv, nil
+	return float64(coin.Value) / decimalPow, nil
 }
 
 func (s *SuiService)ClaimYtReward(nemoConfig *models.NemoConfig, sender *account.Account) (bool, error){
