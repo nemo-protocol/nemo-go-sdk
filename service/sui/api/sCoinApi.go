@@ -79,6 +79,7 @@ var sCoinMap = map[string]string{
 	"0xe56d5167f427cbe597da9e8150ef5c337839aaf46891d62468dcf80bdd8e10d1::scallop_fud::SCALLOP_FUD":                     "0xf25212f11d182decff7a86165699a73e3d5787aced203ca539f43cfbc10db867",
 	"0xb1d7df34829d1513b73ba17cb7ad90c88d1e104bb65ab8f62f13e0cc103783d3::scallop_sb_usdt::SCALLOP_SB_USDT":             "0x58bdf6a9752e3a60144d0b70e8608d630dfd971513e2b2bfa7282f5eaa7d04d8",
 	"0x622345b3f80ea5947567760eec7b9639d0582adcfd6ab9fccb85437aeda7c0d0::scallop_wal::SCALLOP_WAL":                     "0xc02b365a1d880156c1a757d7777867e8a436ab97ce5f51e211695580ab7c9bce",
+	"0x0425be5f46f5639ab7201dfde3b2ed837fc129c434f55677c9ba11b528a3214a::scallop_haedal::SCALLOP_HAEDAL":               "0x4ae9417c4c2ae8e629e72d06682f248c90c61233d43eb0a5654de768d63be26d",
 }
 
 func MintSCoin(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, coinType, underlyingCoinType string, marketCoin *sui_types.Argument) (*sui_types.Argument, error) {
