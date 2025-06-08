@@ -230,7 +230,7 @@ func BurnSCoin(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Cli
 		return nil, err
 	}
 
-	scaTreasuryCallArg, err := GetObjectArg(client, scallopTreasury, false, SCALLOP_PACKAGE, "s_coin_converter", "mint_s_coin")
+	scaTreasuryCallArg, err := GetObjectArg(client, scallopTreasury, false, SCALLOP_PACKAGE, "s_coin_converter", "burn_s_coin")
 	if err != nil {
 		return nil, err
 	}

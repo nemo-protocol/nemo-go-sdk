@@ -40,6 +40,7 @@ type NemoConfig struct {
 	YieldTokenType           string            `json:"yieldTokenType"`
 	WinterStaking            string            `json:"winterStaking"`
 	CacheContractPackageInfo map[string]string `json:"cacheContractPackageInfo"`
+	Incentives               []Incentives      `json:"incentives"`
 }
 
 type NemoConfigInfo struct {
@@ -73,6 +74,7 @@ type NemoConfigInfo struct {
 	YieldTokenType       string   `json:"yieldTokenType"`
 	LstInfo              string   `json:"lstInfo"`
 	WinterStaking        string   `json:"winterStaking"`
+	Incentives           []Incentives `json:"incentives"`
 }
 
 type NemoInfoResponse struct {
@@ -113,7 +115,7 @@ func InitConfig() []NemoConfig {
 		OracleVoucherPackage: "0x8783841625738f73a6b0085f5dad270b4b0bd2e5cdb278dc95201e45bd1a332b",
 	}
 	*/
-	url := "https://app.nemoprotocol.com/api/v1/market/coinInfo"
+	url := "https://app.nemoprotocol.com/api/v1/market/coinInfo?isShowExpiry=0"
 	pageByte, err := utils.SendGetRpc(url)
 	if err != nil {
 		return nil
@@ -173,5 +175,6 @@ func FormatStruct(resInfo NemoConfigInfo) NemoConfig {
 	innerInfo.YieldTokenType = resInfo.YieldTokenType
 	innerInfo.LstInfo = resInfo.LstInfo
 	innerInfo.WinterStaking = resInfo.WinterStaking
+	innerInfo.Incentives = resInfo.Incentives
 	return innerInfo
 }

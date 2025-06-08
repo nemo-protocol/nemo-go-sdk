@@ -135,7 +135,7 @@ func RedeemDueInterest(ptb *sui_types.ProgrammableTransactionBuilder, client *cl
 	return &command, nil
 }
 
-func ClaimReward(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig, marketPosition string) (*sui_types.Argument,error){
+func ClaimReward(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig, marketPosition string, claimTokenType string) (*sui_types.Argument,error){
 	nemoPackageId, err := sui_types.NewObjectIdFromHex(nemoConfig.NemoContract)
 	if err != nil {
 		return nil, err
@@ -151,7 +151,7 @@ func ClaimReward(ptb *sui_types.ProgrammableTransactionBuilder, client *client.C
 		return nil, err
 	}
 
-	coinTypeStructTag, err := GetStructTag(nemoConfig.CoinType)
+	coinTypeStructTag, err := GetStructTag(claimTokenType)
 	if err != nil {
 		return nil, err
 	}

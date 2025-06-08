@@ -16,7 +16,7 @@ type ContractInterface interface {
 	ClaimYtReward(nemoConfig *models.NemoConfig, sender *account.Account) (bool, error)
 	DryRunYtReward(nemoConfig *models.NemoConfig, sender *account.Account) (float64, error)
 	ClaimLpReward(nemoConfig *models.NemoConfig, sender *account.Account) (bool, error)
-	DryRunLpReward(nemoConfig *models.NemoConfig, sender *account.Account) (int64, error)
+	DryRunLpReward(nemoConfig *models.NemoConfig, sender *account.Account) ([]models.CoinInfo, error)
 	QueryPoolApy(nemoConfig *models.NemoConfig, priceInfoMap ...map[string]api.PriceInfo) (*models.ApyModel, error)
 	QueryAsset(nemoConfig *models.NemoConfig, address string) (*models.AssetModel, error)
 	QueryFee(nemoConfig *models.NemoConfig) (*models.FeeModel, error)
