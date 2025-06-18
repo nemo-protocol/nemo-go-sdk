@@ -43,6 +43,7 @@ var (
 
 	SPRING_PROVIDER = "SpringSui"
 	WINTER_PROVIDER = "Winter"
+	LIQUID_AGENTS = "Liquid Agents"
 
 )
 
@@ -114,7 +115,7 @@ func IsWWal(coinType string) bool{
 }
 
 func IsSpringCoin(provider string) bool{
-	return provider == SPRING_PROVIDER
+	return provider == SPRING_PROVIDER || provider == LIQUID_AGENTS
 }
 
 func IsWinterCoin(provider string) bool{
