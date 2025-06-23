@@ -48,7 +48,7 @@ func calculatePtApy(underlyingPrice, ptPrice, daysToExpiry decimal.Decimal) deci
 	exponent := decimal.NewFromFloat(365).Div(daysToExpiry)
 	rf,_ := ratio.Float64()
 	ef,_ := exponent.Float64()
-	return decimal.NewFromFloat(math.Pow(rf,ef)).Sub(decimal.NewFromInt(1)).Mul(decimal.NewFromInt(100))
+	return decimal.NewFromFloat(math.Pow(rf,ef)).Sub(decimal.NewFromInt(1))
 }
 
 func CalculateYtAPY(underlyingInterestApyDec, ytPriceInAsset, yearsToExpiryDec decimal.Decimal) decimal.Decimal {
@@ -73,8 +73,7 @@ func CalculateYtAPY(underlyingInterestApyDec, ytPriceInAsset, yearsToExpiryDec d
 	//divResult2,_ := decimal.NewFromInt(1).Div(yearsToExpiryDec).Float64()
 
 	ytApy := decimal.NewFromFloat(divResult1).
-		Sub(decimal.NewFromInt(1)).
-		Mul(decimal.NewFromInt(100))
+		Sub(decimal.NewFromInt(1))
 
 	return ytApy
 }
@@ -109,14 +108,14 @@ func CalculatePoolApy(coinInfo CoinInfo, marketState MarketState, pyOut, syIn in
 	ptApy := calculatePtApy(underlyingPrice, ptPrice, daysToExpiry)
 	fmt.Printf("yearToExpiry:%v\n",yearToExpiry)
 	ytApy := CalculateYtAPY(underlyingApy, safeDivide(ytPrice, underlyingPrice), yearToExpiry)
-	scaledUnderlyingApy := rSy.Mul(underlyingApy).Mul(decimal.NewFromInt(100))
+	scaledUnderlyingApy := rSy.Mul(underlyingApy)
 	scaledPtApy := rPt.Mul(ptApy)
 	fmt.Printf("\n==scaledPtApy:%v,ptApy:%v，scaledUnderlyingApy：%v==\n", scaledPtApy,ptApy,scaledUnderlyingApy)
 
 	// Calculate swap fee APY
 	swapFeeRateForLpHolder,_ := safeDivide(swapFeeForLpHolder.Mul(coinPrice), tvl).Float64()
 	expiryRate,_ := safeDivide(decimal.NewFromFloat(365), daysToExpiry).Float64()
-	swapFeeApy := decimal.NewFromFloat(math.Pow(swapFeeRateForLpHolder + 1,expiryRate)).Sub(decimal.NewFromInt(1)).Mul(decimal.NewFromInt(100))
+	swapFeeApy := decimal.NewFromFloat(math.Pow(swapFeeRateForLpHolder + 1,expiryRate)).Sub(decimal.NewFromInt(1))
 	fmt.Printf("\nswapFeeApy:%v\n",swapFeeApy)
 
 	// Calculate incentive APY
@@ -133,7 +132,7 @@ func CalculatePoolApy(coinInfo CoinInfo, marketState MarketState, pyOut, syIn in
 		tokenPrice, _ := decimal.NewFromString(reward.TokenPrice)
 		dailyEmission, _ := decimal.NewFromString(reward.DailyEmission)
 		divResult,_ := safeDivide(tokenPrice.Mul(dailyEmission), tvl).Add(decimal.NewFromInt(1)).Float64()
-		apy := decimal.NewFromFloat(math.Pow(divResult, 365)).Sub(decimal.NewFromInt(1)).Mul(decimal.NewFromInt(100))
+		apy := decimal.NewFromFloat(math.Pow(divResult, 365)).Sub(decimal.NewFromInt(1))
 		incentiveApy = incentiveApy.Add(apy)
 
 		incentives := models.Incentives{
