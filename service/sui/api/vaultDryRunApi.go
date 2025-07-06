@@ -176,7 +176,7 @@ func DryRunVaultWithdraw(client *client.Client, address string, vaultConfig *mod
 	if len(result.Results) == 0 {
 		return nil, fmt.Errorf("empty results")
 	}
-	marshal, _ := json.Marshal(result)
+
 	lastResult := result.Results[0]
 	if len(result.Results) == 2{
 		lastResult = result.Results[1]
