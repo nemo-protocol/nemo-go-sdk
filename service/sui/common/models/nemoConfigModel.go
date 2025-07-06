@@ -44,36 +44,36 @@ type NemoConfig struct {
 }
 
 type NemoConfigInfo struct {
-	CoinPrice            string   `json:"coinPrice"`
-	CoinType             string   `json:"coinType"`
-	SyCoinType           string   `json:"syCoinType"`
-	UnderlyingCoinType   string   `json:"underlyingCoinType"`
-	UnderlyingApy        string   `json:"underlyingApy"`
-	Decimal              string   `json:"decimal"`
-	ConversionRate       string   `json:"conversionRate"`
-	PyState              string   `json:"pyStateId"`
-	Version              string   `json:"version"`
-	YieldFactoryConfig   string   `json:"yieldFactoryConfigId"`
-	MarketFactoryConfig  string   `json:"marketFactoryConfigId"`
-	MarketState          string   `json:"marketStateId"`
-	SyState              string   `json:"syStateId"`
-	PyStore              string   `json:"pyStoreId"`
-	PriceOracle          string   `json:"priceOracleConfigId"`
-	HaedalStakeing       string   `json:"haedalStakeingId"`
-	NativePool           string   `json:"nativePool"`
-	Metadata             string   `json:"metadataId"`
-	ProviderMarket       string   `json:"providerMarket"`
-	ProviderVersion      string   `json:"providerVersion"`
-	NemoContract         string   `json:"nemoContractId"`
-	NemoContractList     []string `json:"nemoContractIdList"`
-	ProviderProtocol     string   `json:"underlyingProtocol"`
-	OraclePackage        string   `json:"oraclePackageId"`
-	OracleTicket         string   `json:"oracleTicket"`
-	OracleVoucherPackage string   `json:"oracleVoucherPackageId"`
-	SwapFeeForLpHolder   string   `json:"swapFeeForLpHolder"`
-	YieldTokenType       string   `json:"yieldTokenType"`
-	LstInfo              string   `json:"lstInfo"`
-	WinterStaking        string   `json:"winterStaking"`
+	CoinPrice            string       `json:"coinPrice"`
+	CoinType             string       `json:"coinType"`
+	SyCoinType           string       `json:"syCoinType"`
+	UnderlyingCoinType   string       `json:"underlyingCoinType"`
+	UnderlyingApy        string       `json:"underlyingApy"`
+	Decimal              string       `json:"decimal"`
+	ConversionRate       string       `json:"conversionRate"`
+	PyState              string       `json:"pyStateId"`
+	Version              string       `json:"version"`
+	YieldFactoryConfig   string       `json:"yieldFactoryConfigId"`
+	MarketFactoryConfig  string       `json:"marketFactoryConfigId"`
+	MarketState          string       `json:"marketStateId"`
+	SyState              string       `json:"syStateId"`
+	PyStore              string       `json:"pyStoreId"`
+	PriceOracle          string       `json:"priceOracleConfigId"`
+	HaedalStakeing       string       `json:"haedalStakeingId"`
+	NativePool           string       `json:"nativePool"`
+	Metadata             string       `json:"metadataId"`
+	ProviderMarket       string       `json:"providerMarket"`
+	ProviderVersion      string       `json:"providerVersion"`
+	NemoContract         string       `json:"nemoContractId"`
+	NemoContractList     []string     `json:"nemoContractIdList"`
+	ProviderProtocol     string       `json:"underlyingProtocol"`
+	OraclePackage        string       `json:"oraclePackageId"`
+	OracleTicket         string       `json:"oracleTicket"`
+	OracleVoucherPackage string       `json:"oracleVoucherPackageId"`
+	SwapFeeForLpHolder   string       `json:"swapFeeForLpHolder"`
+	YieldTokenType       string       `json:"yieldTokenType"`
+	LstInfo              string       `json:"lstInfo"`
+	WinterStaking        string       `json:"winterStaking"`
 	Incentives           []Incentives `json:"incentives"`
 }
 
@@ -115,7 +115,7 @@ func InitConfig() []NemoConfig {
 		OracleVoucherPackage: "0x8783841625738f73a6b0085f5dad270b4b0bd2e5cdb278dc95201e45bd1a332b",
 	}
 	*/
-	url := "https://app.nemoprotocol.com/api/v1/market/coinInfo?isShowExpiry=0"
+	url := "https://api.nemoprotocol.com/api/v1/market/coinInfo?isShowExpiry=0"
 	pageByte, err := utils.SendGetRpc(url)
 	if err != nil {
 		return nil
@@ -124,7 +124,7 @@ func InitConfig() []NemoConfig {
 	response := NemoPageResponse{}
 	_ = json.Unmarshal(pageByte, &response)
 
-	infoUrl := "https://app.nemoprotocol.com/api/v1/market/config/detail?id=%v"
+	infoUrl := "https://api.nemoprotocol.com/api/v1/market/config/detail?id=%v"
 	infoList := make([]NemoConfig, 0)
 	for _, v := range response.NemoPage {
 		infoByte, err := utils.SendGetRpc(fmt.Sprintf(infoUrl, v.Id))
@@ -177,4 +177,33 @@ func FormatStruct(resInfo NemoConfigInfo) NemoConfig {
 	innerInfo.WinterStaking = resInfo.WinterStaking
 	innerInfo.Incentives = resInfo.Incentives
 	return innerInfo
+}
+
+type NemoVaultConfig struct {
+	VaultContract    string `json:"vaultContract"`
+	VaultId          string `json:"vaultId"`
+	PoolId           string `json:"poolId"`
+	LeftCoinType     string `json:"leftCoinType"`
+	LeftCoinPrice    string `json:"leftCoinPrice"`
+	LeftCoinDecimal  string `json:"leftCoinDecimal"`
+	RightCoinType    string `json:"rightCoinType"`
+	RightCoinPrice   string `json:"rightCoinPrice"`
+	RightCoinDecimal string `json:"rightCoinDecimal"`
+	VaultType        string `json:"vaultType"`
+}
+
+type VaultPageResponse struct {
+	VaultPage []NemoVaultConfig `json:"data"`
+}
+
+func InitVaultConfig() []NemoVaultConfig {
+	url := "https://api.nemoprotocol.com/api/v1/market/user/vaultInfo?"
+	pageByte, err := utils.SendGetRpc(url)
+	if err != nil {
+		return nil
+	}
+
+	response := VaultPageResponse{}
+	_ = json.Unmarshal(pageByte, &response)
+	return response.VaultPage
 }
