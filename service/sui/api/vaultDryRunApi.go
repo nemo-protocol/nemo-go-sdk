@@ -176,15 +176,18 @@ func DryRunVaultWithdraw(client *client.Client, address string, vaultConfig *mod
 	if len(result.Results) == 0 {
 		return nil, fmt.Errorf("empty results")
 	}
-	lastResult := result.Results[1]
-	fmt.Printf("result:%+v",len(result.Results))
+	marshal, _ := json.Marshal(result)
+	lastResult := result.Results[0]
+	if len(result.Results) == 2{
+		lastResult = result.Results[1]
+	}
+
 	if len(lastResult.ReturnValues) == 0 {
 		return nil, fmt.Errorf("no return values")
 	}
 
 	coinInfoList := make([]models.CoinInfo, 0)
 	for _,firstValue := range lastResult.ReturnValues{
-		fmt.Printf("\n==firstValue:%v==\n", firstValue)
 		var coin models.Coin
 		if firstValueArray, ok := firstValue.([]interface{}); ok && len(firstValueArray) > 0 {
 			if innerArray, ok := firstValueArray[0].([]interface{}); ok && len(innerArray) > 0 {
