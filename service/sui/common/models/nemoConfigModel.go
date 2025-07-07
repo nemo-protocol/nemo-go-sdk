@@ -190,6 +190,7 @@ type NemoVaultConfig struct {
 	RightCoinPrice   string `json:"rightCoinPrice"`
 	RightCoinDecimal string `json:"rightCoinDecimal"`
 	VaultType        string `json:"vaultType"`
+	StableType       string `json:"stableType"`
 }
 
 type VaultPageResponse struct {
