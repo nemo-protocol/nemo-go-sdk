@@ -767,6 +767,14 @@ func GetPriceVoucherFromNemo(ptb *sui_types.ProgrammableTransactionBuilder, clie
 	module := move_types.Identifier(moduleName)
 	function := move_types.Identifier(functionName)
 
+	syTypeStructTag, err := GetStructTag(nemoConfig.SyCoinType)
+	if err != nil {
+		return nil, err
+	}
+	syTypeTag := move_types.TypeTag{
+		Struct: syTypeStructTag,
+	}
+
 	leftCoinTypeStructTag, err := GetStructTag(nemoConfig.LeftCoinType)
 	if err != nil {
 		return nil, err
@@ -799,7 +807,7 @@ func GetPriceVoucherFromNemo(ptb *sui_types.ProgrammableTransactionBuilder, clie
 		Struct: stableTypeStructTag,
 	}
 	typeArguments := make([]move_types.TypeTag, 0)
-	typeArguments = append(typeArguments, leftCoinTypeTag, rightCoinTypeTag, vaultCoinTypeTag, stableTypeTag)
+	typeArguments = append(typeArguments, syTypeTag, leftCoinTypeTag, rightCoinTypeTag, vaultCoinTypeTag, stableTypeTag)
 
 	shareObjectMap := map[string]bool{
 		nemoConfig.PriceOracle: false,
