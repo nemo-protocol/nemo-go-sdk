@@ -45,6 +45,8 @@ type NemoConfig struct {
 	MmtOracle                string            `json:"mmtOracle"`
 	PoolId                   string            `json:"poolId"`
 	StableType               string            `json:"stableType"`
+	LeftCoinType             string            `json:"leftCoinType"`
+	RightCoinType            string           `json:"rightCoinType"`
 }
 
 type NemoConfigInfo struct {
@@ -81,7 +83,9 @@ type NemoConfigInfo struct {
 	Incentives           []Incentives `json:"incentives"`
 	VaultId              string       `json:"vaultId"`
 	MmtOracle            string       `json:"mmtOracle"`
-	PoolId               string            `json:"poolId"`
+	PoolId               string       `json:"poolId"`
+	LeftCoinType         string       `json:"leftCoinType"`
+	RightCoinType        string       `json:"rightCoinType"`
 }
 
 type NemoInfoResponse struct {
@@ -186,6 +190,8 @@ func FormatStruct(resInfo NemoConfigInfo) NemoConfig {
 	innerInfo.MmtOracle = resInfo.MmtOracle
 	innerInfo.VaultId = resInfo.VaultId
 	innerInfo.PoolId = resInfo.PoolId
+	innerInfo.LeftCoinType = resInfo.LeftCoinType
+	innerInfo.RightCoinType = resInfo.RightCoinType
 	return innerInfo
 }
 

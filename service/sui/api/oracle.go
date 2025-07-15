@@ -767,7 +767,7 @@ func GetPriceVoucherFromNemo(ptb *sui_types.ProgrammableTransactionBuilder, clie
 	module := move_types.Identifier(moduleName)
 	function := move_types.Identifier(functionName)
 
-	leftCoinTypeStructTag, err := GetStructTag(nemoConfig.UnderlyingCoinType)
+	leftCoinTypeStructTag, err := GetStructTag(nemoConfig.LeftCoinType)
 	if err != nil {
 		return nil, err
 	}
@@ -775,7 +775,7 @@ func GetPriceVoucherFromNemo(ptb *sui_types.ProgrammableTransactionBuilder, clie
 		Struct: leftCoinTypeStructTag,
 	}
 
-	rightCoinTypeStructTag, err := GetStructTag(nemoConfig.YieldTokenType)
+	rightCoinTypeStructTag, err := GetStructTag(nemoConfig.RightCoinType)
 	if err != nil {
 		return nil, err
 	}
