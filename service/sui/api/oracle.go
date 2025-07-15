@@ -756,6 +756,100 @@ func GetPriceVoucherFromWWal(ptb *sui_types.ProgrammableTransactionBuilder, clie
 	return &command, nil
 }
 
+func GetPriceVoucherFromNemo(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig) (*sui_types.Argument,error) {
+	nemoPackageId, err := sui_types.NewObjectIdFromHex(nemoConfig.OraclePackage)
+	if err != nil {
+		return nil, err
+	}
+
+	moduleName := "vault"
+	functionName := "get_pair_price_voucher_usd_from_mmt_vault"
+	module := move_types.Identifier(moduleName)
+	function := move_types.Identifier(functionName)
+
+	leftCoinTypeStructTag, err := GetStructTag(nemoConfig.UnderlyingCoinType)
+	if err != nil {
+		return nil, err
+	}
+	leftCoinTypeTag := move_types.TypeTag{
+		Struct: leftCoinTypeStructTag,
+	}
+
+	rightCoinTypeStructTag, err := GetStructTag(nemoConfig.YieldTokenType)
+	if err != nil {
+		return nil, err
+	}
+	rightCoinTypeTag := move_types.TypeTag{
+		Struct: rightCoinTypeStructTag,
+	}
+
+	vCoinTypeStructTag, err := GetStructTag(nemoConfig.CoinType)
+	if err != nil {
+		return nil, err
+	}
+	vaultCoinTypeTag := move_types.TypeTag{
+		Struct: vCoinTypeStructTag,
+	}
+
+	stableTypeStructTag, err := GetStructTag(nemoConfig.StableType)
+	if err != nil {
+		return nil, err
+	}
+	stableTypeTag := move_types.TypeTag{
+		Struct: stableTypeStructTag,
+	}
+	typeArguments := make([]move_types.TypeTag, 0)
+	typeArguments = append(typeArguments, leftCoinTypeTag, rightCoinTypeTag, vaultCoinTypeTag, stableTypeTag)
+
+	shareObjectMap := map[string]bool{
+		nemoConfig.PriceOracle: false,
+		nemoConfig.OracleTicket: false,
+		nemoConfig.MmtOracle: false,
+		nemoConfig.VaultId: false,
+		nemoConfig.PoolId: false,
+		nemoConfig.SyState: false,
+		constant.CLOCK: false,
+	}
+
+	objectArgMap, err := MultiGetObjectArg(client, shareObjectMap, nemoConfig.OraclePackage, moduleName, functionName, nemoConfig.CacheContractPackageInfo[nemoConfig.OraclePackage])
+	if err != nil{
+		return nil, err
+	}
+
+	fmt.Printf("\n==objectArgMap:%+v==\n",objectArgMap)
+	callArgs := make([]sui_types.CallArg, 0)
+	callArgs = append(callArgs,
+		sui_types.CallArg{Object: objectArgMap[nemoConfig.PriceOracle]},
+		sui_types.CallArg{Object: objectArgMap[nemoConfig.OracleTicket]},
+		sui_types.CallArg{Object: objectArgMap[nemoConfig.MmtOracle]},
+		sui_types.CallArg{Object: objectArgMap[nemoConfig.VaultId]},
+		sui_types.CallArg{Object: objectArgMap[nemoConfig.PoolId]},
+		sui_types.CallArg{Object: objectArgMap[nemoConfig.SyState]},
+		sui_types.CallArg{Object: objectArgMap[constant.CLOCK]},
+	)
+
+	var arguments []sui_types.Argument
+	for _, v := range callArgs {
+		argument, err := ptb.Input(v)
+		if err != nil {
+			return nil, err
+		}
+		arguments = append(arguments, argument)
+	}
+	command := ptb.Command(
+		sui_types.Command{
+			MoveCall: &sui_types.ProgrammableMoveCall{
+				Package:       *nemoPackageId,
+				Module:        module,
+				Function:      function,
+				TypeArguments: typeArguments,
+				Arguments:     arguments,
+			},
+		},
+	)
+	return &command, nil
+}
+
 func GetPriceVoucher(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig, cacheContractPackageInfo ...string) (*sui_types.Argument,error){
 	if constant.IsScallopCoin(nemoConfig.CoinType) || nemoConfig.ProviderProtocol == constant.SCALLOP{
 		return GetPriceVoucherFromXOracle(ptb, client, nemoConfig)
@@ -783,6 +877,8 @@ func GetPriceVoucher(ptb *sui_types.ProgrammableTransactionBuilder, client *clie
 		return GetPriceVoucherFromHaWal(ptb, client, nemoConfig)
 	}else if constant.IsWinterCoin(nemoConfig.ProviderProtocol){
 		return GetPriceVoucherFromWWal(ptb, client, nemoConfig)
+	}else if nemoConfig.ProviderProtocol == constant.Nemo{
+		return GetPriceVoucherFromNemo(ptb, client, nemoConfig)
 	}
 	return nil, errors.New("coinType oracle not support！")
 }

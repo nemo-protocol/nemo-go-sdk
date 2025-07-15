@@ -41,6 +41,10 @@ type NemoConfig struct {
 	WinterStaking            string            `json:"winterStaking"`
 	CacheContractPackageInfo map[string]string `json:"cacheContractPackageInfo"`
 	Incentives               []Incentives      `json:"incentives"`
+	VaultId                  string            `json:"vaultId"`
+	MmtOracle                string            `json:"mmtOracle"`
+	PoolId                   string            `json:"poolId"`
+	StableType               string            `json:"stableType"`
 }
 
 type NemoConfigInfo struct {
@@ -75,6 +79,9 @@ type NemoConfigInfo struct {
 	LstInfo              string       `json:"lstInfo"`
 	WinterStaking        string       `json:"winterStaking"`
 	Incentives           []Incentives `json:"incentives"`
+	VaultId              string       `json:"vaultId"`
+	MmtOracle            string       `json:"mmtOracle"`
+	PoolId               string            `json:"poolId"`
 }
 
 type NemoInfoResponse struct {
@@ -176,6 +183,9 @@ func FormatStruct(resInfo NemoConfigInfo) NemoConfig {
 	innerInfo.LstInfo = resInfo.LstInfo
 	innerInfo.WinterStaking = resInfo.WinterStaking
 	innerInfo.Incentives = resInfo.Incentives
+	innerInfo.MmtOracle = resInfo.MmtOracle
+	innerInfo.VaultId = resInfo.VaultId
+	innerInfo.PoolId = resInfo.PoolId
 	return innerInfo
 }
 
