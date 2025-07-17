@@ -7,8 +7,10 @@ import (
 	"github.com/coming-chat/go-sui/v2/client"
 	"github.com/nemo-protocol/nemo-go-sdk/utils"
 	"math/rand"
+	"net/http"
 	"reflect"
 	"sync"
+	"time"
 )
 
 var (
@@ -19,6 +21,7 @@ var (
 	SuiMainNetEndpoint = constant.SuiMainnetEndpoint
 	servMap     *sync.Map
 	onlyServMap *sync.Map
+	Hc           *http.Client
 )
 
 type SuiService struct {
@@ -31,16 +34,7 @@ func InitSuiService(params ...map[string]interface{}) *SuiService{
 		servMap = &sync.Map{}
 	}
 	once.Do(func() {
-		c, err := client.Dial(SuiMainNetEndpoint)
-		if err != nil {
-			errorMsg := fmt.Sprintf("connect sui main net error:%v", err)
-			panic(errorMsg)
-		}
-		blockSuiApi := sui.NewSuiClient(SuiMainNetEndpoint)
-		instance = &SuiService{
-			SuiApi: c,
-			BlockApi: &blockSuiApi,
-		}
+		instance = createInstance(SuiMainNetEndpoint)
 		servMap.Store(SuiMainNetEndpoint, instance)
 	})
 
@@ -103,14 +97,37 @@ func InitSuiService(params ...map[string]interface{}) *SuiService{
 	}
 }
 
+func (api *SuiService)ReloadHc(proxyUrl string){
+	Hc = &http.Client{
+		Transport: &http.Transport{
+			MaxIdleConns:    3,
+			IdleConnTimeout: 30 * time.Second,
+		},
+		Timeout: 30 * time.Second,
+	}
+	if proxyUrl == ""{
+		return
+	}
+	Hc.Transport = utils.RegenTransport(proxyUrl)
+}
+
 func createInstance(endpoint string) *SuiService{
-	c, err := client.Dial(endpoint)
+	if Hc == nil{
+		Hc = &http.Client{
+			Transport: &http.Transport{
+				MaxIdleConns:    3,
+				IdleConnTimeout: 30 * time.Second,
+			},
+			Timeout: 30 * time.Second,
+		}
+	}
+	c, err := client.DialWithClient(endpoint, Hc)
 	if err != nil {
 		errorMsg := fmt.Sprintf("connect sui main net error:%v", err)
 		fmt.Printf("\n==errorMsg:%v==\n", errorMsg)
 		return nil
 	}
-	blockSuiApi := sui.NewSuiClient(endpoint)
+	blockSuiApi := sui.NewSuiClientWithCustomClient(endpoint, Hc)
 	instance = &SuiService{
 		SuiApi:   c,
 		BlockApi: &blockSuiApi,

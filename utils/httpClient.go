@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
+	"regexp"
+	"time"
 )
 
 func SendGetRpc(url string, headers ...map[string]string) ([]byte, error) {
@@ -33,4 +36,26 @@ func SendGetRpc(url string, headers ...map[string]string) ([]byte, error) {
 		return nil, err
 	}
 	return body, nil
+}
+
+func RegenTransport(pUrl string) *http.Transport{
+	parseURL := mustParseURL(pUrl)
+	fmt.Printf("\n==parseURL:%v,pUrl:%v==\n", parseURL, pUrl)
+	return &http.Transport{
+		MaxIdleConns:    100,
+		MaxIdleConnsPerHost: 100,
+		IdleConnTimeout: 30 * time.Second,
+		Proxy:           http.ProxyURL(parseURL),
+	}
+}
+
+func mustParseURL(rawURL string) *url.URL {
+	re := regexp.MustCompile(`[\r\n]`)
+	rawURL = re.ReplaceAllString(rawURL, "")
+	parsedURL, err := url.Parse(rawURL)
+	fmt.Printf("\n==parsedURL:%v,err:%v==\n", parsedURL, err)
+	if err != nil {
+		return nil
+	}
+	return parsedURL
 }
