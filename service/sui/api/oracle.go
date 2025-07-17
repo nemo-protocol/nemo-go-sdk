@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/coming-chat/go-sui/v2/client"
@@ -8,6 +9,13 @@ import (
 	"github.com/coming-chat/go-sui/v2/sui_types"
 	"github.com/nemo-protocol/nemo-go-sdk/service/sui/common/constant"
 	"github.com/nemo-protocol/nemo-go-sdk/service/sui/common/models"
+)
+
+const (
+	MMT_ORACLE_PACKAGE_ID = "0x069fea1d4f9275f58bec2465ac54ccf6477a44fb89c6ab893421ad849fb947ae"
+	MMT_REGISTRY_ID = "0xeb2aaddb67f29f313762bb100fd4dde982d7d9ee4f59c1dc20e0de6709202f98"
+	MMT_ORACLE_STATE = "0x1f9310238ee9298fb703c3419030b35b22bb1cc37113e3bb5007c99aec79e5b8"
+	PRICE_ADAPTER_PACKAGE_ID = "0x7808c5c73fb46da980905c867789aa33900f4ad8e874b139354a1bf379be26eb"
 )
 
 func GetPriceVoucherFromXOracle(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig) (*sui_types.Argument,error) {
@@ -757,6 +765,11 @@ func GetPriceVoucherFromWWal(ptb *sui_types.ProgrammableTransactionBuilder, clie
 }
 
 func GetPriceVoucherFromNemo(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig) (*sui_types.Argument,error) {
+	_,err := PreNemoProcess(ptb, client, nemoConfig)
+	if err != nil {
+		return nil, err
+	}
+
 	nemoPackageId, err := sui_types.NewObjectIdFromHex(nemoConfig.OraclePackage)
 	if err != nil {
 		return nil, err
@@ -808,6 +821,8 @@ func GetPriceVoucherFromNemo(ptb *sui_types.ProgrammableTransactionBuilder, clie
 	}
 	typeArguments := make([]move_types.TypeTag, 0)
 	typeArguments = append(typeArguments, syTypeTag, leftCoinTypeTag, rightCoinTypeTag, vaultCoinTypeTag, stableTypeTag)
+	marshal, err := json.Marshal(typeArguments)
+	fmt.Printf("m:%v",string(marshal))
 
 	shareObjectMap := map[string]bool{
 		nemoConfig.PriceOracle: false,
@@ -818,6 +833,7 @@ func GetPriceVoucherFromNemo(ptb *sui_types.ProgrammableTransactionBuilder, clie
 		nemoConfig.SyState: false,
 		constant.CLOCK: false,
 	}
+	fmt.Printf("shareObjectMap:%v",shareObjectMap)
 
 	objectArgMap, err := MultiGetObjectArg(client, shareObjectMap, nemoConfig.OraclePackage, moduleName, functionName, nemoConfig.CacheContractPackageInfo[nemoConfig.OraclePackage])
 	if err != nil{
@@ -856,6 +872,232 @@ func GetPriceVoucherFromNemo(ptb *sui_types.ProgrammableTransactionBuilder, clie
 		},
 	)
 	return &command, nil
+}
+
+func SetKOraclePrice(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig, priceReceipt *sui_types.Argument, coinType string, priceOracleObjId string) (*sui_types.Argument,error){
+	nemoPackageId, err := sui_types.NewObjectIdFromHex(PRICE_ADAPTER_PACKAGE_ID)
+	if err != nil {
+		return nil, err
+	}
+
+	moduleName := "price_source"
+	functionName := "set_k_oracle_price"
+	module := move_types.Identifier(moduleName)
+	function := move_types.Identifier(functionName)
+
+	coinTypeTypeStructTag, err := GetStructTag(coinType)
+	if err != nil {
+		return nil, err
+	}
+	coinTypeTag := move_types.TypeTag{
+		Struct: coinTypeTypeStructTag,
+	}
+
+	typeArguments := make([]move_types.TypeTag, 0)
+	typeArguments = append(typeArguments, coinTypeTag)
+
+	shareObjectMap := map[string]bool{
+		nemoConfig.MmtOracle: false,
+		MMT_REGISTRY_ID: false,
+		MMT_ORACLE_STATE: false,
+		priceOracleObjId: false,
+		constant.CLOCK: false,
+	}
+
+	objectArgMap, err := MultiGetObjectArg(client, shareObjectMap, PRICE_ADAPTER_PACKAGE_ID, moduleName, functionName, nemoConfig.CacheContractPackageInfo[PRICE_ADAPTER_PACKAGE_ID])
+	if err != nil{
+		return nil, err
+	}
+	callArgs := make([]sui_types.CallArg, 0)
+	callArgs = append(callArgs,
+		sui_types.CallArg{Object: objectArgMap[nemoConfig.MmtOracle]},
+		sui_types.CallArg{Object: objectArgMap[MMT_REGISTRY_ID]},
+		sui_types.CallArg{Object: objectArgMap[MMT_ORACLE_STATE]},
+		sui_types.CallArg{Object: objectArgMap[priceOracleObjId]},
+		sui_types.CallArg{Object: objectArgMap[constant.CLOCK]},
+	)
+
+	boolArguemnt,err := ptb.Pure(true)
+	if err != nil{
+		return nil, err
+	}
+
+	var arguments []sui_types.Argument
+	arguments = append(arguments, *priceReceipt)
+	for k, v := range callArgs {
+		if k == 2{
+			arguments = append(arguments, boolArguemnt)
+		}
+		argument, err := ptb.Input(v)
+		if err != nil {
+			return nil, err
+		}
+		arguments = append(arguments, argument)
+	}
+	command := ptb.Command(
+		sui_types.Command{
+			MoveCall: &sui_types.ProgrammableMoveCall{
+				Package:       *nemoPackageId,
+				Module:        module,
+				Function:      function,
+				TypeArguments: typeArguments,
+				Arguments:     arguments,
+			},
+		},
+	)
+	return &command, nil
+}
+
+func UpdatePrice(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig, priceReceipt *sui_types.Argument, coinType string) (*sui_types.Argument,error){
+	nemoPackageId, err := sui_types.NewObjectIdFromHex(MMT_ORACLE_PACKAGE_ID)
+	if err != nil {
+		return nil, err
+	}
+
+	moduleName := "oracle"
+	functionName := "update_price"
+	module := move_types.Identifier(moduleName)
+	function := move_types.Identifier(functionName)
+
+	coinTypeTypeStructTag, err := GetStructTag(coinType)
+	if err != nil {
+		return nil, err
+	}
+	coinTypeTag := move_types.TypeTag{
+		Struct: coinTypeTypeStructTag,
+	}
+
+	typeArguments := make([]move_types.TypeTag, 0)
+	typeArguments = append(typeArguments, coinTypeTag)
+
+	shareObjectMap := map[string]bool{
+		nemoConfig.MmtOracle: false,
+	}
+
+	objectArgMap, err := MultiGetObjectArg(client, shareObjectMap, MMT_ORACLE_PACKAGE_ID, moduleName, functionName, nemoConfig.CacheContractPackageInfo[MMT_ORACLE_PACKAGE_ID])
+	if err != nil{
+		return nil, err
+	}
+
+	callArgs := make([]sui_types.CallArg, 0)
+	callArgs = append(callArgs,
+		sui_types.CallArg{Object: objectArgMap[nemoConfig.MmtOracle]},
+	)
+
+	var arguments []sui_types.Argument
+	arguments = append(arguments, *priceReceipt)
+	for _, v := range callArgs {
+		argument, err := ptb.Input(v)
+		if err != nil {
+			return nil, err
+		}
+		arguments = append(arguments, argument)
+	}
+	command := ptb.Command(
+		sui_types.Command{
+			MoveCall: &sui_types.ProgrammableMoveCall{
+				Package:       *nemoPackageId,
+				Module:        module,
+				Function:      function,
+				TypeArguments: typeArguments,
+				Arguments:     arguments,
+			},
+		},
+	)
+	return &command, nil
+}
+
+func GetPriceReceipt(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig, coinType string) (*sui_types.Argument,error){
+	nemoPackageId, err := sui_types.NewObjectIdFromHex(MMT_ORACLE_PACKAGE_ID)
+	if err != nil {
+		return nil, err
+	}
+
+	moduleName := "oracle"
+	functionName := "get_price_receipt"
+	module := move_types.Identifier(moduleName)
+	function := move_types.Identifier(functionName)
+
+	coinTypeTypeStructTag, err := GetStructTag(coinType)
+	if err != nil {
+		return nil, err
+	}
+	coinTypeTag := move_types.TypeTag{
+		Struct: coinTypeTypeStructTag,
+	}
+
+	typeArguments := make([]move_types.TypeTag, 0)
+	typeArguments = append(typeArguments, coinTypeTag)
+
+	shareObjectMap := map[string]bool{
+		nemoConfig.MmtOracle: false,
+	}
+
+	objectArgMap, err := MultiGetObjectArg(client, shareObjectMap, MMT_ORACLE_PACKAGE_ID, moduleName, functionName, nemoConfig.CacheContractPackageInfo[MMT_ORACLE_PACKAGE_ID])
+	if err != nil{
+		return nil, err
+	}
+
+	fmt.Printf("\n==aaaobjectArgMap:%+v==\n",objectArgMap)
+	callArgs := make([]sui_types.CallArg, 0)
+	callArgs = append(callArgs,
+		sui_types.CallArg{Object: objectArgMap[nemoConfig.MmtOracle]},
+	)
+
+	var arguments []sui_types.Argument
+	for _, v := range callArgs {
+		argument, err := ptb.Input(v)
+		if err != nil {
+			return nil, err
+		}
+		arguments = append(arguments, argument)
+	}
+	command := ptb.Command(
+		sui_types.Command{
+			MoveCall: &sui_types.ProgrammableMoveCall{
+				Package:       *nemoPackageId,
+				Module:        module,
+				Function:      function,
+				TypeArguments: typeArguments,
+				Arguments:     arguments,
+			},
+		},
+	)
+	return &command, nil
+}
+
+func PreNemoProcess(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig) (*sui_types.Argument,error){
+	priceReceiptA, err := GetPriceReceipt(ptb, client, nemoConfig, nemoConfig.LeftCoinType)
+	if err != nil{
+		return nil, err
+	}
+
+	_, err = SetKOraclePrice(ptb, client, nemoConfig, priceReceiptA, nemoConfig.LeftCoinType, nemoConfig.LeftPriceInfoObjectId)
+	if err != nil{
+		return nil, err
+	}
+
+	_, err = UpdatePrice(ptb, client, nemoConfig, priceReceiptA, nemoConfig.LeftCoinType)
+	if err != nil{
+		return nil, err
+	}
+
+	priceReceiptB, err := GetPriceReceipt(ptb, client, nemoConfig, nemoConfig.RightCoinType)
+	if err != nil{
+		return nil, err
+	}
+
+	_, err = SetKOraclePrice(ptb, client, nemoConfig, priceReceiptB, nemoConfig.RightCoinType, nemoConfig.RightPriceInfoObjectId)
+	if err != nil{
+		return nil, err
+	}
+
+	_, err = UpdatePrice(ptb, client, nemoConfig, priceReceiptB, nemoConfig.RightCoinType)
+	if err != nil{
+		return nil, err
+	}
+
+	return nil, nil
 }
 
 func GetPriceVoucher(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig, cacheContractPackageInfo ...string) (*sui_types.Argument,error){

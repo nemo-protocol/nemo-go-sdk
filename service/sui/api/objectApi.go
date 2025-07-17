@@ -79,7 +79,7 @@ func GetObjectMutable(client *client.Client, objectType, contractPackage, module
 	}
 	argElement := ""
 	for _,v := range args{
-		if strings.HasSuffix(v, typeList[2]){
+		if strings.HasSuffix(v, typeList[2]) || strings.HasSuffix(v, fmt.Sprintf("%v) {", typeList[2])){
 			argElement = v
 			break
 		}else if strings.Contains(v, "<") && strings.Contains(typeList[2], "<"){
