@@ -1147,12 +1147,12 @@ func PreNemoProcess(ptb *sui_types.ProgrammableTransactionBuilder, client *clien
 	}
 
 	if constant.IsSui(nemoConfig.LeftCoinType) {
-		_, err = SetKOraclePrice(ptb, client, nemoConfig, priceReceiptA, nemoConfig.LeftCoinType, nemoConfig.LeftPriceInfoObjectId)
+		_, err = SetMmtOraclePriceSuiPair(ptb, client, nemoConfig, priceReceiptA, nemoConfig.LeftCoinType, nemoConfig.LeftPriceInfoObjectId)
 		if err != nil{
 			return nil, err
 		}
 	}else {
-		_, err = SetMmtOraclePriceSuiPair(ptb, client, nemoConfig, priceReceiptA, nemoConfig.LeftCoinType, nemoConfig.LeftPriceInfoObjectId)
+		_, err = SetKOraclePrice(ptb, client, nemoConfig, priceReceiptA, nemoConfig.LeftCoinType, nemoConfig.LeftPriceInfoObjectId)
 		if err != nil{
 			return nil, err
 		}
@@ -1169,12 +1169,12 @@ func PreNemoProcess(ptb *sui_types.ProgrammableTransactionBuilder, client *clien
 	}
 
 	if constant.IsSui(nemoConfig.RightCoinType) {
-		_, err = SetKOraclePrice(ptb, client, nemoConfig, priceReceiptB, nemoConfig.RightCoinType, nemoConfig.RightPriceInfoObjectId)
+		_, err = SetMmtOraclePriceSuiPair(ptb, client, nemoConfig, priceReceiptB, nemoConfig.RightCoinType, nemoConfig.RightPriceInfoObjectId)
 		if err != nil{
 			return nil, err
 		}
 	}else {
-		_, err = SetMmtOraclePriceSuiPair(ptb, client, nemoConfig, priceReceiptB, nemoConfig.RightCoinType, nemoConfig.RightPriceInfoObjectId)
+		_, err = SetKOraclePrice(ptb, client, nemoConfig, priceReceiptB, nemoConfig.RightCoinType, nemoConfig.RightPriceInfoObjectId)
 		if err != nil{
 			return nil, err
 		}
