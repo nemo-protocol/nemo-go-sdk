@@ -948,6 +948,80 @@ func SetKOraclePrice(ptb *sui_types.ProgrammableTransactionBuilder, client *clie
 	return &command, nil
 }
 
+func SetMmtOraclePriceSuiPair(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig, priceReceipt *sui_types.Argument, coinType string, priceOracleObjId string) (*sui_types.Argument,error){
+	nemoPackageId, err := sui_types.NewObjectIdFromHex(PRICE_ADAPTER_PACKAGE_ID)
+	if err != nil {
+		return nil, err
+	}
+
+	moduleName := "price_source"
+	functionName := "set_mmt_oracle_price_sui_pair"
+	module := move_types.Identifier(moduleName)
+	function := move_types.Identifier(functionName)
+
+	coinTypeTypeStructTag, err := GetStructTag(coinType)
+	if err != nil {
+		return nil, err
+	}
+	coinTypeTag := move_types.TypeTag{
+		Struct: coinTypeTypeStructTag,
+	}
+
+	typeArguments := make([]move_types.TypeTag, 0)
+	typeArguments = append(typeArguments, coinTypeTag)
+
+	shareObjectMap := map[string]bool{
+		nemoConfig.MmtOracle: false,
+		MMT_REGISTRY_ID: false,
+		MMT_ORACLE_STATE: false,
+		priceOracleObjId: false,
+		constant.CLOCK: false,
+		nemoConfig.PoolId: false,
+	}
+
+	objectArgMap, err := MultiGetObjectArg(client, shareObjectMap, PRICE_ADAPTER_PACKAGE_ID, moduleName, functionName, nemoConfig.CacheContractPackageInfo[PRICE_ADAPTER_PACKAGE_ID])
+	if err != nil{
+		return nil, err
+	}
+	callArgs := make([]sui_types.CallArg, 0)
+	callArgs = append(callArgs,
+		sui_types.CallArg{Object: objectArgMap[nemoConfig.PoolId]},
+		sui_types.CallArg{Object: objectArgMap[nemoConfig.MmtOracle]},
+		sui_types.CallArg{Object: objectArgMap[MMT_ORACLE_STATE]},
+		sui_types.CallArg{Object: objectArgMap[MMT_REGISTRY_ID]},
+		sui_types.CallArg{Object: objectArgMap[priceOracleObjId]},
+		sui_types.CallArg{Object: objectArgMap[constant.CLOCK]},
+	)
+
+	var arguments []sui_types.Argument
+	arguments = append(arguments, *priceReceipt)
+	for _, v := range callArgs {
+		argument, err := ptb.Input(v)
+		if err != nil {
+			return nil, err
+		}
+		arguments = append(arguments, argument)
+	}
+	boolArguemnt,err := ptb.Pure(true)
+	if err != nil{
+		return nil, err
+	}
+	arguments = append(arguments, boolArguemnt)
+
+	command := ptb.Command(
+		sui_types.Command{
+			MoveCall: &sui_types.ProgrammableMoveCall{
+				Package:       *nemoPackageId,
+				Module:        module,
+				Function:      function,
+				TypeArguments: typeArguments,
+				Arguments:     arguments,
+			},
+		},
+	)
+	return &command, nil
+}
+
 func UpdatePrice(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig, priceReceipt *sui_types.Argument, coinType string) (*sui_types.Argument,error){
 	nemoPackageId, err := sui_types.NewObjectIdFromHex(MMT_ORACLE_PACKAGE_ID)
 	if err != nil {
@@ -1072,9 +1146,16 @@ func PreNemoProcess(ptb *sui_types.ProgrammableTransactionBuilder, client *clien
 		return nil, err
 	}
 
-	_, err = SetKOraclePrice(ptb, client, nemoConfig, priceReceiptA, nemoConfig.LeftCoinType, nemoConfig.LeftPriceInfoObjectId)
-	if err != nil{
-		return nil, err
+	if constant.IsSui(nemoConfig.LeftCoinType) {
+		_, err = SetKOraclePrice(ptb, client, nemoConfig, priceReceiptA, nemoConfig.LeftCoinType, nemoConfig.LeftPriceInfoObjectId)
+		if err != nil{
+			return nil, err
+		}
+	}else {
+		_, err = SetMmtOraclePriceSuiPair(ptb, client, nemoConfig, priceReceiptA, nemoConfig.LeftCoinType, nemoConfig.LeftPriceInfoObjectId)
+		if err != nil{
+			return nil, err
+		}
 	}
 
 	_, err = UpdatePrice(ptb, client, nemoConfig, priceReceiptA, nemoConfig.LeftCoinType)
@@ -1087,9 +1168,16 @@ func PreNemoProcess(ptb *sui_types.ProgrammableTransactionBuilder, client *clien
 		return nil, err
 	}
 
-	_, err = SetKOraclePrice(ptb, client, nemoConfig, priceReceiptB, nemoConfig.RightCoinType, nemoConfig.RightPriceInfoObjectId)
-	if err != nil{
-		return nil, err
+	if constant.IsSui(nemoConfig.RightCoinType) {
+		_, err = SetKOraclePrice(ptb, client, nemoConfig, priceReceiptB, nemoConfig.RightCoinType, nemoConfig.RightPriceInfoObjectId)
+		if err != nil{
+			return nil, err
+		}
+	}else {
+		_, err = SetMmtOraclePriceSuiPair(ptb, client, nemoConfig, priceReceiptB, nemoConfig.RightCoinType, nemoConfig.RightPriceInfoObjectId)
+		if err != nil{
+			return nil, err
+		}
 	}
 
 	_, err = UpdatePrice(ptb, client, nemoConfig, priceReceiptB, nemoConfig.RightCoinType)
