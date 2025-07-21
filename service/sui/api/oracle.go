@@ -875,11 +875,6 @@ func GetPriceVoucherFromNemo(ptb *sui_types.ProgrammableTransactionBuilder, clie
 }
 
 func GetPriceVoucherFromNemoMmt(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig) (*sui_types.Argument,error) {
-	_,err := PreNemoProcess(ptb, client, nemoConfig)
-	if err != nil {
-		return nil, err
-	}
-
 	nemoPackageId, err := sui_types.NewObjectIdFromHex(nemoConfig.OraclePackage)
 	if err != nil {
 		return nil, err
@@ -922,7 +917,7 @@ func GetPriceVoucherFromNemoMmt(ptb *sui_types.ProgrammableTransactionBuilder, c
 		Struct: stableTypeStructTag,
 	}
 	typeArguments := make([]move_types.TypeTag, 0)
-	typeArguments = append(typeArguments, leftCoinTypeTag, syTypeTag, vaultCoinTypeTag, stableTypeTag)
+	typeArguments = append(typeArguments, syTypeTag, leftCoinTypeTag, vaultCoinTypeTag, stableTypeTag)
 	marshal, err := json.Marshal(typeArguments)
 	fmt.Printf("m:%v",string(marshal))
 
