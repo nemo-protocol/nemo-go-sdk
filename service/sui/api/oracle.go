@@ -890,20 +890,20 @@ func GetPriceVoucherFromNemoMmt(ptb *sui_types.ProgrammableTransactionBuilder, c
 	module := move_types.Identifier(moduleName)
 	function := move_types.Identifier(functionName)
 
-	syTypeStructTag, err := GetStructTag(nemoConfig.SyCoinType)
-	if err != nil {
-		return nil, err
-	}
-	syTypeTag := move_types.TypeTag{
-		Struct: syTypeStructTag,
-	}
-
 	leftCoinTypeStructTag, err := GetStructTag(nemoConfig.LeftCoinType)
 	if err != nil {
 		return nil, err
 	}
 	leftCoinTypeTag := move_types.TypeTag{
 		Struct: leftCoinTypeStructTag,
+	}
+
+	syTypeStructTag, err := GetStructTag(nemoConfig.SyCoinType)
+	if err != nil {
+		return nil, err
+	}
+	syTypeTag := move_types.TypeTag{
+		Struct: syTypeStructTag,
 	}
 
 	vCoinTypeStructTag, err := GetStructTag(nemoConfig.CoinType)
@@ -922,7 +922,7 @@ func GetPriceVoucherFromNemoMmt(ptb *sui_types.ProgrammableTransactionBuilder, c
 		Struct: stableTypeStructTag,
 	}
 	typeArguments := make([]move_types.TypeTag, 0)
-	typeArguments = append(typeArguments, syTypeTag, leftCoinTypeTag, vaultCoinTypeTag, stableTypeTag)
+	typeArguments = append(typeArguments, leftCoinTypeTag, syTypeTag, vaultCoinTypeTag, stableTypeTag)
 	marshal, err := json.Marshal(typeArguments)
 	fmt.Printf("m:%v",string(marshal))
 
