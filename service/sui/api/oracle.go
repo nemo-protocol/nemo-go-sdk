@@ -874,6 +874,106 @@ func GetPriceVoucherFromNemo(ptb *sui_types.ProgrammableTransactionBuilder, clie
 	return &command, nil
 }
 
+func GetPriceVoucherFromNemoMmt(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig) (*sui_types.Argument,error) {
+	_,err := PreNemoProcess(ptb, client, nemoConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	nemoPackageId, err := sui_types.NewObjectIdFromHex(nemoConfig.OraclePackage)
+	if err != nil {
+		return nil, err
+	}
+
+	moduleName := "spring"
+	functionName := "get_price_voucher_in_sui_from_mmt_vault"
+	module := move_types.Identifier(moduleName)
+	function := move_types.Identifier(functionName)
+
+	syTypeStructTag, err := GetStructTag(nemoConfig.SyCoinType)
+	if err != nil {
+		return nil, err
+	}
+	syTypeTag := move_types.TypeTag{
+		Struct: syTypeStructTag,
+	}
+
+	leftCoinTypeStructTag, err := GetStructTag(nemoConfig.LeftCoinType)
+	if err != nil {
+		return nil, err
+	}
+	leftCoinTypeTag := move_types.TypeTag{
+		Struct: leftCoinTypeStructTag,
+	}
+
+	vCoinTypeStructTag, err := GetStructTag(nemoConfig.CoinType)
+	if err != nil {
+		return nil, err
+	}
+	vaultCoinTypeTag := move_types.TypeTag{
+		Struct: vCoinTypeStructTag,
+	}
+
+	stableTypeStructTag, err := GetStructTag(nemoConfig.StableType)
+	if err != nil {
+		return nil, err
+	}
+	stableTypeTag := move_types.TypeTag{
+		Struct: stableTypeStructTag,
+	}
+	typeArguments := make([]move_types.TypeTag, 0)
+	typeArguments = append(typeArguments, syTypeTag, leftCoinTypeTag, vaultCoinTypeTag, stableTypeTag)
+	marshal, err := json.Marshal(typeArguments)
+	fmt.Printf("m:%v",string(marshal))
+
+	shareObjectMap := map[string]bool{
+		nemoConfig.PriceOracle: false,
+		nemoConfig.OracleTicket: false,
+		nemoConfig.LstInfo: false,
+		nemoConfig.VaultId: false,
+		nemoConfig.PoolId: false,
+		nemoConfig.SyState: false,
+	}
+	fmt.Printf("shareObjectMap:%v",shareObjectMap)
+
+	objectArgMap, err := MultiGetObjectArg(client, shareObjectMap, nemoConfig.OraclePackage, moduleName, functionName, nemoConfig.CacheContractPackageInfo[nemoConfig.OraclePackage])
+	if err != nil{
+		return nil, err
+	}
+
+	fmt.Printf("\n==objectArgMap:%+v==\n",objectArgMap)
+	callArgs := make([]sui_types.CallArg, 0)
+	callArgs = append(callArgs,
+		sui_types.CallArg{Object: objectArgMap[nemoConfig.PriceOracle]},
+		sui_types.CallArg{Object: objectArgMap[nemoConfig.OracleTicket]},
+		sui_types.CallArg{Object: objectArgMap[nemoConfig.LstInfo]},
+		sui_types.CallArg{Object: objectArgMap[nemoConfig.VaultId]},
+		sui_types.CallArg{Object: objectArgMap[nemoConfig.PoolId]},
+		sui_types.CallArg{Object: objectArgMap[nemoConfig.SyState]},
+	)
+
+	var arguments []sui_types.Argument
+	for _, v := range callArgs {
+		argument, err := ptb.Input(v)
+		if err != nil {
+			return nil, err
+		}
+		arguments = append(arguments, argument)
+	}
+	command := ptb.Command(
+		sui_types.Command{
+			MoveCall: &sui_types.ProgrammableMoveCall{
+				Package:       *nemoPackageId,
+				Module:        module,
+				Function:      function,
+				TypeArguments: typeArguments,
+				Arguments:     arguments,
+			},
+		},
+	)
+	return &command, nil
+}
+
 func SetKOraclePrice(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig, priceReceipt *sui_types.Argument, coinType string, priceOracleObjId string) (*sui_types.Argument,error){
 	nemoPackageId, err := sui_types.NewObjectIdFromHex(PRICE_ADAPTER_PACKAGE_ID)
 	if err != nil {
@@ -1216,6 +1316,10 @@ func GetPriceVoucher(ptb *sui_types.ProgrammableTransactionBuilder, client *clie
 	}else if constant.IsWinterCoin(nemoConfig.ProviderProtocol){
 		return GetPriceVoucherFromWWal(ptb, client, nemoConfig)
 	}else if nemoConfig.ProviderProtocol == constant.Nemo{
+		hasSuiPair := constant.IsSui(nemoConfig.LeftCoinType) || constant.IsSui(nemoConfig.RightCoinType)
+		if nemoConfig.VaultId != "" && hasSuiPair{
+			return GetPriceVoucherFromNemoMmt(ptb, client, nemoConfig)
+		}
 		return GetPriceVoucherFromNemo(ptb, client, nemoConfig)
 	}
 	return nil, errors.New("coinType oracle not support！")
