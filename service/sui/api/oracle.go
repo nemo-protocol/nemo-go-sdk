@@ -3,7 +3,6 @@ package api
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/coming-chat/go-sui/v2/client"
 	"github.com/coming-chat/go-sui/v2/move_types"
 	"github.com/coming-chat/go-sui/v2/sui_types"
@@ -905,8 +904,7 @@ func GetPriceVoucherFromNemoMmt(ptb *sui_types.ProgrammableTransactionBuilder, c
 	}
 	typeArguments := make([]move_types.TypeTag, 0)
 	typeArguments = append(typeArguments, syTypeTag, leftCoinTypeTag, vaultCoinTypeTag, stableTypeTag)
-	marshal, err := json.Marshal(typeArguments)
-
+	//marshal, err := json.Marshal(typeArguments
 	shareObjectMap := map[string]bool{
 		nemoConfig.PriceOracle: false,
 		nemoConfig.OracleTicket: false,
