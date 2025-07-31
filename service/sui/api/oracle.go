@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/json"
 	"errors"
 	"github.com/coming-chat/go-sui/v2/client"
 	"github.com/coming-chat/go-sui/v2/move_types"
