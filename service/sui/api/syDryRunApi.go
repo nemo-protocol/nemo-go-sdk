@@ -306,7 +306,6 @@ func DryRunGetPyOutForExactSyInWithPriceVoucher(client *client.Client, nemoConfi
 		return 0, err
 	}
 
-	fmt.Printf("\n==objectArgMap:%+v==\n",objectArgMap)
 	callArgs := make([]sui_types.CallArg, 0)
 	callArgs = append(callArgs,
 		sui_types.CallArg{Object: objectArgMap[nemoConfig.PyState]},
@@ -439,7 +438,6 @@ func DryRunGetPyInForExactSyOutWithPriceVoucher(client *client.Client, nemoConfi
 		return 0, err
 	}
 
-	fmt.Printf("\n==objectArgMap:%+v==\n",objectArgMap)
 	callArgs := make([]sui_types.CallArg, 0)
 	callArgs = append(callArgs,
 		sui_types.CallArg{Object: objectArgMap[nemoConfig.PyState]},
@@ -566,7 +564,6 @@ func DryRunGetLpOutForSingleSyIn(client *client.Client, nemoConfig *models.NemoC
 		return 0, err
 	}
 
-	fmt.Printf("\n==objectArgMap:%+v==\n",objectArgMap)
 	callArgs := make([]sui_types.CallArg, 0)
 	callArgs = append(callArgs,
 		sui_types.CallArg{Object: objectArgMap[nemoConfig.PyState]},
@@ -693,7 +690,6 @@ func DryRunSingleLiquidityAddPtOut(client *client.Client, nemoConfig *models.Nem
 		return 0, err
 	}
 
-	fmt.Printf("\n==objectArgMap:%+v==\n",objectArgMap)
 	callArgs := make([]sui_types.CallArg, 0)
 	callArgs = append(callArgs,
 		sui_types.CallArg{Object: objectArgMap[nemoConfig.MarketFactoryConfig]},

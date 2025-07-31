@@ -60,7 +60,6 @@ func GetPriceVoucherFromXOracle(ptb *sui_types.ProgrammableTransactionBuilder, c
 		return nil, err
 	}
 
-	fmt.Printf("\n==objectArgMap:%+v==\n",objectArgMap)
 	callArgs := make([]sui_types.CallArg, 0)
 	callArgs = append(callArgs,
 		sui_types.CallArg{Object: objectArgMap[nemoConfig.PriceOracle]},
@@ -127,7 +126,6 @@ func GetPriceVoucherFromVolo(ptb *sui_types.ProgrammableTransactionBuilder, clie
 		return nil, err
 	}
 
-	fmt.Printf("\n==objectArgMap:%+v==\n",objectArgMap)
 	callArgs := make([]sui_types.CallArg, 0)
 	callArgs = append(callArgs,
 		sui_types.CallArg{Object: objectArgMap[nemoConfig.PriceOracle]},
@@ -197,7 +195,6 @@ func GetPriceVoucherFromSpring(ptb *sui_types.ProgrammableTransactionBuilder, cl
 		return nil, err
 	}
 
-	fmt.Printf("\n==objectArgMap:%+v==\n",objectArgMap)
 	callArgs := make([]sui_types.CallArg, 0)
 	callArgs = append(callArgs,
 		sui_types.CallArg{Object: objectArgMap[nemoConfig.PriceOracle]},
@@ -268,7 +265,6 @@ func GetPriceVoucherFromAftermath(ptb *sui_types.ProgrammableTransactionBuilder,
 		return nil, err
 	}
 
-	fmt.Printf("\n==objectArgMap:%+v==\n",objectArgMap)
 	callArgs := make([]sui_types.CallArg, 0)
 	callArgs = append(callArgs,
 		sui_types.CallArg{Object: objectArgMap[nemoConfig.PriceOracle]},
@@ -339,7 +335,6 @@ func GetPriceVoucherFromHasui(ptb *sui_types.ProgrammableTransactionBuilder, cli
 		return nil, err
 	}
 
-	fmt.Printf("\n==objectArgMap:%+v==\n",objectArgMap)
 	callArgs := make([]sui_types.CallArg, 0)
 	callArgs = append(callArgs,
 		sui_types.CallArg{Object: objectArgMap[nemoConfig.PriceOracle]},
@@ -421,7 +416,6 @@ func GetPriceVoucherFromLpToken(ptb *sui_types.ProgrammableTransactionBuilder, c
 		return nil, err
 	}
 
-	fmt.Printf("\n==objectArgMap:%+v==\n",objectArgMap)
 	callArgs := make([]sui_types.CallArg, 0)
 
 	//default hasui
@@ -519,7 +513,6 @@ func GetPriceVoucherFromBuck(ptb *sui_types.ProgrammableTransactionBuilder, clie
 		return nil, err
 	}
 
-	fmt.Printf("\n==objectArgMap:%+v==\n",objectArgMap)
 	callArgs := make([]sui_types.CallArg, 0)
 	callArgs = append(callArgs,
 		sui_types.CallArg{Object: objectArgMap[nemoConfig.PriceOracle]},
@@ -590,7 +583,6 @@ func GetPriceVoucherFromMsTable(ptb *sui_types.ProgrammableTransactionBuilder, c
 		return nil, err
 	}
 
-	fmt.Printf("\n==objectArgMap:%+v==\n",objectArgMap)
 	callArgs := make([]sui_types.CallArg, 0)
 	callArgs = append(callArgs,
 		sui_types.CallArg{Object: objectArgMap[nemoConfig.PriceOracle]},
@@ -661,7 +653,6 @@ func GetPriceVoucherFromHaWal(ptb *sui_types.ProgrammableTransactionBuilder, cli
 		return nil, err
 	}
 
-	fmt.Printf("\n==objectArgMap:%+v==\n",objectArgMap)
 	callArgs := make([]sui_types.CallArg, 0)
 	callArgs = append(callArgs,
 		sui_types.CallArg{Object: objectArgMap[nemoConfig.PriceOracle]},
@@ -732,7 +723,6 @@ func GetPriceVoucherFromWWal(ptb *sui_types.ProgrammableTransactionBuilder, clie
 		return nil, err
 	}
 
-	fmt.Printf("\n==objectArgMap:%+v==\n",objectArgMap)
 	callArgs := make([]sui_types.CallArg, 0)
 	callArgs = append(callArgs,
 		sui_types.CallArg{Object: objectArgMap[nemoConfig.PriceOracle]},
@@ -821,8 +811,7 @@ func GetPriceVoucherFromNemo(ptb *sui_types.ProgrammableTransactionBuilder, clie
 	}
 	typeArguments := make([]move_types.TypeTag, 0)
 	typeArguments = append(typeArguments, syTypeTag, leftCoinTypeTag, rightCoinTypeTag, vaultCoinTypeTag, stableTypeTag)
-	marshal, err := json.Marshal(typeArguments)
-	fmt.Printf("m:%v",string(marshal))
+	//marshal, err := json.Marshal(typeArguments)
 
 	shareObjectMap := map[string]bool{
 		nemoConfig.PriceOracle: false,
@@ -833,14 +822,12 @@ func GetPriceVoucherFromNemo(ptb *sui_types.ProgrammableTransactionBuilder, clie
 		nemoConfig.SyState: false,
 		constant.CLOCK: false,
 	}
-	fmt.Printf("shareObjectMap:%v",shareObjectMap)
 
 	objectArgMap, err := MultiGetObjectArg(client, shareObjectMap, nemoConfig.OraclePackage, moduleName, functionName, nemoConfig.CacheContractPackageInfo[nemoConfig.OraclePackage])
 	if err != nil{
 		return nil, err
 	}
 
-	fmt.Printf("\n==objectArgMap:%+v==\n",objectArgMap)
 	callArgs := make([]sui_types.CallArg, 0)
 	callArgs = append(callArgs,
 		sui_types.CallArg{Object: objectArgMap[nemoConfig.PriceOracle]},
@@ -919,7 +906,6 @@ func GetPriceVoucherFromNemoMmt(ptb *sui_types.ProgrammableTransactionBuilder, c
 	typeArguments := make([]move_types.TypeTag, 0)
 	typeArguments = append(typeArguments, syTypeTag, leftCoinTypeTag, vaultCoinTypeTag, stableTypeTag)
 	marshal, err := json.Marshal(typeArguments)
-	fmt.Printf("m:%v",string(marshal))
 
 	shareObjectMap := map[string]bool{
 		nemoConfig.PriceOracle: false,
@@ -929,14 +915,12 @@ func GetPriceVoucherFromNemoMmt(ptb *sui_types.ProgrammableTransactionBuilder, c
 		nemoConfig.PoolId: false,
 		nemoConfig.SyState: false,
 	}
-	fmt.Printf("shareObjectMap:%v",shareObjectMap)
 
 	objectArgMap, err := MultiGetObjectArg(client, shareObjectMap, nemoConfig.OraclePackage, moduleName, functionName, nemoConfig.CacheContractPackageInfo[nemoConfig.OraclePackage])
 	if err != nil{
 		return nil, err
 	}
 
-	fmt.Printf("\n==objectArgMap:%+v==\n",objectArgMap)
 	callArgs := make([]sui_types.CallArg, 0)
 	callArgs = append(callArgs,
 		sui_types.CallArg{Object: objectArgMap[nemoConfig.PriceOracle]},
@@ -1207,7 +1191,6 @@ func GetPriceReceipt(ptb *sui_types.ProgrammableTransactionBuilder, client *clie
 		return nil, err
 	}
 
-	fmt.Printf("\n==aaaobjectArgMap:%+v==\n",objectArgMap)
 	callArgs := make([]sui_types.CallArg, 0)
 	callArgs = append(callArgs,
 		sui_types.CallArg{Object: objectArgMap[nemoConfig.MmtOracle]},

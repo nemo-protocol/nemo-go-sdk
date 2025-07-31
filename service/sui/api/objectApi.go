@@ -54,7 +54,6 @@ func GetObjectMutable(client *client.Client, objectType, contractPackage, module
 			}
 		}
 	}
-	fmt.Printf("\n==contractPackage:%v,reloadPackageInfo:%v==\n",contractPackage,reloadPackageInfo)
 	if reloadPackageInfo{
 		objects,_ = client.GetObject(context.Background(), *contractPackageAddr, &types.SuiObjectDataOptions{
 			ShowType: true, ShowContent: true, ShowBcs: true, ShowOwner: true, ShowPreviousTransaction: true, ShowStorageRebate: true, ShowDisplay: true,
@@ -73,7 +72,6 @@ func GetObjectMutable(client *client.Client, objectType, contractPackage, module
 	filterFunc := utils.FindFunctionInBytecode(filterContent, function)
 	args := strings.Split(filterFunc, ",")
 	typeList := strings.SplitN(objectType, "::", 3)
-	fmt.Printf("\n==typeList:%v, args:%v==\n",typeList,args)
 	if len(typeList) != 3{
 		return false
 	}

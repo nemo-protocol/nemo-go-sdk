@@ -87,7 +87,6 @@ func MultiGetObjectArg(client *client.Client, shareObjectsMap map[string]bool, c
 		shareObjectIdList = append(shareObjectIdList, shareObject)
 	}
 
-	fmt.Printf("\n==shareObjectIdList:%+v==\n",shareObjectIdList)
 	objectMap, err := MultiGetObjectFieldByObjectId(client, shareObjectIdList)
 	if err != nil{
 		return nil, err

@@ -96,7 +96,6 @@ func CalculatePoolApy(coinInfo CoinInfo, marketState MarketState, pyOut, syIn in
 	// Calculate TVL
 	ytPrice := safeDivide(coinPrice.Mul(decimal.NewFromInt(syIn)), decimal.NewFromInt(pyOut))
 	ptPrice := underlyingPrice.Sub(ytPrice)
-	fmt.Printf("\nsyOut:%v,ytIn:%v,ptPrice:%v\n",syIn,pyOut,ptPrice)
 	ptTvl := totalPt.Mul(ptPrice).Div(decimal.NewFromInt(int64(math.Pow(10, float64(coinInfo.Decimal)))))
 	syTvl := totalSy.Mul(coinPrice).Div(decimal.NewFromInt(int64(math.Pow(10, float64(coinInfo.Decimal)))))
 	tvl := syTvl.Add(ptTvl)

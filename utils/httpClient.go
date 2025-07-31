@@ -40,7 +40,6 @@ func SendGetRpc(url string, headers ...map[string]string) ([]byte, error) {
 
 func RegenTransport(pUrl string) *http.Transport{
 	parseURL := mustParseURL(pUrl)
-	fmt.Printf("\n==parseURL:%v,pUrl:%v==\n", parseURL, pUrl)
 	return &http.Transport{
 		MaxIdleConns:    100,
 		MaxIdleConnsPerHost: 100,
@@ -53,7 +52,6 @@ func mustParseURL(rawURL string) *url.URL {
 	re := regexp.MustCompile(`[\r\n]`)
 	rawURL = re.ReplaceAllString(rawURL, "")
 	parsedURL, err := url.Parse(rawURL)
-	fmt.Printf("\n==parsedURL:%v,err:%v==\n", parsedURL, err)
 	if err != nil {
 		return nil
 	}
