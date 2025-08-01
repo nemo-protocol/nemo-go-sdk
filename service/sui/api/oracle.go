@@ -10,10 +10,10 @@ import (
 )
 
 const (
-	MMT_ORACLE_PACKAGE_ID = "0x069fea1d4f9275f58bec2465ac54ccf6477a44fb89c6ab893421ad849fb947ae"
-	MMT_REGISTRY_ID = "0xeb2aaddb67f29f313762bb100fd4dde982d7d9ee4f59c1dc20e0de6709202f98"
+	MMT_ORACLE_PACKAGE_ID = "0x45fe3ef1ed2d9b444b8041a84e426242ad129483bf56000cdd514b8065967f4d"
+	MMT_REGISTRY_ID = "0x6f8c395de3f250e08c01a25500c185d74cb182002d76750189c7e20a514befa8"
 	MMT_ORACLE_STATE = "0x1f9310238ee9298fb703c3419030b35b22bb1cc37113e3bb5007c99aec79e5b8"
-	PRICE_ADAPTER_PACKAGE_ID = "0xa7ae1b3700211d7fa618c1ce9af5f0d120028d8b3188333abf97a1f142adc10f"
+	PRICE_ADAPTER_PACKAGE_ID = "0x454ae856685130db7e5f86851add03d8252cebddbaff59db196548f3bd93d32a"
 )
 
 func GetPriceVoucherFromXOracle(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig) (*sui_types.Argument,error) {
