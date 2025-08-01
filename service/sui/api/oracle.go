@@ -14,6 +14,7 @@ const (
 	MMT_REGISTRY_ID = "0x6f8c395de3f250e08c01a25500c185d74cb182002d76750189c7e20a514befa8"
 	MMT_ORACLE_STATE = "0x1f9310238ee9298fb703c3419030b35b22bb1cc37113e3bb5007c99aec79e5b8"
 	PRICE_ADAPTER_PACKAGE_ID = "0x454ae856685130db7e5f86851add03d8252cebddbaff59db196548f3bd93d32a"
+	SET_PRICE_CAP_REGISTRY = "0xd088d1eaf09dfda03c989acf3063fd0e3e14432a2d21bf9fd2be30bf76373bfd"
 )
 
 func GetPriceVoucherFromXOracle(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig) (*sui_types.Argument,error) {
@@ -977,6 +978,7 @@ func SetKOraclePrice(ptb *sui_types.ProgrammableTransactionBuilder, client *clie
 		MMT_REGISTRY_ID: false,
 		MMT_ORACLE_STATE: false,
 		priceOracleObjId: false,
+		SET_PRICE_CAP_REGISTRY: false,
 		constant.CLOCK: false,
 	}
 
@@ -990,6 +992,7 @@ func SetKOraclePrice(ptb *sui_types.ProgrammableTransactionBuilder, client *clie
 		sui_types.CallArg{Object: objectArgMap[MMT_REGISTRY_ID]},
 		sui_types.CallArg{Object: objectArgMap[MMT_ORACLE_STATE]},
 		sui_types.CallArg{Object: objectArgMap[priceOracleObjId]},
+		sui_types.CallArg{Object: objectArgMap[SET_PRICE_CAP_REGISTRY]},
 		sui_types.CallArg{Object: objectArgMap[constant.CLOCK]},
 	)
 
