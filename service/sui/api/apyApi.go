@@ -14,7 +14,7 @@ type CoinInfo struct {
 	UnderlyingPrice       float64
 	UnderlyingApy         float64
 	SwapFeeForLpHolder    float64
-	SwapFeeForLpHolderAvg float64
+	TvlAvg                float64
 	Decimal               uint64
 	Maturity              int64
 }
@@ -86,7 +86,7 @@ func CalculatePoolApy(coinInfo CoinInfo, marketState MarketState, pyOut, syIn in
 	underlyingPrice := decimal.NewFromFloat(coinInfo.UnderlyingPrice)
 	underlyingApy := decimal.NewFromFloat(coinInfo.UnderlyingApy)
 	swapFeeForLpHolder := decimal.NewFromFloat(coinInfo.SwapFeeForLpHolder)
-	swapFeeForLpHolderAvg := decimal.NewFromFloat(coinInfo.SwapFeeForLpHolderAvg)
+	tvlAvg := decimal.NewFromFloat(coinInfo.TvlAvg)
 	totalPt, _ := decimal.NewFromString(marketState.TotalPt)
 	totalSy, _ := decimal.NewFromString(marketState.TotalSy)
 	lpSupply, _ := decimal.NewFromString(marketState.LpSupply)
@@ -115,8 +115,8 @@ func CalculatePoolApy(coinInfo CoinInfo, marketState MarketState, pyOut, syIn in
 
 	// Calculate swap fee APY
 	swapFeeRateForLpHolder, _ := safeDivide(swapFeeForLpHolder.Mul(coinPrice), tvl).Float64()
-	if swapFeeForLpHolderAvg.GreaterThan(decimal.Zero) {
-		swapFeeRateForLpHolder, _ = safeDivide(swapFeeForLpHolderAvg.Mul(coinPrice), tvl).Float64()
+	if tvlAvg.GreaterThan(decimal.Zero) {
+		swapFeeRateForLpHolder, _ = safeDivide(swapFeeForLpHolder.Mul(coinPrice), tvlAvg).Float64()
 	}
 
 	fmt.Printf("\nswapFeeRateForLpHolder:%0.10f\n", swapFeeRateForLpHolder)

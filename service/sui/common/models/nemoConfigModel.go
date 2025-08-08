@@ -37,7 +37,7 @@ type NemoConfig struct {
 	OracleTicket             string            `json:"oracleTicket"`
 	OracleVoucherPackage     string            `json:"oracleVoucherPackageId"`
 	SwapFeeForLpHolder       string            `json:"swapFeeForLpHolder"`
-	SwapFeeForLpHolderAvg    string            `json:"swapFeeForLpHolderAvg"`
+	TvlAvg                   string            `json:"tvlAvg"`
 	YieldTokenType           string            `json:"yieldTokenType"`
 	WinterStaking            string            `json:"winterStaking"`
 	CacheContractPackageInfo map[string]string `json:"cacheContractPackageInfo"`
@@ -80,7 +80,7 @@ type NemoConfigInfo struct {
 	OracleTicket           string       `json:"oracleTicket"`
 	OracleVoucherPackage   string       `json:"oracleVoucherPackageId"`
 	SwapFeeForLpHolder     string       `json:"swapFeeForLpHolder"`
-	SwapFeeForLpHolderAvg  string       `json:"swapFeeForLpHolderAvg"`
+	TvlAvg                 string       `json:"tvlAvg"`
 	YieldTokenType         string       `json:"yieldTokenType"`
 	LstInfo                string       `json:"lstInfo"`
 	WinterStaking          string       `json:"winterStaking"`
@@ -199,7 +199,7 @@ func FormatStruct(resInfo NemoConfigInfo) NemoConfig {
 	innerInfo.LeftCoinType = resInfo.LeftCoinType
 	innerInfo.RightCoinType = resInfo.RightPriceInfoObjectId
 	innerInfo.LeftPriceInfoObjectId = resInfo.LeftPriceInfoObjectId
-	innerInfo.SwapFeeForLpHolderAvg = resInfo.SwapFeeForLpHolderAvg
+	innerInfo.TvlAvg = resInfo.TvlAvg
 	return innerInfo
 }
 
