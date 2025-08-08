@@ -346,7 +346,7 @@ func SwapToUnderlyingCoin(ptb *sui_types.ProgrammableTransactionBuilder, client 
 }
 
 func GetCoinPriceInfo() map[string]PriceInfo {
-	priceInfoUrl := "https://app.nemoprotocol.com/api/v1/market/info"
+	priceInfoUrl := "https://api.nemoprotocol.com/api/v1/market/info"
 	priceInfoByte, err := utils.SendGetRpc(priceInfoUrl)
 	if err != nil {
 		return map[string]PriceInfo{}

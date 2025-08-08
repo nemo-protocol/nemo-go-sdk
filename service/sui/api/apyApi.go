@@ -10,12 +10,13 @@ import (
 )
 
 type CoinInfo struct {
-	CoinPrice          float64
-	UnderlyingPrice    float64
-	UnderlyingApy      float64
-	SwapFeeForLpHolder float64
-	Decimal            uint64
-	Maturity           int64
+	CoinPrice             float64
+	UnderlyingPrice       float64
+	UnderlyingApy         float64
+	SwapFeeForLpHolder    float64
+	SwapFeeForLpHolderAvg float64
+	Decimal               uint64
+	Maturity              int64
 }
 
 type MarketState struct {
@@ -42,23 +43,23 @@ func safeDivide(numerator, denominator decimal.Decimal) decimal.Decimal {
 	return numerator.Div(denominator)
 }
 
-func calculatePtApy(underlyingPrice, ptPrice, daysToExpiry decimal.Decimal) decimal.Decimal{
-	fmt.Printf("\n==underlyingPrice:%v, ptPrice:%v, daysToExpiry:%v==\n",underlyingPrice, ptPrice, daysToExpiry)
+func calculatePtApy(underlyingPrice, ptPrice, daysToExpiry decimal.Decimal) decimal.Decimal {
+	fmt.Printf("\n==underlyingPrice:%v, ptPrice:%v, daysToExpiry:%v==\n", underlyingPrice, ptPrice, daysToExpiry)
 	ratio := underlyingPrice.Div(ptPrice)
 	exponent := decimal.NewFromFloat(365).Div(daysToExpiry)
-	rf,_ := ratio.Float64()
-	ef,_ := exponent.Float64()
-	return decimal.NewFromFloat(math.Pow(rf,ef)).Sub(decimal.NewFromInt(1))
+	rf, _ := ratio.Float64()
+	ef, _ := exponent.Float64()
+	return decimal.NewFromFloat(math.Pow(rf, ef)).Sub(decimal.NewFromInt(1))
 }
 
 func CalculateYtAPY(underlyingInterestApyDec, ytPriceInAsset, yearsToExpiryDec decimal.Decimal) decimal.Decimal {
-	yearsToExpiryResult,_ := yearsToExpiryDec.Float64()
+	yearsToExpiryResult, _ := yearsToExpiryDec.Float64()
 	if yearsToExpiryResult <= 0 {
 		return decimal.NewFromInt(0)
 	}
 
-	addResult,_ := underlyingInterestApyDec.Add(decimal.NewFromInt(1)).Float64()
-	yearsToExpiryDecResult,_ := yearsToExpiryDec.Float64()
+	addResult, _ := underlyingInterestApyDec.Add(decimal.NewFromInt(1)).Float64()
+	yearsToExpiryDecResult, _ := yearsToExpiryDec.Float64()
 
 	interestReturns := decimal.NewFromFloat(math.Pow(addResult, yearsToExpiryDecResult)).
 		Sub(decimal.NewFromInt(1))
@@ -69,7 +70,7 @@ func CalculateYtAPY(underlyingInterestApyDec, ytPriceInAsset, yearsToExpiryDec d
 
 	ytReturnsAfterFee := ytReturns.Mul(decimal.NewFromFloat(0.965))
 
-	divResult1,_ := safeDivide(ytReturnsAfterFee, ytPriceInAsset).Float64()
+	divResult1, _ := safeDivide(ytReturnsAfterFee, ytPriceInAsset).Float64()
 	//divResult2,_ := decimal.NewFromInt(1).Div(yearsToExpiryDec).Float64()
 
 	ytApy := decimal.NewFromFloat(divResult1).
@@ -78,20 +79,21 @@ func CalculateYtAPY(underlyingInterestApyDec, ytPriceInAsset, yearsToExpiryDec d
 	return ytApy
 }
 
-func CalculatePoolApy(coinInfo CoinInfo, marketState MarketState, pyOut, syIn int64) *models.ApyModel{
+func CalculatePoolApy(coinInfo CoinInfo, marketState MarketState, pyOut, syIn int64) *models.ApyModel {
 	response := &models.ApyModel{}
 	// Convert strings to decimals
 	coinPrice := decimal.NewFromFloat(coinInfo.CoinPrice)
 	underlyingPrice := decimal.NewFromFloat(coinInfo.UnderlyingPrice)
 	underlyingApy := decimal.NewFromFloat(coinInfo.UnderlyingApy)
 	swapFeeForLpHolder := decimal.NewFromFloat(coinInfo.SwapFeeForLpHolder)
+	swapFeeForLpHolderAvg := decimal.NewFromFloat(coinInfo.SwapFeeForLpHolderAvg)
 	totalPt, _ := decimal.NewFromString(marketState.TotalPt)
 	totalSy, _ := decimal.NewFromString(marketState.TotalSy)
 	lpSupply, _ := decimal.NewFromString(marketState.LpSupply)
 
 	// Calculate days to expiry
-	daysToExpiry := decimal.NewFromFloat(float64(coinInfo.Maturity/1000 - time.Now().Unix()) / float64(86400))
-	yearToExpiry := decimal.NewFromFloat(float64(coinInfo.Maturity/1000 - time.Now().Unix()) / float64(31536000))
+	daysToExpiry := decimal.NewFromFloat(float64(coinInfo.Maturity/1000-time.Now().Unix()) / float64(86400))
+	yearToExpiry := decimal.NewFromFloat(float64(coinInfo.Maturity/1000-time.Now().Unix()) / float64(31536000))
 
 	// Calculate TVL
 	ytPrice := safeDivide(coinPrice.Mul(decimal.NewFromInt(syIn)), decimal.NewFromInt(pyOut))
@@ -105,49 +107,56 @@ func CalculatePoolApy(coinInfo CoinInfo, marketState MarketState, pyOut, syIn in
 	rSy := safeDivide(totalSy, totalSy.Add(totalPt))
 	rPt := safeDivide(totalPt, totalSy.Add(totalPt))
 	ptApy := calculatePtApy(underlyingPrice, ptPrice, daysToExpiry)
-	fmt.Printf("yearToExpiry:%v\n",yearToExpiry)
+	fmt.Printf("yearToExpiry:%v\n", yearToExpiry)
 	ytApy := CalculateYtAPY(underlyingApy, safeDivide(ytPrice, underlyingPrice), yearToExpiry)
 	scaledUnderlyingApy := rSy.Mul(underlyingApy)
 	scaledPtApy := rPt.Mul(ptApy)
-	fmt.Printf("\n==scaledPtApy:%v,ptApy:%v，scaledUnderlyingApy：%v==\n", scaledPtApy,ptApy,scaledUnderlyingApy)
+	fmt.Printf("\n==scaledPtApy:%v,ptApy:%v，scaledUnderlyingApy：%v==\n", scaledPtApy, ptApy, scaledUnderlyingApy)
 
 	// Calculate swap fee APY
-	swapFeeRateForLpHolder,_ := safeDivide(swapFeeForLpHolder.Mul(coinPrice), tvl).Float64()
-	expiryRate,_ := safeDivide(decimal.NewFromFloat(365), daysToExpiry).Float64()
-	swapFeeApy := decimal.NewFromFloat(math.Pow(swapFeeRateForLpHolder + 1,expiryRate)).Sub(decimal.NewFromInt(1))
-	fmt.Printf("\nswapFeeApy:%v\n",swapFeeApy)
+	swapFeeRateForLpHolder, _ := safeDivide(swapFeeForLpHolder.Mul(coinPrice), tvl).Float64()
+	if swapFeeForLpHolderAvg.GreaterThan(decimal.Zero) {
+		swapFeeRateForLpHolder, _ = safeDivide(swapFeeForLpHolderAvg.Mul(coinPrice), tvl).Float64()
+	}
+
+	fmt.Printf("\nswapFeeRateForLpHolder:%0.10f\n", swapFeeRateForLpHolder)
+	//expiryRate, _ := safeDivide(decimal.NewFromFloat(365), daysToExpiry).Float64()
+	//fmt.Printf("\nexpiryRate:%v\n", expiryRate)
+	//swapFeeApy := decimal.NewFromFloat(math.Pow(swapFeeRateForLpHolder+1, expiryRate)).Sub(decimal.NewFromInt(1))
+	swapFeeApy := decimal.NewFromFloat(swapFeeRateForLpHolder).Mul(decimal.NewFromInt(365))
+	fmt.Printf("\nswapFeeApy:%v\n", swapFeeApy)
 
 	// Calculate incentive APY
 	incentiveApy := decimal.Zero
 	marketStateInfo := models.MarketState{
-		MarketCap: marketState.MarketCap,
-		TotalSy: marketState.TotalSy,
-		TotalPt: marketState.TotalPt,
-		LpSupply: marketState.LpSupply,
+		MarketCap:     marketState.MarketCap,
+		TotalSy:       marketState.TotalSy,
+		TotalPt:       marketState.TotalPt,
+		LpSupply:      marketState.LpSupply,
 		RewardMetrics: make([]models.RewardMetrics, 0),
 	}
 	response.Incentives = make([]models.Incentives, 0)
 	for _, reward := range marketState.RewardMetrics {
 		tokenPrice, _ := decimal.NewFromString(reward.TokenPrice)
 		dailyEmission, _ := decimal.NewFromString(reward.DailyEmission)
-		divResult,_ := safeDivide(tokenPrice.Mul(dailyEmission), tvl).Add(decimal.NewFromInt(1)).Float64()
+		divResult, _ := safeDivide(tokenPrice.Mul(dailyEmission), tvl).Add(decimal.NewFromInt(1)).Float64()
 		apy := decimal.NewFromFloat(math.Pow(divResult, 365)).Sub(decimal.NewFromInt(1))
 		incentiveApy = incentiveApy.Add(apy)
 
 		incentives := models.Incentives{
-			Apy: apy.String(),
+			Apy:       apy.String(),
 			TokenType: reward.CoinType,
 			TokenLogo: reward.TokenLogo,
 		}
 		response.Incentives = append(response.Incentives, incentives)
 
 		rm := models.RewardMetrics{
-			TokenType: reward.CoinType,
-			TokenLogo: reward.TokenLogo,
+			TokenType:     reward.CoinType,
+			TokenLogo:     reward.TokenLogo,
 			DailyEmission: dailyEmission.String(),
-			TokenPrice: tokenPrice.String(),
-			TokenName: reward.CoinName,
-			Decimal: reward.Decimal,
+			TokenPrice:    tokenPrice.String(),
+			TokenName:     reward.CoinName,
+			Decimal:       reward.Decimal,
 		}
 		marketStateInfo.RewardMetrics = append(marketStateInfo.RewardMetrics, rm)
 	}
