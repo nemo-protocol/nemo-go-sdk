@@ -9,6 +9,7 @@ var (
 	GASCOINTYPE = "0x2::sui::SUI"
 	SCALLOP     = "Scallop"
 	Nemo     = "Nemo"
+	Merlin   = "Merlin"
 
 	SCALLOPSSUI   = "0xaafc4f740de0dd0dde642a31148fb94517087052f19afb0f7bed1dc41a50c77b::scallop_sui::SCALLOP_SUI"
 	SCALLOPSCA    = "0x5ca17430c1d046fae9edeaa8fd76c7b4193a00d764a0ecfa9418d733ad27bc1e::scallop_sca::SCALLOP_SCA"
