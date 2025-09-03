@@ -961,6 +961,6 @@ func GetYtInitInAmount(coinType string) []uint64{
 	case constant.STSUI:
 		return []uint64{1000000, 10000, 1000, 100, 10}
 	default:
-		return []uint64{1000000, 10000, 1000, 100, 10}
+		return []uint64{1000000, 10000, 1000, 100, 10, 1}
 	}
 }
