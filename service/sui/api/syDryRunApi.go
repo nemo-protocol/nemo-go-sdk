@@ -798,9 +798,30 @@ func DryRunConversionRate(client *client.Client, nemoConfig *models.NemoConfig, 
 		return 0, err
 	}
 
-	arguments := []sui_types.Argument{
-		*oracleArgument,
+	shareObjectMap := map[string]bool{
+		nemoConfig.Version: false,
 	}
+
+	objectArgMap, err := MultiGetObjectArg(client, shareObjectMap, nemoConfig.OracleVoucherPackage, moduleName, functionName, nemoConfig.CacheContractPackageInfo[nemoConfig.OracleVoucherPackage])
+	if err != nil{
+		return 0, err
+	}
+
+	callArgs := make([]sui_types.CallArg, 0)
+	callArgs = append(callArgs,
+		sui_types.CallArg{Object: objectArgMap[nemoConfig.Version]},
+	)
+
+	var arguments []sui_types.Argument
+	for _, v := range callArgs {
+		argument, err := ptb.Input(v)
+		if err != nil {
+			return 0, err
+		}
+		arguments = append(arguments, argument)
+	}
+
+	arguments = append(arguments, *oracleArgument)
 
 	ptb.Command(
 		sui_types.Command{

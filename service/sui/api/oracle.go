@@ -932,6 +932,80 @@ func GetPriceVoucherFromMerlin(ptb *sui_types.ProgrammableTransactionBuilder, cl
 	return &command, nil
 }
 
+func GetPriceVoucherFromVishwa(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig) (*sui_types.Argument,error) {
+	nemoPackageId, err := sui_types.NewObjectIdFromHex(nemoConfig.OraclePackage)
+	if err != nil {
+		return nil, err
+	}
+
+	moduleName := "constant"
+	functionName := "get_price_voucher_cap"
+	module := move_types.Identifier(moduleName)
+	function := move_types.Identifier(functionName)
+
+	syTypeStructTag, err := GetStructTag(nemoConfig.SyCoinType)
+	if err != nil {
+		return nil, err
+	}
+	syTypeTag := move_types.TypeTag{
+		Struct: syTypeStructTag,
+	}
+
+	coinTypeStructTag, err := GetStructTag(nemoConfig.CoinType)
+	if err != nil {
+		return nil, err
+	}
+	coinTypeTag := move_types.TypeTag{
+		Struct: coinTypeStructTag,
+	}
+
+	typeArguments := make([]move_types.TypeTag, 0)
+	typeArguments = append(typeArguments, syTypeTag, coinTypeTag)
+
+	shareObjectMap := map[string]bool{
+		nemoConfig.Version: false,
+		nemoConfig.PriceOracle: false,
+		nemoConfig.OracleTicket: false,
+		nemoConfig.SyState: false,
+		constant.CLOCK: false,
+	}
+
+	objectArgMap, err := MultiGetObjectArg(client, shareObjectMap, nemoConfig.OraclePackage, moduleName, functionName, nemoConfig.CacheContractPackageInfo[nemoConfig.OraclePackage])
+	if err != nil{
+		return nil, err
+	}
+
+	callArgs := make([]sui_types.CallArg, 0)
+	callArgs = append(callArgs,
+		sui_types.CallArg{Object: objectArgMap[nemoConfig.Version]},
+		sui_types.CallArg{Object: objectArgMap[nemoConfig.PriceOracle]},
+		sui_types.CallArg{Object: objectArgMap[nemoConfig.OracleTicket]},
+		sui_types.CallArg{Object: objectArgMap[nemoConfig.SyState]},
+		sui_types.CallArg{Object: objectArgMap[constant.CLOCK]},
+	)
+
+	var arguments []sui_types.Argument
+	for _, v := range callArgs {
+		argument, err := ptb.Input(v)
+		if err != nil {
+			return nil, err
+		}
+		arguments = append(arguments, argument)
+	}
+	command := ptb.Command(
+		sui_types.Command{
+			MoveCall: &sui_types.ProgrammableMoveCall{
+				Package:       *nemoPackageId,
+				Module:        module,
+				Function:      function,
+				TypeArguments: typeArguments,
+				Arguments:     arguments,
+			},
+		},
+	)
+	return &command, nil
+}
+
 func GetPriceVoucherFromNemoMmt(ptb *sui_types.ProgrammableTransactionBuilder, client *client.Client, nemoConfig *models.NemoConfig) (*sui_types.Argument,error) {
 	nemoPackageId, err := sui_types.NewObjectIdFromHex(nemoConfig.OraclePackage)
 	if err != nil {
@@ -1373,6 +1447,8 @@ func GetPriceVoucher(ptb *sui_types.ProgrammableTransactionBuilder, client *clie
 		return GetPriceVoucherFromNemo(ptb, client, nemoConfig)
 	}else if nemoConfig.ProviderProtocol == constant.Merlin{
 		return GetPriceVoucherFromMerlin(ptb, client, nemoConfig)
+	}else if nemoConfig.ProviderProtocol == constant.Vishwa{
+		return GetPriceVoucherFromVishwa(ptb, client, nemoConfig)
 	}
 	return nil, errors.New("coinType oracle not support！")
 }
