@@ -295,8 +295,8 @@ func DryRunGetPyOutForExactSyInWithPriceVoucher(client *client.Client, nemoConfi
 	}
 
 	shareObjectMap := map[string]bool{
-		nemoConfig.MarketState: false,
 		nemoConfig.MarketFactoryConfig: false,
+		nemoConfig.MarketState: false,
 		constant.CLOCK: false,
 	}
 
