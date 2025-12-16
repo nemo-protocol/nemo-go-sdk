@@ -295,7 +295,6 @@ func DryRunGetPyOutForExactSyInWithPriceVoucher(client *client.Client, nemoConfi
 	}
 
 	shareObjectMap := map[string]bool{
-		nemoConfig.PyState: false,
 		nemoConfig.MarketState: false,
 		nemoConfig.MarketFactoryConfig: false,
 		constant.CLOCK: false,
@@ -308,7 +307,6 @@ func DryRunGetPyOutForExactSyInWithPriceVoucher(client *client.Client, nemoConfi
 
 	callArgs := make([]sui_types.CallArg, 0)
 	callArgs = append(callArgs,
-		sui_types.CallArg{Object: objectArgMap[nemoConfig.PyState]},
 		sui_types.CallArg{Object: objectArgMap[nemoConfig.MarketFactoryConfig]},
 		sui_types.CallArg{Object: objectArgMap[nemoConfig.MarketState]},
 		sui_types.CallArg{Object: objectArgMap[constant.CLOCK]},
