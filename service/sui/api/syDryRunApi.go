@@ -289,7 +289,12 @@ func DryRunGetPyOutForExactSyInWithPriceVoucher(client *client.Client, nemoConfi
 		return 0, err
 	}
 
-	oracleArgument, err := GetPriceVoucher(ptb, client, nemoConfig)
+	priceRate, err := DryRunConversionRateRawValue(client, nemoConfig, sender.Address)
+	if err != nil{
+		return 0, err
+	}
+
+	fixedPoint64Argument, err := AddCreateFixedPoint64(ptb, priceRate)
 	if err != nil{
 		return 0, err
 	}
@@ -314,7 +319,7 @@ func DryRunGetPyOutForExactSyInWithPriceVoucher(client *client.Client, nemoConfi
 	arguments := []sui_types.Argument{
 		netSyInArgument,
 		minPyOutArgument,
-		*oracleArgument,
+		fixedPoint64Argument.Command,
 	}
 	for _, v := range callArgs {
 		argument, err := ptb.Input(v)
@@ -887,6 +892,121 @@ func DryRunConversionRate(client *client.Client, nemoConfig *models.NemoConfig, 
 	return ptValueFloat, nil
 }
 
+func DryRunConversionRateRawValue(client *client.Client, nemoConfig *models.NemoConfig, address string) (*big.Int, error){
+	ptb := sui_types.NewProgrammableTransactionBuilder()
+
+	nemoPackageId, err := sui_types.NewObjectIdFromHex(nemoConfig.OracleVoucherPackage)
+	if err != nil {
+		return nil, err
+	}
+
+	syStructTag, err := GetStructTag(nemoConfig.SyCoinType)
+	if err != nil {
+		return nil, err
+	}
+
+	moduleName := "oracle_voucher"
+	functionName := "get_price"
+	module := move_types.Identifier(moduleName)
+	function := move_types.Identifier(functionName)
+
+	typeArguments := []move_types.TypeTag{
+		{Struct: syStructTag},
+	}
+
+	oracleArgument, err := GetPriceVoucher(ptb, client, nemoConfig)
+	if err != nil{
+		return nil, err
+	}
+
+	shareObjectMap := map[string]bool{
+		nemoConfig.Version: false,
+	}
+
+	objectArgMap, err := MultiGetObjectArg(client, shareObjectMap, nemoConfig.OracleVoucherPackage, moduleName, functionName, nemoConfig.CacheContractPackageInfo[nemoConfig.OracleVoucherPackage])
+	if err != nil{
+		return nil, err
+	}
+
+	callArgs := make([]sui_types.CallArg, 0)
+	callArgs = append(callArgs,
+		sui_types.CallArg{Object: objectArgMap[nemoConfig.Version]},
+	)
+
+	var arguments []sui_types.Argument
+	for _, v := range callArgs {
+		argument, err := ptb.Input(v)
+		if err != nil {
+			return nil, err
+		}
+		arguments = append(arguments, argument)
+	}
+
+	arguments = append(arguments, *oracleArgument)
+
+	ptb.Command(
+		sui_types.Command{
+			MoveCall: &sui_types.ProgrammableMoveCall{
+				Package:       *nemoPackageId,
+				Module:        module,
+				Function:      function,
+				TypeArguments: typeArguments,
+				Arguments:     arguments,
+			},
+		},
+	)
+
+	pt := ptb.Finish()
+
+	txKind := sui_types.TransactionKind{
+		ProgrammableTransaction: &pt,
+	}
+
+	txBytes, err := bcs.Marshal(txKind)
+	if err != nil {
+		return nil, fmt.Errorf("failed to serialize transaction: %w", err)
+	}
+
+	senderAddr, err := sui_types.NewAddressFromHex(address)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse sender address: %w", err)
+	}
+
+	result, err := client.DevInspectTransactionBlock(context.Background(), *senderAddr, txBytes, nil, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to inspect transaction: %w", err)
+	}
+	if result.Error != nil{
+		return nil, errors.New(fmt.Sprintf("%v", *result.Error))
+	}
+	if len(result.Results) == 0 {
+		return nil, fmt.Errorf("no results returned")
+	}
+
+	lastResult := result.Results[len(result.Results)-1]
+
+	var ptValue128 *big.Int
+	if len(lastResult.ReturnValues) > 0 {
+		firstValue := lastResult.ReturnValues[0]
+		if firstValueArray, ok := firstValue.([]interface{}); ok && len(firstValueArray) > 0 {
+			if innerArray, ok := firstValueArray[0].([]interface{}); ok && len(innerArray) > 0 {
+				byteSlice := make([]byte, len(innerArray))
+				for i, v := range innerArray {
+					if num, ok := v.(float64); ok {
+						byteSlice[i] = byte(num)
+					}
+				}
+				if len(byteSlice) >= 8 {
+					ptValue128 = utils.ReadUint128ToBigInt(byteSlice)
+					fmt.Printf("Parsed ptValue: %d\n", ptValue128)
+				}
+			}
+		}
+	}
+
+	return ptValue128, nil
+}
+
 func GetSyInAndPyOut(client *client.Client, nemoConfig *models.NemoConfig, address string, syInList []uint64) (uint64, uint64, error){
 	var pyOut, syIn uint64
 	var err error
@@ -982,4 +1102,38 @@ func GetYtInitInAmount(coinType string) []uint64{
 	default:
 		return []uint64{1000000, 10000, 1000, 100, 10, 1}
 	}
+}
+
+type FixedPoint64Call struct {
+	Arg     sui_types.Argument // 输入句柄，用于其他 MoveCall
+	Command sui_types.Argument // 本命令的结果句柄（ptb.Command 返回）
+}
+
+func AddCreateFixedPoint64(ptb *sui_types.ProgrammableTransactionBuilder, v *big.Int) (*FixedPoint64Call, error) {
+	mathPackageId, err := sui_types.NewObjectIdFromHex("0x120fc4f90f308b81dc95d89cde8e758140395b83ada59405f33cf68ef6e97024")
+	if err != nil {
+		return nil, err
+	}
+
+	inputArg, err := MakeU128InputArg(ptb, v)
+	if err != nil { return nil, err }
+
+	cmd := ptb.Command(sui_types.Command{
+		MoveCall: &sui_types.ProgrammableMoveCall{
+			Package:  *mathPackageId,
+			Module:   move_types.Identifier("fixed_point64"),
+			Function: move_types.Identifier("create_from_raw_value"),
+			Arguments: []sui_types.Argument{
+				inputArg, // 这里是 Input
+			},
+		},
+	})
+
+	return &FixedPoint64Call{Arg: inputArg, Command: cmd}, nil
+}
+
+func MakeU128InputArg(ptb *sui_types.ProgrammableTransactionBuilder, v *big.Int) (sui_types.Argument, error) {
+	callArg, err := CreatePureU128CallArg(v)
+	if err != nil { return sui_types.Argument{}, err }
+	return ptb.Input(callArg)
 }

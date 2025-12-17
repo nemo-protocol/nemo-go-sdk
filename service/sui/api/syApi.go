@@ -9,6 +9,7 @@ import (
 	"github.com/coming-chat/go-sui/v2/sui_types"
 	"github.com/nemo-protocol/nemo-go-sdk/service/sui/common/constant"
 	"github.com/nemo-protocol/nemo-go-sdk/service/sui/common/models"
+	"math/big"
 	"strconv"
 )
 
@@ -229,6 +230,28 @@ func CreatePureU64CallArg(value uint64) sui_types.CallArg {
 		Pure: &buf,
 		Object: nil,  // Pure 类型不需要 Object
 	}
+}
+
+func CreatePureU128CallArg(v *big.Int) (sui_types.CallArg, error) {
+	if v == nil || v.Sign() < 0 {
+		return sui_types.CallArg{}, errors.New("u128 must be non-nil and >= 0")
+	}
+	if v.BitLen() > 128 {
+		return sui_types.CallArg{}, errors.New("value exceeds u128")
+	}
+
+	// 拆成低/高 64 位，小端序列化
+	low := new(big.Int).And(v, new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 64), big.NewInt(1))).Uint64()
+	high := new(big.Int).Rsh(v, 64).Uint64()
+
+	buf := make([]byte, 16)
+	binary.LittleEndian.PutUint64(buf[0:8], low)
+	binary.LittleEndian.PutUint64(buf[8:16], high)
+
+	return sui_types.CallArg{
+		Pure:   &buf,
+		Object: nil, // 纯值不需要对象引用
+	}, nil
 }
 
 func SwapExactYtForSy(ptb *sui_types.ProgrammableTransactionBuilder, blockClient *sui.ISuiAPI, client *client.Client, nemoConfig *models.NemoConfig, amountIn, minSyOut uint64, ownerAddress string, oracleArgument *sui_types.Argument) (*sui_types.Argument,error){
